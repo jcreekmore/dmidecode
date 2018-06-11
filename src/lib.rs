@@ -1,11 +1,14 @@
 extern crate aho_corasick;
-#[macro_use] extern crate failure;
-#[macro_use] extern crate failure_derive;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
+#[macro_use]
+extern crate lazy_static;
 
 use aho_corasick::{AcAutomaton, Automaton};
-use std::mem;
 use std::ffi::CStr;
+use std::mem;
 
 #[repr(C)]
 #[repr(packed)]
@@ -37,8 +40,8 @@ pub enum InvalidEntryError {
 }
 
 lazy_static! {
-    static ref FIND_SMBIOS_SIGNATURE: AcAutomaton<[u8; 4]> = AcAutomaton::new(vec![[0x5f, 0x53, 0x4d, 0x5f]]);
-    static ref NULNUL: AcAutomaton<[u8; 2]> = AcAutomaton::new(vec![[0x0, 0x0]]);
+    static ref FIND_SMBIOS_SIGNATURE: AcAutomaton<[u8; 4]> =
+        AcAutomaton::new(vec![[0x5f, 0x53, 0x4d, 0x5f]]);
 }
 
 impl Entry {
@@ -50,7 +53,10 @@ impl Entry {
             }
 
             let entry: Entry = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
-            ensure!(entry.len as usize >= mem::size_of::<Entry>(), InvalidEntryError::BadSize(entry.len));
+            ensure!(
+                entry.len as usize >= mem::size_of::<Entry>(),
+                InvalidEntryError::BadSize(entry.len)
+            );
 
             if sub_buffer.len() < entry.len as usize {
                 continue;
@@ -62,13 +68,18 @@ impl Entry {
             }
             ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
 
-            return Ok(entry)
+            return Ok(entry);
         }
         Err(InvalidEntryError::NotFound.into())
     }
 
     pub fn structures<'a, 'b>(&'a self, buffer: &'b [u8]) -> Structures<'a, 'b> {
-        Structures { entry: self, count: 0, idx: 0u16, buffer: buffer }
+        Structures {
+            entry: self,
+            count: 0,
+            idx: 0u16,
+            buffer: buffer,
+        }
     }
 }
 
@@ -87,12 +98,28 @@ pub enum InvalidStructureError {
     UnterminatedStrings(u16),
 }
 
+/// Finds the final nul nul terminator of a buffer and returns the index of the final nul
+fn find_nulnul(buf: &[u8]) -> Option<usize> {
+    for i in 0..buf.len() {
+        if i + 1 >= buf.len() {
+            return None;
+        }
+
+        if buf[i] == 0 && buf[i + 1] == 0 {
+            return Some(i + 1);
+        }
+    }
+
+    None
+}
+
 impl<'a, 'b> Iterator for Structures<'a, 'b> {
     type Item = Result<Structure<'b>, failure::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len ||
-            self.count >= self.entry.smbios_count {
+        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len
+            || self.count >= self.entry.smbios_count
+        {
             return None;
         }
 
@@ -104,18 +131,19 @@ impl<'a, 'b> Iterator for Structures<'a, 'b> {
             return Some(Err(InvalidStructureError::BadSize(self.idx, header.len).into()));
         }
 
-        let mut term_it = NULNUL.find(&self.buffer[(strings_idx as usize)..]);
-        let strings_len = match term_it.next() {
-            Some(terminator) => terminator.end as u16,
+        let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
+        let strings_len = match term {
+            Some(terminator) => (terminator + 1) as u16,
             None => {
                 return Some(Err(InvalidStructureError::UnterminatedStrings(self.idx).into()));
-            },
+            }
         };
 
         let structure = Structure {
             info: header._type.into(),
             handle: header.handle,
-            data: &self.buffer[(self.idx + mem::size_of::<HeaderPacked>() as u16) as usize..strings_idx as usize],
+            data: &self.buffer
+                [(self.idx + mem::size_of::<HeaderPacked>() as u16) as usize..strings_idx as usize],
             strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
         };
 
@@ -167,7 +195,10 @@ impl<'a> Structure<'a> {
     }
 
     pub fn system(&self) -> Result<System<'a>, failure::Error> {
-        ensure!(self.info == InfoType::System, MalformedStructureError::BadType(self.info, self.handle, "System"));
+        ensure!(
+            self.info == InfoType::System,
+            MalformedStructureError::BadType(self.info, self.handle, "System")
+        );
 
         #[repr(C)]
         #[repr(packed)]
@@ -194,7 +225,10 @@ impl<'a> Structure<'a> {
     }
 
     pub fn base_board(&self) -> Result<BaseBoard<'a>, failure::Error> {
-        ensure!(self.info == InfoType::BaseBoard, MalformedStructureError::BadType(self.info, self.handle, "BaseBoard"));
+        ensure!(
+            self.info == InfoType::BaseBoard,
+            MalformedStructureError::BadType(self.info, self.handle, "BaseBoard")
+        );
 
         #[repr(C)]
         #[repr(packed)]
@@ -310,9 +344,9 @@ impl From<u8> for InfoType {
 mod tests {
     use super::*;
 
-    const DMIDECODE_BIN: &'static[u8] = include_bytes!("./dmidecode.bin");
-    const ENTRY_BIN: &'static[u8] = include_bytes!("./entry.bin");
-    const DMI_BIN: &'static[u8] = include_bytes!("./dmi.bin");
+    const DMIDECODE_BIN: &'static [u8] = include_bytes!("./dmidecode.bin");
+    const ENTRY_BIN: &'static [u8] = include_bytes!("./entry.bin");
+    const DMI_BIN: &'static [u8] = include_bytes!("./dmi.bin");
 
     #[test]
     fn found_smbios_entry() {
@@ -337,7 +371,9 @@ mod tests {
     #[test]
     fn iterator_through_structures_baseboard() {
         let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]).filter_map(|s| s.ok());
+        let structures = entry
+            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
+            .filter_map(|s| s.ok());
         for s in structures.filter(|s| s.info == InfoType::BaseBoard) {
             println!("{:?}", s.base_board().unwrap());
         }
@@ -346,9 +382,41 @@ mod tests {
     #[test]
     fn iterator_through_structures_system() {
         let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]).filter_map(|s| s.ok());
+        let structures = entry
+            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
+            .filter_map(|s| s.ok());
         for s in structures.filter(|s| s.info == InfoType::System) {
             println!("{:?}", s.system().unwrap());
         }
+    }
+
+    #[test]
+    fn find_nulnul_empty() {
+        let buf = vec![];
+        assert_eq!(find_nulnul(&buf), None);
+    }
+
+    #[test]
+    fn find_nulnul_single_char() {
+        let buf = vec![0];
+        assert_eq!(find_nulnul(&buf), None);
+    }
+
+    #[test]
+    fn find_nulnul_trivial() {
+        let buf = vec![0, 0];
+        assert_eq!(find_nulnul(&buf), Some(1));
+    }
+
+    #[test]
+    fn find_nulnul_with_data() {
+        let buf = vec![1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0];
+        assert_eq!(find_nulnul(&buf), Some(11));
+    }
+
+    #[test]
+    fn find_nulnul_with_data_more_at_end() {
+        let buf = vec![1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3];
+        assert_eq!(find_nulnul(&buf), Some(11));
     }
 }
