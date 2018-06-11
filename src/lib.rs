@@ -1,5 +1,4 @@
 extern crate core;
-#[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
@@ -48,24 +47,32 @@ fn find_signature(buffer: &[u8]) -> Option<usize> {
     None
 }
 
+macro_rules! lib_ensure {
+    ($cond:expr, $e:expr) => {
+        if !($cond) {
+            return Err($e);
+        }
+    };
+}
+
 impl Entry {
-    pub fn new(buffer: &[u8]) -> Result<Entry, failure::Error> {
+    pub fn new(buffer: &[u8]) -> Result<Entry, InvalidEntryError> {
         find_signature(buffer)
-            .ok_or_else(|| InvalidEntryError::NotFound.into())
+            .ok_or_else(|| InvalidEntryError::NotFound)
             .and_then(|start| {
                 let sub_buffer = &buffer[start..];
-                ensure!(
+                lib_ensure!(
                     sub_buffer.len() >= mem::size_of::<Entry>(),
                     InvalidEntryError::BadSize(sub_buffer.len() as u8)
                 );
 
                 let entry: Entry = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
-                ensure!(
+                lib_ensure!(
                     entry.len as usize >= mem::size_of::<Entry>(),
                     InvalidEntryError::BadSize(entry.len)
                 );
 
-                ensure!(
+                lib_ensure!(
                     sub_buffer.len() as u8 >= entry.len,
                     InvalidEntryError::BadSize(sub_buffer.len() as u8)
                 );
@@ -74,7 +81,7 @@ impl Entry {
                 for val in &sub_buffer[0..(entry.len as usize)] {
                     sum = sum.wrapping_add(*val);
                 }
-                ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
+                lib_ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
 
                 Ok(entry)
             })
@@ -121,7 +128,7 @@ fn find_nulnul(buf: &[u8]) -> Option<usize> {
 }
 
 impl<'a, 'b> Iterator for Structures<'a, 'b> {
-    type Item = Result<Structure<'b>, failure::Error>;
+    type Item = Result<Structure<'b>, InvalidStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len
@@ -135,14 +142,14 @@ impl<'a, 'b> Iterator for Structures<'a, 'b> {
 
         let strings_idx: u16 = self.idx + header.len as u16;
         if strings_idx >= self.entry.smbios_len {
-            return Some(Err(InvalidStructureError::BadSize(self.idx, header.len).into()));
+            return Some(Err(InvalidStructureError::BadSize(self.idx, header.len)));
         }
 
         let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
         let strings_len = match term {
             Some(terminator) => (terminator + 1) as u16,
             None => {
-                return Some(Err(InvalidStructureError::UnterminatedStrings(self.idx).into()));
+                return Some(Err(InvalidStructureError::UnterminatedStrings(self.idx)));
             }
         };
 
@@ -196,14 +203,14 @@ impl<'a> Structure<'a> {
         })
     }
 
-    fn find_string(&self, idx: u8) -> Result<&'a str, failure::Error> {
-        self.strings().nth((idx - 1) as usize).ok_or_else(|| {
-            MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx).into()
-        })
+    fn find_string(&self, idx: u8) -> Result<&'a str, MalformedStructureError> {
+        self.strings()
+            .nth((idx - 1) as usize)
+            .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
     }
 
-    pub fn system(&self) -> Result<System<'a>, failure::Error> {
-        ensure!(
+    pub fn system(&self) -> Result<System<'a>, MalformedStructureError> {
+        lib_ensure!(
             self.info == InfoType::System,
             MalformedStructureError::BadType(self.info, self.handle, "System")
         );
@@ -231,8 +238,8 @@ impl<'a> Structure<'a> {
         })
     }
 
-    pub fn base_board(&self) -> Result<BaseBoard<'a>, failure::Error> {
-        ensure!(
+    pub fn base_board(&self) -> Result<BaseBoard<'a>, MalformedStructureError> {
+        lib_ensure!(
             self.info == InfoType::BaseBoard,
             MalformedStructureError::BadType(self.info, self.handle, "BaseBoard")
         );
