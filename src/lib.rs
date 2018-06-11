@@ -1,12 +1,8 @@
-extern crate aho_corasick;
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-#[macro_use]
-extern crate lazy_static;
 
-use aho_corasick::{AcAutomaton, Automaton};
 use std::ffi::CStr;
 use std::mem;
 
@@ -39,38 +35,48 @@ pub enum InvalidEntryError {
     BadChecksum(u8),
 }
 
-lazy_static! {
-    static ref FIND_SMBIOS_SIGNATURE: AcAutomaton<[u8; 4]> =
-        AcAutomaton::new(vec![[0x5f, 0x53, 0x4d, 0x5f]]);
+fn find_signature(buffer: &[u8]) -> Option<usize> {
+    static STRIDE: usize = 16;
+    static SIG: &[u8; 4] = &[0x5f, 0x53, 0x4d, 0x5f];
+    for (idx, chunk) in buffer.chunks(STRIDE).enumerate() {
+        if chunk.starts_with(SIG) {
+            return Some(idx * STRIDE);
+        }
+    }
+
+    None
 }
 
 impl Entry {
     pub fn new(buffer: &[u8]) -> Result<Entry, failure::Error> {
-        for possible in FIND_SMBIOS_SIGNATURE.find(buffer) {
-            let sub_buffer = &buffer[possible.start..];
-            if sub_buffer.len() < mem::size_of::<Entry>() {
-                continue;
-            }
+        find_signature(buffer)
+            .ok_or_else(|| InvalidEntryError::NotFound.into())
+            .and_then(|start| {
+                let sub_buffer = &buffer[start..];
+                ensure!(
+                    sub_buffer.len() >= mem::size_of::<Entry>(),
+                    InvalidEntryError::BadSize(sub_buffer.len() as u8)
+                );
 
-            let entry: Entry = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
-            ensure!(
-                entry.len as usize >= mem::size_of::<Entry>(),
-                InvalidEntryError::BadSize(entry.len)
-            );
+                let entry: Entry = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
+                ensure!(
+                    entry.len as usize >= mem::size_of::<Entry>(),
+                    InvalidEntryError::BadSize(entry.len)
+                );
 
-            if sub_buffer.len() < entry.len as usize {
-                continue;
-            }
+                ensure!(
+                    sub_buffer.len() as u8 >= entry.len,
+                    InvalidEntryError::BadSize(sub_buffer.len() as u8)
+                );
 
-            let mut sum = 0u8;
-            for val in &sub_buffer[0..(entry.len as usize)] {
-                sum = sum.wrapping_add(*val);
-            }
-            ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
+                let mut sum = 0u8;
+                for val in &sub_buffer[0..(entry.len as usize)] {
+                    sum = sum.wrapping_add(*val);
+                }
+                ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
 
-            return Ok(entry);
-        }
-        Err(InvalidEntryError::NotFound.into())
+                Ok(entry)
+            })
     }
 
     pub fn structures<'a, 'b>(&'a self, buffer: &'b [u8]) -> Structures<'a, 'b> {
@@ -358,6 +364,18 @@ mod tests {
     #[should_panic]
     fn doesnt_find_smbios_entry() {
         Entry::new(DMI_BIN).unwrap();
+    }
+
+    #[test]
+    fn found_signature() {
+        find_signature(ENTRY_BIN).unwrap();
+        find_signature(DMIDECODE_BIN).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn doesnt_find_signature() {
+        find_signature(DMI_BIN).unwrap();
     }
 
     #[test]
