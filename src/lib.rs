@@ -180,24 +180,25 @@ pub struct Structure<'a> {
 pub enum MalformedStructureError {
     #[fail(display = "Structure {:?} with handle {} cannot be decoded to {}", _0, _1, _2)]
     BadType(InfoType, u16, &'static str),
-}
-
-fn index<'a>(strings: &[&'a CStr], idx: u8) -> &'a CStr {
-    strings[(idx - 1) as usize]
+    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
+    InvalidStringIndex(InfoType, u16, u8),
 }
 
 impl<'a> Structure<'a> {
-    fn strings(&self) -> Vec<&'a CStr> {
-        self.strings
-            .split(|elm| *elm == 0)
-            .filter_map(|slice| {
-                if slice.is_empty() {
-                    None
-                } else {
-                    unsafe { Some(CStr::from_ptr(slice.as_ptr() as *const i8)) }
-                }
-            })
-            .collect()
+    fn strings(&self) -> impl Iterator<Item = &'a CStr> {
+        self.strings.split(|elm| *elm == 0).filter_map(|slice| {
+            if slice.is_empty() {
+                None
+            } else {
+                unsafe { Some(CStr::from_ptr(slice.as_ptr() as *const i8)) }
+            }
+        })
+    }
+
+    fn find_string(&self, idx: u8) -> Result<&'a CStr, failure::Error> {
+        self.strings().nth((idx - 1) as usize).ok_or_else(|| {
+            MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx).into()
+        })
     }
 
     pub fn system(&self) -> Result<System<'a>, failure::Error> {
@@ -218,13 +219,12 @@ impl<'a> Structure<'a> {
         }
 
         let packed: SystemPacked = unsafe { std::ptr::read(self.data.as_ptr() as *const _) };
-        let strings = self.strings();
 
         Ok(System {
-            manufacturer: index(&strings, packed.manufacturer),
-            product: index(&strings, packed.product),
-            version: index(&strings, packed.version),
-            serial: index(&strings, packed.serial),
+            manufacturer: self.find_string(packed.manufacturer)?,
+            product: self.find_string(packed.product)?,
+            version: self.find_string(packed.version)?,
+            serial: self.find_string(packed.serial)?,
             uuid: packed.uuid,
             wakeup: packed.wakeup.into(),
         })
@@ -246,13 +246,12 @@ impl<'a> Structure<'a> {
         }
 
         let packed: BaseBoardPacked = unsafe { std::ptr::read(self.data.as_ptr() as *const _) };
-        let strings = self.strings();
 
         Ok(BaseBoard {
-            manufacturer: index(&strings, packed.manufacturer),
-            product: index(&strings, packed.product),
-            version: index(&strings, packed.version),
-            serial: index(&strings, packed.serial),
+            manufacturer: self.find_string(packed.manufacturer)?,
+            product: self.find_string(packed.product)?,
+            version: self.find_string(packed.version)?,
+            serial: self.find_string(packed.serial)?,
         })
     }
 }
