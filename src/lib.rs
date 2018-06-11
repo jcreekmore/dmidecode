@@ -1,10 +1,11 @@
+extern crate core;
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 
-use std::ffi::CStr;
-use std::mem;
+use core::mem;
+use core::str;
 
 #[repr(C)]
 #[repr(packed)]
@@ -185,17 +186,17 @@ pub enum MalformedStructureError {
 }
 
 impl<'a> Structure<'a> {
-    fn strings(&self) -> impl Iterator<Item = &'a CStr> {
+    fn strings(&self) -> impl Iterator<Item = &'a str> {
         self.strings.split(|elm| *elm == 0).filter_map(|slice| {
             if slice.is_empty() {
                 None
             } else {
-                unsafe { Some(CStr::from_ptr(slice.as_ptr() as *const i8)) }
+                unsafe { Some(str::from_utf8_unchecked(slice)) }
             }
         })
     }
 
-    fn find_string(&self, idx: u8) -> Result<&'a CStr, failure::Error> {
+    fn find_string(&self, idx: u8) -> Result<&'a str, failure::Error> {
         self.strings().nth((idx - 1) as usize).ok_or_else(|| {
             MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx).into()
         })
@@ -290,20 +291,20 @@ impl From<u8> for WakeupType {
 
 #[derive(Debug)]
 pub struct System<'a> {
-    pub manufacturer: &'a CStr,
-    pub product: &'a CStr,
-    pub version: &'a CStr,
-    pub serial: &'a CStr,
+    pub manufacturer: &'a str,
+    pub product: &'a str,
+    pub version: &'a str,
+    pub serial: &'a str,
     pub uuid: [u8; 16],
     pub wakeup: WakeupType,
 }
 
 #[derive(Debug)]
 pub struct BaseBoard<'a> {
-    pub manufacturer: &'a CStr,
-    pub product: &'a CStr,
-    pub version: &'a CStr,
-    pub serial: &'a CStr,
+    pub manufacturer: &'a str,
+    pub product: &'a str,
+    pub version: &'a str,
+    pub serial: &'a str,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
