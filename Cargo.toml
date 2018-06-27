@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 aho-corasick = "0.6.4"
+bitflags = "1.0.3"
 failure = "0.1.1"
 failure_derive = "0.1.1"
 lazy_static = "1.0.1"

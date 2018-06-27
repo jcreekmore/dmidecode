@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate bitflags;
 extern crate core;
 extern crate failure;
 #[macro_use]
@@ -29,6 +31,8 @@ pub struct Entry {
 pub enum InvalidEntryError {
     #[fail(display = "Input did not contain a valid SMBIOS entry")]
     NotFound,
+    #[fail(display = "Input version number was below 2.0: {}", _0)]
+    TooOldVersion(u8),
     #[fail(display = "Input contained an invalid-sized SMBIOS entry: {}", _0)]
     BadSize(u8),
     #[fail(display = "SMBIOS entry has an invalid checksum: {}", _0)]
@@ -70,6 +74,11 @@ impl Entry {
                 lib_ensure!(
                     entry.len as usize >= mem::size_of::<Entry>(),
                     InvalidEntryError::BadSize(entry.len)
+                );
+
+                lib_ensure!(
+                    entry.major >= 2,
+                    InvalidEntryError::TooOldVersion(entry.major)
                 );
 
                 lib_ensure!(
@@ -127,8 +136,8 @@ fn find_nulnul(buf: &[u8]) -> Option<usize> {
     None
 }
 
-impl<'a, 'b> Iterator for Structures<'a, 'b> {
-    type Item = Result<Structure<'b>, InvalidStructureError>;
+impl<'entry, 'b> Iterator for Structures<'entry, 'b> {
+    type Item = Result<Structure<'b, 'entry>, InvalidStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len
@@ -156,6 +165,7 @@ impl<'a, 'b> Iterator for Structures<'a, 'b> {
         let structure = Structure {
             info: header._type.into(),
             handle: header.handle,
+            entry: self.entry,
             data: &self.buffer
                 [(self.idx + mem::size_of::<HeaderPacked>() as u16) as usize..strings_idx as usize],
             strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
@@ -176,10 +186,10 @@ pub struct HeaderPacked {
     pub handle: u16,
 }
 
-#[derive(Debug)]
-pub struct Structure<'a> {
+pub struct Structure<'a, 'entry> {
     pub info: InfoType,
     pub handle: u16,
+    entry: &'entry Entry,
     data: &'a [u8],
     strings: &'a [u8],
 }
@@ -192,7 +202,13 @@ pub enum MalformedStructureError {
     InvalidStringIndex(InfoType, u16, u8),
 }
 
-impl<'a> Structure<'a> {
+macro_rules! let_as_struct {
+    ($name:ident, $ty:ty, $data:expr) => {
+        let $name: $ty = unsafe { std::ptr::read($data.as_ptr() as * const _) };
+    };
+}
+
+impl<'a, 'entry> Structure<'a, 'entry> {
     fn strings(&self) -> impl Iterator<Item = &'a str> {
         self.strings.split(|elm| *elm == 0).filter_map(|slice| {
             if slice.is_empty() {
@@ -217,25 +233,71 @@ impl<'a> Structure<'a> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct SystemPacked {
+        struct SystemPacked_2_0 {
             manufacturer: u8,
             product: u8,
             version: u8,
             serial: u8,
+        }
+
+        #[repr(C)]
+        #[repr(packed)]
+        struct SystemPacked_2_1 {
+            v2_0: SystemPacked_2_0,
             uuid: [u8; 16],
             wakeup: u8,
         }
 
-        let packed: SystemPacked = unsafe { std::ptr::read(self.data.as_ptr() as *const _) };
+        #[repr(C)]
+        #[repr(packed)]
+        struct SystemPacked_2_4 {
+            v2_1: SystemPacked_2_1,
+            sku: u8,
+            family: u8,
+        }
 
-        Ok(System {
-            manufacturer: self.find_string(packed.manufacturer)?,
-            product: self.find_string(packed.product)?,
-            version: self.find_string(packed.version)?,
-            serial: self.find_string(packed.serial)?,
-            uuid: packed.uuid,
-            wakeup: packed.wakeup.into(),
-        })
+        if self.entry.major == 2 && self.entry.minor < 1 {
+            let_as_struct!(packed, SystemPacked_2_0, self.data);
+
+            Ok(System {
+                manufacturer: self.find_string(packed.manufacturer)?,
+                product: self.find_string(packed.product)?,
+                version: self.find_string(packed.version)?,
+                serial: self.find_string(packed.serial)?,
+                uuid: None,
+                wakeup: None,
+                sku: None,
+                family: None,
+            })
+
+        } else if self.entry.major == 2 && self.entry.minor < 4 {
+            let_as_struct!(packed, SystemPacked_2_1, self.data);
+
+            Ok(System {
+                manufacturer: self.find_string(packed.v2_0.manufacturer)?,
+                product: self.find_string(packed.v2_0.product)?,
+                version: self.find_string(packed.v2_0.version)?,
+                serial: self.find_string(packed.v2_0.serial)?,
+                uuid: Some(packed.uuid),
+                wakeup: Some(packed.wakeup.into()),
+                sku: None,
+                family: None,
+            })
+
+        } else {
+            let_as_struct!(packed, SystemPacked_2_4, self.data);
+
+            Ok(System {
+                manufacturer: self.find_string(packed.v2_1.v2_0.manufacturer)?,
+                product: self.find_string(packed.v2_1.v2_0.product)?,
+                version: self.find_string(packed.v2_1.v2_0.version)?,
+                serial: self.find_string(packed.v2_1.v2_0.serial)?,
+                uuid: Some(packed.v2_1.uuid),
+                wakeup: Some(packed.v2_1.wakeup.into()),
+                sku: Some(self.find_string(packed.sku)?),
+                family: Some(self.find_string(packed.family)?),
+            })
+        }
     }
 
     pub fn base_board(&self) -> Result<BaseBoard<'a>, MalformedStructureError> {
@@ -251,6 +313,11 @@ impl<'a> Structure<'a> {
             product: u8,
             version: u8,
             serial: u8,
+            asset: u8,
+            feature_flags: u8,
+            location_in_chassis: u8,
+            chassis_handle: u16,
+            board_type: u8,
         }
 
         let packed: BaseBoardPacked = unsafe { std::ptr::read(self.data.as_ptr() as *const _) };
@@ -260,6 +327,11 @@ impl<'a> Structure<'a> {
             product: self.find_string(packed.product)?,
             version: self.find_string(packed.version)?,
             serial: self.find_string(packed.serial)?,
+            asset: self.find_string(packed.asset)?,
+            feature_flags: BaseBoardFlags::from_bits_truncate(packed.feature_flags),
+            location_in_chassis: self.find_string(packed.location_in_chassis)?,
+            chassis_handle: packed.chassis_handle,
+            board_type: packed.board_type.into(),
         })
     }
 }
@@ -302,8 +374,60 @@ pub struct System<'a> {
     pub product: &'a str,
     pub version: &'a str,
     pub serial: &'a str,
-    pub uuid: [u8; 16],
-    pub wakeup: WakeupType,
+    pub uuid: Option<[u8; 16]>,
+    pub wakeup: Option<WakeupType>,
+    pub sku: Option<&'a str>,
+    pub family: Option<&'a str>,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum BoardType {
+    Unknown,
+    Other,
+    ServerBlade,
+    ConnectivitySwitch,
+    SystemManagementModule,
+    ProcessorModule,
+    IoModule,
+    MemoryModule,
+    DaughterBoard,
+    MotherBoard,
+    ProcessorMemoryModule,
+    ProcessorIoModule,
+    InterconnectBoard,
+    Undefined(u8),
+}
+
+impl From<u8> for BoardType {
+    fn from(_type: u8) -> BoardType {
+        match _type {
+            1 => BoardType::Unknown,
+            2 => BoardType::Other,
+            3 => BoardType::ServerBlade,
+            4 => BoardType::ConnectivitySwitch,
+            5 => BoardType::SystemManagementModule,
+            6 => BoardType::ProcessorModule,
+            7 => BoardType::IoModule,
+            8 => BoardType::MemoryModule,
+            9 => BoardType::DaughterBoard,
+           10 => BoardType::MotherBoard,
+           11 => BoardType::ProcessorMemoryModule,
+           12 => BoardType::ProcessorIoModule,
+           13 => BoardType::InterconnectBoard,
+            t => BoardType::Undefined(t),
+        }
+    }
+}
+
+bitflags! {
+    pub struct BaseBoardFlags: u8 {
+        const HOSTING = 0b0000_0001;
+        const REQUIRES_DAUGHTER = 0b0000_0010;
+        const IS_REMOVABLE = 0b0000_0100;
+        const IS_REPLACEABLE = 0b0000_1000;
+        const IS_HOT_SWAPPABLE = 0b0001_0000;
+    }
 }
 
 #[derive(Debug)]
@@ -312,6 +436,11 @@ pub struct BaseBoard<'a> {
     pub product: &'a str,
     pub version: &'a str,
     pub serial: &'a str,
+    pub asset: &'a str,
+    pub feature_flags: BaseBoardFlags,
+    pub location_in_chassis: &'a str,
+    pub chassis_handle: u16,
+    pub board_type: BoardType,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
