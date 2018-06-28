@@ -1,7 +1,11 @@
 [package]
-authors = ["Jonathan Creekmore <jonathan.creekmore@starlab.io>"]
+authors = ["Jonathan Creekmore <jonathan@thecreekmores.org>"]
 name = "dmidecode"
 version = "0.1.0"
+description = "Decode SMBIOS/DMI information into accessible data structures"
+documentation = "https://docs.rs/dmidecode/"
+homepage = "https://github.com/jcreekmore/dmidecode.git"
+license = "MIT"
 
 [dependencies]
 aho-corasick = "0.6.4"
