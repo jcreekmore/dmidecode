@@ -231,9 +231,13 @@ impl<'a, 'entry> Structure<'a, 'entry> {
     }
 
     fn find_string(&self, idx: u8) -> Result<&'a str, MalformedStructureError> {
-        self.strings()
-            .nth((idx - 1) as usize)
-            .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
+        if idx == 0 {
+            Ok("")
+        } else {
+            self.strings()
+                .nth((idx - 1) as usize)
+                .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
+        }
     }
 
     pub fn system(&self) -> Result<System<'a>, MalformedStructureError> {
