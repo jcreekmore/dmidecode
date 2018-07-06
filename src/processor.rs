@@ -48,14 +48,14 @@ bitflags! {
     }
 }
 
-#[derive(Debug)]
-pub struct Processor<'a> {
-    pub socket_designation: &'a str,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Processor<'buffer> {
+    pub socket_designation: &'buffer str,
     pub processor_type: ProcessorType,
     pub processor_family: u16,
-    pub processor_manufacturer: &'a str,
+    pub processor_manufacturer: &'buffer str,
     pub processor_id: u64,
-    pub processor_version: &'a str,
+    pub processor_version: &'buffer str,
     pub voltage: u8,
     pub external_clock: u16,
     pub max_speed: u16,
@@ -65,9 +65,9 @@ pub struct Processor<'a> {
     pub l1_cache_handle: Option<u16>,
     pub l2_cache_handle: Option<u16>,
     pub l3_cache_handle: Option<u16>,
-    pub serial_number: Option<&'a str>,
-    pub asset_tag: Option<&'a str>,
-    pub part_number: Option<&'a str>,
+    pub serial_number: Option<&'buffer str>,
+    pub asset_tag: Option<&'buffer str>,
+    pub part_number: Option<&'buffer str>,
     pub core_count: Option<u16>,
     pub core_enabled: Option<u16>,
     pub thread_count: Option<u16>,
@@ -75,8 +75,8 @@ pub struct Processor<'a> {
 }
 
 
-impl<'a> Processor<'a> {
-    pub fn new<'entry>(structure: &super::Structure<'a, 'entry>) -> Result<Processor<'a>, super::MalformedStructureError> {
+impl<'buffer> Processor<'buffer> {
+    pub fn new<'entry>(structure: &super::Structure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct ProcessorPacked_2_0 {

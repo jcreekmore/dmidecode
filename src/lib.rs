@@ -5,6 +5,7 @@ extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 
+use std::fmt;
 use core::mem;
 use core::str;
 
@@ -27,6 +28,7 @@ pub use processor::Processor;
 
 #[repr(C)]
 #[repr(packed)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Entry {
     pub signature: u32,
     pub checksum: u8,
@@ -113,7 +115,7 @@ impl Entry {
             })
     }
 
-    pub fn structures<'a, 'b>(&'a self, buffer: &'b [u8]) -> Structures<'a, 'b> {
+    pub fn structures<'entry, 'buffer>(&'entry self, buffer: &'buffer [u8]) -> Structures<'entry, 'buffer> {
         Structures {
             entry: self,
             count: 0,
@@ -123,19 +125,31 @@ impl Entry {
     }
 }
 
-pub struct Structures<'a, 'b> {
-    entry: &'a Entry,
+pub struct Structures<'entry, 'buffer> {
+    entry: &'entry Entry,
     count: u16,
     idx: u16,
-    buffer: &'b [u8],
+    buffer: &'buffer [u8],
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Struct<'entry, 'buffer> {
+    System(System<'buffer>),
+    BaseBoard(BaseBoard<'buffer>),
+    Processor(Processor<'buffer>),
+    Other(Structure<'entry, 'buffer>)
 }
 
 #[derive(Debug, Fail)]
-pub enum InvalidStructureError {
+pub enum MalformedStructureError {
     #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
     BadSize(u16, u8),
     #[fail(display = "Structure at offset {} with unterminated strings", _0)]
     UnterminatedStrings(u16),
+    #[fail(display = "Structure {:?} with handle {} cannot be decoded to {}", _0, _1, _2)]
+    BadType(InfoType, u16, &'static str),
+    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
+    InvalidStringIndex(InfoType, u16, u8),
 }
 
 /// Finds the final nul nul terminator of a buffer and returns the index of the final nul
@@ -153,8 +167,8 @@ fn find_nulnul(buf: &[u8]) -> Option<usize> {
     None
 }
 
-impl<'entry, 'b> Iterator for Structures<'entry, 'b> {
-    type Item = Result<Structure<'b, 'entry>, InvalidStructureError>;
+impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
+    type Item = Result<Struct<'entry, 'buffer>, MalformedStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len
@@ -168,14 +182,14 @@ impl<'entry, 'b> Iterator for Structures<'entry, 'b> {
 
         let strings_idx: u16 = self.idx + header.len as u16;
         if strings_idx >= self.entry.smbios_len {
-            return Some(Err(InvalidStructureError::BadSize(self.idx, header.len)));
+            return Some(Err(MalformedStructureError::BadSize(self.idx, header.len)));
         }
 
         let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
         let strings_len = match term {
             Some(terminator) => (terminator + 1) as u16,
             None => {
-                return Some(Err(InvalidStructureError::UnterminatedStrings(self.idx)));
+                return Some(Err(MalformedStructureError::UnterminatedStrings(self.idx)));
             }
         };
 
@@ -191,7 +205,12 @@ impl<'entry, 'b> Iterator for Structures<'entry, 'b> {
         self.idx = strings_idx + strings_len;
         self.count += 1;
 
-        Some(Ok(structure))
+        Some(match structure.info {
+            InfoType::System => structure.system().map(Struct::System),
+            InfoType::BaseBoard => structure.baseboard().map(Struct::BaseBoard),
+            InfoType::Processor => structure.processor().map(Struct::Processor),
+            _ => Ok(Struct::Other(structure))
+        })
     }
 }
 
@@ -203,24 +222,23 @@ pub struct HeaderPacked {
     pub handle: u16,
 }
 
-pub struct Structure<'a, 'entry> {
+#[derive(Clone, Eq, PartialEq)]
+pub struct Structure<'entry, 'buffer> {
     pub info: InfoType,
     pub handle: u16,
-    entry: &'entry Entry,
-    data: &'a [u8],
-    strings: &'a [u8],
+    pub entry: &'entry Entry,
+    pub data: &'buffer [u8],
+    pub strings: &'buffer [u8],
 }
 
-#[derive(Debug, Fail)]
-pub enum MalformedStructureError {
-    #[fail(display = "Structure {:?} with handle {} cannot be decoded to {}", _0, _1, _2)]
-    BadType(InfoType, u16, &'static str),
-    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
-    InvalidStringIndex(InfoType, u16, u8),
+impl<'entry, 'buffer> fmt::Debug for Structure<'entry, 'buffer> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Structure {{ info: {:?}, handle: {}, entry: <Entry>, data: <[u8]>, strings: <[u8]> }}", self.info, self.handle)
+    }
 }
 
-impl<'a, 'entry> Structure<'a, 'entry> {
-    fn strings(&self) -> impl Iterator<Item = &'a str> {
+impl<'entry, 'buffer> Structure<'entry, 'buffer> {
+    fn strings(&self) -> impl Iterator<Item = &'buffer str> {
         self.strings.split(|elm| *elm == 0).filter_map(|slice| {
             if slice.is_empty() {
                 None
@@ -230,7 +248,7 @@ impl<'a, 'entry> Structure<'a, 'entry> {
         })
     }
 
-    fn find_string(&self, idx: u8) -> Result<&'a str, MalformedStructureError> {
+    fn find_string(&self, idx: u8) -> Result<&'buffer str, MalformedStructureError> {
         if idx == 0 {
             Ok("")
         } else {
@@ -240,7 +258,7 @@ impl<'a, 'entry> Structure<'a, 'entry> {
         }
     }
 
-    pub fn system(&self) -> Result<System<'a>, MalformedStructureError> {
+    pub fn system(&self) -> Result<System<'buffer>, MalformedStructureError> {
         lib_ensure!(
             self.info == InfoType::System,
             MalformedStructureError::BadType(self.info, self.handle, "System")
@@ -249,7 +267,7 @@ impl<'a, 'entry> Structure<'a, 'entry> {
         System::new(&self)
     }
 
-    pub fn baseboard(&self) -> Result<BaseBoard<'a>, MalformedStructureError> {
+    pub fn baseboard(&self) -> Result<BaseBoard<'buffer>, MalformedStructureError> {
         lib_ensure!(
             self.info == InfoType::BaseBoard,
             MalformedStructureError::BadType(self.info, self.handle, "BaseBoard")
@@ -258,7 +276,7 @@ impl<'a, 'entry> Structure<'a, 'entry> {
         BaseBoard::new(&self)
     }
 
-    pub fn processor(&self) -> Result<Processor<'a>, MalformedStructureError> {
+    pub fn processor(&self) -> Result<Processor<'buffer>, MalformedStructureError> {
         lib_ensure!(
             self.info == InfoType::Processor,
             MalformedStructureError::BadType(self.info, self.handle, "Processor")
@@ -342,41 +360,8 @@ mod tests {
     #[test]
     fn iterator_through_structures() {
         let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        for s in entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]) {
-            s.unwrap();
-        }
-    }
-
-    #[test]
-    fn iterator_through_structures_baseboard() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry
-            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
-            .filter_map(|s| s.ok());
-        for s in structures.filter(|s| s.info == InfoType::BaseBoard) {
-            println!("{:?}", s.baseboard().unwrap());
-        }
-    }
-
-    #[test]
-    fn iterator_through_structures_system() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry
-            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
-            .filter_map(|s| s.ok());
-        for s in structures.filter(|s| s.info == InfoType::System) {
-            println!("{:?}", s.system().unwrap());
-        }
-    }
-
-    #[test]
-    fn iterator_through_structures_processor() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry
-            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
-            .filter_map(|s| s.ok());
-        for s in structures.filter(|s| s.info == InfoType::Processor) {
-            println!("{:?}", s.processor().unwrap());
+        for s in entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]).filter_map(|s| s.ok()) {
+            println!("{:?}", s);
         }
     }
 

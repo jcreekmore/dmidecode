@@ -48,22 +48,22 @@ bitflags! {
     }
 }
 
-#[derive(Debug)]
-pub struct BaseBoard<'a> {
-    pub manufacturer: &'a str,
-    pub product: &'a str,
-    pub version: &'a str,
-    pub serial: &'a str,
-    pub asset: &'a str,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BaseBoard<'buffer> {
+    pub manufacturer: &'buffer str,
+    pub product: &'buffer str,
+    pub version: &'buffer str,
+    pub serial: &'buffer str,
+    pub asset: &'buffer str,
     pub feature_flags: BaseBoardFlags,
-    pub location_in_chassis: &'a str,
+    pub location_in_chassis: &'buffer str,
     pub chassis_handle: u16,
     pub board_type: BoardType,
 }
 
 
-impl<'a> BaseBoard<'a> {
-    pub fn new<'entry>(structure: &super::Structure<'a, 'entry>) -> Result<BaseBoard<'a>, super::MalformedStructureError> {
+impl<'buffer> BaseBoard<'buffer> {
+    pub fn new<'entry>(structure: &super::Structure<'entry, 'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {

@@ -30,20 +30,20 @@ impl From<u8> for WakeupType {
     }
 }
 
-#[derive(Debug)]
-pub struct System<'a> {
-    pub manufacturer: &'a str,
-    pub product: &'a str,
-    pub version: &'a str,
-    pub serial: &'a str,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct System<'buffer> {
+    pub manufacturer: &'buffer str,
+    pub product: &'buffer str,
+    pub version: &'buffer str,
+    pub serial: &'buffer str,
     pub uuid: Option<[u8; 16]>,
     pub wakeup: Option<WakeupType>,
-    pub sku: Option<&'a str>,
-    pub family: Option<&'a str>,
+    pub sku: Option<&'buffer str>,
+    pub family: Option<&'buffer str>,
 }
 
-impl<'a> System<'a> {
-    pub fn new<'entry>(structure: &super::Structure<'a, 'entry>) -> Result<System<'a>, super::MalformedStructureError> {
+impl<'buffer> System<'buffer> {
+    pub fn new<'entry>(structure: &super::Structure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {
