@@ -50,6 +50,7 @@ bitflags! {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Processor<'buffer> {
+    pub handle: u16,
     pub socket_designation: &'buffer str,
     pub processor_type: ProcessorType,
     pub processor_family: u16,
@@ -227,6 +228,7 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_2_0, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -254,6 +256,7 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_2_1, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -281,6 +284,7 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_2_3, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -308,6 +312,7 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_2_5, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -335,6 +340,7 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family_2,
@@ -362,6 +368,7 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_3_0, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family_2,

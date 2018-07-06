@@ -50,6 +50,7 @@ bitflags! {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BaseBoard<'buffer> {
+    pub handle: u16,
     pub manufacturer: &'buffer str,
     pub product: &'buffer str,
     pub version: &'buffer str,
@@ -81,6 +82,7 @@ impl<'buffer> BaseBoard<'buffer> {
         let_as_struct!(packed, BaseBoardPacked, structure.data);
 
         Ok(BaseBoard {
+            handle: structure.handle,
             manufacturer: structure.find_string(packed.manufacturer)?,
             product: structure.find_string(packed.product)?,
             version: structure.find_string(packed.version)?,

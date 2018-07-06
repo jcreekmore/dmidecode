@@ -32,6 +32,7 @@ impl From<u8> for WakeupType {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct System<'buffer> {
+    pub handle: u16,
     pub manufacturer: &'buffer str,
     pub product: &'buffer str,
     pub version: &'buffer str,
@@ -73,6 +74,7 @@ impl<'buffer> System<'buffer> {
             let_as_struct!(packed, SystemPacked_2_0, structure.data);
 
             Ok(System {
+                handle: structure.handle,
                 manufacturer: structure.find_string(packed.manufacturer)?,
                 product: structure.find_string(packed.product)?,
                 version: structure.find_string(packed.version)?,
@@ -87,6 +89,7 @@ impl<'buffer> System<'buffer> {
             let_as_struct!(packed, SystemPacked_2_1, structure.data);
 
             Ok(System {
+                handle: structure.handle,
                 manufacturer: structure.find_string(packed.v2_0.manufacturer)?,
                 product: structure.find_string(packed.v2_0.product)?,
                 version: structure.find_string(packed.v2_0.version)?,
@@ -101,6 +104,7 @@ impl<'buffer> System<'buffer> {
             let_as_struct!(packed, SystemPacked_2_4, structure.data);
 
             Ok(System {
+                handle: structure.handle,
                 manufacturer: structure.find_string(packed.v2_1.v2_0.manufacturer)?,
                 product: structure.find_string(packed.v2_1.v2_0.product)?,
                 version: structure.find_string(packed.v2_1.v2_0.version)?,
