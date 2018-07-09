@@ -1,3 +1,4 @@
+/// The wakeup type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum WakeupType {
@@ -30,6 +31,10 @@ impl From<u8> for WakeupType {
     }
 }
 
+/// The `System` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct System<'buffer> {
     pub handle: u16,
@@ -44,7 +49,7 @@ pub struct System<'buffer> {
 }
 
 impl<'buffer> System<'buffer> {
-    pub fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {

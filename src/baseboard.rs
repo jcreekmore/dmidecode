@@ -1,3 +1,4 @@
+/// The baseboard type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum BoardType {
@@ -39,6 +40,7 @@ impl From<u8> for BoardType {
 }
 
 bitflags! {
+    /// The baseboard characteristic flags defined in the SMBIOS specification.
     pub struct BaseBoardFlags: u8 {
         const HOSTING = 0b0000_0001;
         const REQUIRES_DAUGHTER = 0b0000_0010;
@@ -48,6 +50,10 @@ bitflags! {
     }
 }
 
+/// The `BaseBoard` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct BaseBoard<'buffer> {
     pub handle: u16,
@@ -64,7 +70,7 @@ pub struct BaseBoard<'buffer> {
 
 
 impl<'buffer> BaseBoard<'buffer> {
-    pub fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {

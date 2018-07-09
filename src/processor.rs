@@ -1,3 +1,4 @@
+/// The processor types defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ProcessorType {
@@ -25,6 +26,7 @@ impl From<u8> for ProcessorType {
 }
 
 bitflags! {
+    /// The processor status flags defined in the SMBIOS specification.
     pub struct ProcessorStatus: u8 {
         const CPU_SOCKET_POPULATED = 0b0100_0000;
         const CPU_ENABLED = 0b0000_0001;
@@ -36,6 +38,7 @@ bitflags! {
 }
 
 bitflags! {
+    /// The processor characteristic flags defined in the SMBIOS specification.
     pub struct ProcessorCharacteristics: u16 {
         const RESERVED = 0b0000_0001;
         const UNKNOWN = 0b0000_0010;
@@ -48,6 +51,10 @@ bitflags! {
     }
 }
 
+/// The `Processor` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Processor<'buffer> {
     pub handle: u16,
@@ -77,7 +84,7 @@ pub struct Processor<'buffer> {
 
 
 impl<'buffer> Processor<'buffer> {
-    pub fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct ProcessorPacked_2_0 {
