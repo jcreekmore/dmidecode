@@ -84,7 +84,7 @@ pub struct Processor<'buffer> {
 
 
 impl<'buffer> Processor<'buffer> {
-    pub(crate) fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct ProcessorPacked_2_0 {

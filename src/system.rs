@@ -49,7 +49,7 @@ pub struct System<'buffer> {
 }
 
 impl<'buffer> System<'buffer> {
-    pub(crate) fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {

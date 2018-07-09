@@ -263,9 +263,9 @@ impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
         self.count += 1;
 
         Some(match structure.info {
-            InfoType::System => System::new(structure).map(Structure::System),
-            InfoType::BaseBoard => BaseBoard::new(structure).map(Structure::BaseBoard),
-            InfoType::Processor => Processor::new(structure).map(Structure::Processor),
+            InfoType::System => System::try_from(structure).map(Structure::System),
+            InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
+            InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
             _ => Ok(Structure::Other(structure))
         })
     }
