@@ -1,5 +1,5 @@
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum BoardType {
     Unknown,
     Other,
@@ -48,7 +48,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct BaseBoard<'buffer> {
     pub handle: u16,
     pub manufacturer: &'buffer str,
@@ -64,7 +64,7 @@ pub struct BaseBoard<'buffer> {
 
 
 impl<'buffer> BaseBoard<'buffer> {
-    pub fn new<'entry>(structure: &super::Structure<'entry, 'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
+    pub fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {

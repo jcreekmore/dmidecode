@@ -1,5 +1,5 @@
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ProcessorType {
     Other,
     Unknown,
@@ -48,7 +48,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Processor<'buffer> {
     pub handle: u16,
     pub socket_designation: &'buffer str,
@@ -77,7 +77,7 @@ pub struct Processor<'buffer> {
 
 
 impl<'buffer> Processor<'buffer> {
-    pub fn new<'entry>(structure: &super::Structure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
+    pub fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct ProcessorPacked_2_0 {

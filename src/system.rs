@@ -1,5 +1,5 @@
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum WakeupType {
     Reserved,
     Other,
@@ -30,7 +30,7 @@ impl From<u8> for WakeupType {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct System<'buffer> {
     pub handle: u16,
     pub manufacturer: &'buffer str,
@@ -44,7 +44,7 @@ pub struct System<'buffer> {
 }
 
 impl<'buffer> System<'buffer> {
-    pub fn new<'entry>(structure: &super::Structure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
+    pub fn new<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {
