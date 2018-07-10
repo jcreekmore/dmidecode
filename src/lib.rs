@@ -27,16 +27,16 @@ pub mod processor;
 pub use processor::Processor;
 
 ///
-/// An SMBIOS `Entry` structure.
+/// An SMBIOS `EntryPoint` structure.
 ///
-/// The SMBIOS `Entry` structure is used to verify that a set of SMBIOS tables exist
+/// The SMBIOS `EntryPoint` structure is used to verify that a set of SMBIOS tables exist
 /// in memory and what version of the SMBIOS specification should be used to
 /// access the tables.
 ///
 #[repr(C)]
 #[repr(packed)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Entry {
+pub struct EntryPoint {
     pub signature: u32,
     pub checksum: u8,
     pub len: u8,
@@ -53,20 +53,20 @@ pub struct Entry {
     pub bcd_revision: u8,
 }
 
-/// Failure type for trying to find the SMBIOS `Entry` structure in memory.
+/// Failure type for trying to find the SMBIOS `EntryPoint` structure in memory.
 #[derive(Debug, Fail)]
-pub enum InvalidEntryError {
-    /// The SMBIOS `Entry` structure was not found in the memory buffer.
-    #[fail(display = "Input did not contain a valid SMBIOS entry")]
+pub enum InvalidEntryPointError {
+    /// The SMBIOS `EntryPoint` structure was not found in the memory buffer.
+    #[fail(display = "Input did not contain a valid SMBIOS entry point")]
     NotFound,
-    /// The SMBIOS `Entry` structure was versioned before 2.0.
+    /// The SMBIOS `EntryPoint` structure was versioned before 2.0.
     #[fail(display = "Input version number was below 2.0: {}", _0)]
     TooOldVersion(u8),
-    /// The SMBIOS `Entry` structure was smaller than the size of the SMBIOS 2.1 structure.
+    /// The SMBIOS `EntryPoint` structure was smaller than the size of the SMBIOS 2.1 structure.
     #[fail(display = "Input contained an invalid-sized SMBIOS entry: {}", _0)]
     BadSize(u8),
-    /// The SMBIOS `Entry` structure had an invalid checksum.
-    #[fail(display = "SMBIOS entry has an invalid checksum: {}", _0)]
+    /// The SMBIOS `EntryPoint` structure had an invalid checksum.
+    #[fail(display = "SMBIOS entry point has an invalid checksum: {}", _0)]
     BadChecksum(u8),
 }
 
@@ -91,55 +91,55 @@ macro_rules! lib_ensure {
     };
 }
 
-impl Entry {
-    /// Search for an instance of an SMBIOS `Entry` structure in a memory `buffer`.
+impl EntryPoint {
+    /// Search for an instance of an SMBIOS `EntryPoint` structure in a memory `buffer`.
     ///
     /// # Example
     ///
     /// ```
     /// # extern crate dmidecode;
-    /// use dmidecode::Entry;
+    /// use dmidecode::EntryPoint;
     ///
     /// const ENTRY_BIN: &'static [u8] = include_bytes!("./entry.bin");
     ///
-    /// let entry = Entry::search(ENTRY_BIN);
+    /// let entry = EntryPoint::search(ENTRY_BIN);
     /// ```
     ///
     /// # Errors
     ///
-    /// If this function fails to find a valid SMBIOS `Entry` structure, it will return
-    /// an `InvalidEntryError` variant.
-    pub fn search(buffer: &[u8]) -> Result<Entry, InvalidEntryError> {
+    /// If this function fails to find a valid SMBIOS `EntryPoint` structure, it will return
+    /// an `InvalidEntryPointError` variant.
+    pub fn search(buffer: &[u8]) -> Result<EntryPoint, InvalidEntryPointError> {
         find_signature(buffer)
-            .ok_or_else(|| InvalidEntryError::NotFound)
+            .ok_or_else(|| InvalidEntryPointError::NotFound)
             .and_then(|start| {
                 let sub_buffer = &buffer[start..];
                 lib_ensure!(
-                    sub_buffer.len() >= mem::size_of::<Entry>(),
-                    InvalidEntryError::BadSize(sub_buffer.len() as u8)
+                    sub_buffer.len() >= mem::size_of::<EntryPoint>(),
+                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                 );
 
-                let entry: Entry = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
+                let entry: EntryPoint = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
                 lib_ensure!(
-                    entry.len as usize >= mem::size_of::<Entry>(),
-                    InvalidEntryError::BadSize(entry.len)
+                    entry.len as usize >= mem::size_of::<EntryPoint>(),
+                    InvalidEntryPointError::BadSize(entry.len)
                 );
 
                 lib_ensure!(
                     entry.major >= 2,
-                    InvalidEntryError::TooOldVersion(entry.major)
+                    InvalidEntryPointError::TooOldVersion(entry.major)
                 );
 
                 lib_ensure!(
                     sub_buffer.len() as u8 >= entry.len,
-                    InvalidEntryError::BadSize(sub_buffer.len() as u8)
+                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                 );
 
                 let mut sum = 0u8;
                 for val in &sub_buffer[0..(entry.len as usize)] {
                     sum = sum.wrapping_add(*val);
                 }
-                lib_ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
+                lib_ensure!(sum == 0, InvalidEntryPointError::BadChecksum(sum));
 
                 Ok(entry)
             })
@@ -153,12 +153,12 @@ impl Entry {
     /// # extern crate failure;
     /// # extern crate dmidecode;
     /// # use failure::Error;
-    /// use dmidecode::Entry;
+    /// use dmidecode::EntryPoint;
     /// # fn try_main() -> Result<(), Error> {
     /// #
     /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./dmidecode.bin");
     ///
-    /// let entry = Entry::search(DMIDECODE_BIN)?;
+    /// let entry = EntryPoint::search(DMIDECODE_BIN)?;
     /// for s in entry.structures(&DMIDECODE_BIN[entry.smbios_address as usize..]) {
     ///   let table = s?;
     /// }
@@ -179,7 +179,7 @@ impl Entry {
 /// This struct is produced by the `structures` method on `Entry`. See its documentation for more details.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Structures<'entry, 'buffer> {
-    entry: &'entry Entry,
+    entry: &'entry EntryPoint,
     count: u16,
     idx: u16,
     buffer: &'buffer [u8],
@@ -197,7 +197,7 @@ pub enum Structure<'entry, 'buffer> {
 /// Failure type for trying to decode the SMBIOS `Structures` iterator into the `Structure` variant type.
 #[derive(Debug, Fail)]
 pub enum MalformedStructureError {
-    /// The SMBIOS structure exceeds the end of the memory buffer given to the `Entry::structure` method.
+    /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
     #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
     BadSize(u16, u8),
     /// The SMBIOS structure contains an unterminated strings section.
@@ -285,7 +285,7 @@ struct HeaderPacked {
 pub struct RawStructure<'entry, 'buffer> {
     pub info: InfoType,
     pub handle: u16,
-    pub entry: &'entry Entry,
+    pub entry: &'entry EntryPoint,
     pub data: &'buffer [u8],
     strings: &'buffer [u8],
 }
@@ -369,14 +369,14 @@ mod tests {
 
     #[test]
     fn found_smbios_entry() {
-        Entry::search(ENTRY_BIN).unwrap();
-        Entry::search(DMIDECODE_BIN).unwrap();
+        EntryPoint::search(ENTRY_BIN).unwrap();
+        EntryPoint::search(DMIDECODE_BIN).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn doesnt_find_smbios_entry() {
-        Entry::search(DMI_BIN).unwrap();
+        EntryPoint::search(DMI_BIN).unwrap();
     }
 
     #[test]
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn iterator_through_structures() {
-        let entry = Entry::search(DMIDECODE_BIN).unwrap();
+        let entry = EntryPoint::search(DMIDECODE_BIN).unwrap();
         for s in entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]).filter_map(|s| s.ok()) {
             println!("{:?}", s);
         }
