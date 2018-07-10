@@ -275,9 +275,9 @@ impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
 #[repr(C)]
 #[repr(packed)]
 struct HeaderPacked {
-    pub _type: u8,
-    pub len: u8,
-    pub handle: u16,
+    _type: u8,
+    len: u8,
+    handle: u16,
 }
 
 /// The raw SMBIOS structure information for structures that are not handled by this crate, such as Oem structures.
