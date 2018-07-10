@@ -102,7 +102,7 @@ impl EntryPoint {
     ///
     /// const ENTRY_BIN: &'static [u8] = include_bytes!("./entry.bin");
     ///
-    /// let entry = EntryPoint::search(ENTRY_BIN);
+    /// let entry_point = EntryPoint::search(ENTRY_BIN);
     /// ```
     ///
     /// # Errors
@@ -158,8 +158,8 @@ impl EntryPoint {
     /// #
     /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./dmidecode.bin");
     ///
-    /// let entry = EntryPoint::search(DMIDECODE_BIN)?;
-    /// for s in entry.structures(&DMIDECODE_BIN[entry.smbios_address as usize..]) {
+    /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
+    /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address as usize..]) {
     ///   let table = s?;
     /// }
     /// Ok(())
@@ -393,8 +393,8 @@ mod tests {
 
     #[test]
     fn iterator_through_structures() {
-        let entry = EntryPoint::search(DMIDECODE_BIN).unwrap();
-        for s in entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]).filter_map(|s| s.ok()) {
+        let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
+        for s in entry_point.structures(&DMIDECODE_BIN[(entry_point.smbios_address as usize)..]).filter_map(|s| s.ok()) {
             println!("{:?}", s);
         }
     }
