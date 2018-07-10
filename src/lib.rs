@@ -251,7 +251,7 @@ impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
         };
 
         let structure = RawStructure {
-            info: header._type.into(),
+            info: header.kind.into(),
             handle: header.handle,
             entry: self.entry,
             data: &self.buffer
@@ -275,7 +275,7 @@ impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
 #[repr(C)]
 #[repr(packed)]
 struct HeaderPacked {
-    _type: u8,
+    kind: u8,
     len: u8,
     handle: u16,
 }
@@ -339,8 +339,8 @@ pub enum InfoType {
 }
 
 impl From<u8> for InfoType {
-    fn from(_type: u8) -> InfoType {
-        match _type {
+    fn from(kind: u8) -> InfoType {
+        match kind {
             0 => InfoType::Bios,
             1 => InfoType::System,
             2 => InfoType::BaseBoard,
