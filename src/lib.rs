@@ -122,7 +122,7 @@ impl EntryPoint {
     /// # extern crate dmidecode;
     /// use dmidecode::EntryPoint;
     ///
-    /// const ENTRY_BIN: &'static [u8] = include_bytes!("./entry.bin");
+    /// const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
     ///
     /// let entry_point = EntryPoint::search(ENTRY_BIN);
     /// ```
@@ -192,7 +192,7 @@ impl EntryPoint {
     /// use dmidecode::EntryPoint;
     /// # fn try_main() -> Result<(), Error> {
     /// #
-    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./dmidecode.bin");
+    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
     ///
     /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
     /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address as usize..]) {
@@ -401,9 +401,9 @@ impl From<u8> for InfoType {
 mod tests {
     use super::*;
 
-    const DMIDECODE_BIN: &'static [u8] = include_bytes!("./dmidecode.bin");
-    const ENTRY_BIN: &'static [u8] = include_bytes!("./entry.bin");
-    const DMI_BIN: &'static [u8] = include_bytes!("./dmi.bin");
+    const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
+    const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
+    const DMI_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
 
     #[test]
     fn found_smbios_entry() {
