@@ -70,9 +70,9 @@ impl From<(usize, usize)> for SmbiosVersion {
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub(crate) struct SmbiosBound {
-    pub len: u16,
-    pub count: u16,
+struct SmbiosBound {
+    len: u16,
+    count: u16,
 }
 
 /// Failure type for trying to find the SMBIOS `EntryPoint` structure in memory.
