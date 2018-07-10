@@ -119,29 +119,29 @@ impl EntryPoint {
                     InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                 );
 
-                let entry: EntryPoint = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
+                let_as_struct!(entry_point, EntryPoint, sub_buffer);
                 lib_ensure!(
-                    entry.len as usize >= mem::size_of::<EntryPoint>(),
-                    InvalidEntryPointError::BadSize(entry.len)
+                    entry_point.len as usize >= mem::size_of::<EntryPoint>(),
+                    InvalidEntryPointError::BadSize(entry_point.len)
                 );
 
                 lib_ensure!(
-                    entry.major >= 2,
-                    InvalidEntryPointError::TooOldVersion(entry.major)
+                    entry_point.major >= 2,
+                    InvalidEntryPointError::TooOldVersion(entry_point.major)
                 );
 
                 lib_ensure!(
-                    sub_buffer.len() as u8 >= entry.len,
+                    sub_buffer.len() as u8 >= entry_point.len,
                     InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                 );
 
                 let mut sum = 0u8;
-                for val in &sub_buffer[0..(entry.len as usize)] {
+                for val in &sub_buffer[0..(entry_point.len as usize)] {
                     sum = sum.wrapping_add(*val);
                 }
                 lib_ensure!(sum == 0, InvalidEntryPointError::BadChecksum(sum));
 
-                Ok(entry)
+                Ok(entry_point)
             })
     }
 
