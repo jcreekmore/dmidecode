@@ -1,5 +1,6 @@
+/// The wakeup type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum WakeupType {
     Reserved,
     Other,
@@ -30,20 +31,25 @@ impl From<u8> for WakeupType {
     }
 }
 
-#[derive(Debug)]
-pub struct System<'a> {
-    pub manufacturer: &'a str,
-    pub product: &'a str,
-    pub version: &'a str,
-    pub serial: &'a str,
+/// The `System` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct System<'buffer> {
+    pub handle: u16,
+    pub manufacturer: &'buffer str,
+    pub product: &'buffer str,
+    pub version: &'buffer str,
+    pub serial: &'buffer str,
     pub uuid: Option<[u8; 16]>,
     pub wakeup: Option<WakeupType>,
-    pub sku: Option<&'a str>,
-    pub family: Option<&'a str>,
+    pub sku: Option<&'buffer str>,
+    pub family: Option<&'buffer str>,
 }
 
-impl<'a> System<'a> {
-    pub fn new<'entry>(structure: &super::Structure<'a, 'entry>) -> Result<System<'a>, super::MalformedStructureError> {
+impl<'buffer> System<'buffer> {
+    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {
@@ -69,10 +75,11 @@ impl<'a> System<'a> {
             family: u8,
         }
 
-        if structure.entry.major == 2 && structure.entry.minor < 1 {
+        if structure.version < (2, 1).into() {
             let_as_struct!(packed, SystemPacked_2_0, structure.data);
 
             Ok(System {
+                handle: structure.handle,
                 manufacturer: structure.find_string(packed.manufacturer)?,
                 product: structure.find_string(packed.product)?,
                 version: structure.find_string(packed.version)?,
@@ -83,10 +90,11 @@ impl<'a> System<'a> {
                 family: None,
             })
 
-        } else if structure.entry.major == 2 && structure.entry.minor < 4 {
+        } else if structure.version < (2, 4).into() {
             let_as_struct!(packed, SystemPacked_2_1, structure.data);
 
             Ok(System {
+                handle: structure.handle,
                 manufacturer: structure.find_string(packed.v2_0.manufacturer)?,
                 product: structure.find_string(packed.v2_0.product)?,
                 version: structure.find_string(packed.v2_0.version)?,
@@ -101,6 +109,7 @@ impl<'a> System<'a> {
             let_as_struct!(packed, SystemPacked_2_4, structure.data);
 
             Ok(System {
+                handle: structure.handle,
                 manufacturer: structure.find_string(packed.v2_1.v2_0.manufacturer)?,
                 product: structure.find_string(packed.v2_1.v2_0.product)?,
                 version: structure.find_string(packed.v2_1.v2_0.version)?,

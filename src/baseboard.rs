@@ -1,5 +1,6 @@
+/// The baseboard type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum BoardType {
     Unknown,
     Other,
@@ -39,6 +40,7 @@ impl From<u8> for BoardType {
 }
 
 bitflags! {
+    /// The baseboard characteristic flags defined in the SMBIOS specification.
     pub struct BaseBoardFlags: u8 {
         const HOSTING = 0b0000_0001;
         const REQUIRES_DAUGHTER = 0b0000_0010;
@@ -48,22 +50,27 @@ bitflags! {
     }
 }
 
-#[derive(Debug)]
-pub struct BaseBoard<'a> {
-    pub manufacturer: &'a str,
-    pub product: &'a str,
-    pub version: &'a str,
-    pub serial: &'a str,
-    pub asset: &'a str,
+/// The `BaseBoard` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct BaseBoard<'buffer> {
+    pub handle: u16,
+    pub manufacturer: &'buffer str,
+    pub product: &'buffer str,
+    pub version: &'buffer str,
+    pub serial: &'buffer str,
+    pub asset: &'buffer str,
     pub feature_flags: BaseBoardFlags,
-    pub location_in_chassis: &'a str,
+    pub location_in_chassis: &'buffer str,
     pub chassis_handle: u16,
     pub board_type: BoardType,
 }
 
 
-impl<'a> BaseBoard<'a> {
-    pub fn new<'entry>(structure: &super::Structure<'a, 'entry>) -> Result<BaseBoard<'a>, super::MalformedStructureError> {
+impl<'buffer> BaseBoard<'buffer> {
+    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {
@@ -81,6 +88,7 @@ impl<'a> BaseBoard<'a> {
         let_as_struct!(packed, BaseBoardPacked, structure.data);
 
         Ok(BaseBoard {
+            handle: structure.handle,
             manufacturer: structure.find_string(packed.manufacturer)?,
             product: structure.find_string(packed.product)?,
             version: structure.find_string(packed.version)?,

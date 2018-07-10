@@ -9,6 +9,7 @@ use core::mem;
 use core::str;
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! let_as_struct {
     ($name:ident, $ty:ty, $data:expr) => {
         use core::ptr;
@@ -25,9 +26,17 @@ pub use baseboard::BaseBoard;
 pub mod processor;
 pub use processor::Processor;
 
+///
+/// An SMBIOS `EntryPoint` structure.
+///
+/// The SMBIOS `EntryPoint` structure is used to verify that a set of SMBIOS tables exist
+/// in memory and what version of the SMBIOS specification should be used to
+/// access the tables.
+///
 #[repr(C)]
 #[repr(packed)]
-pub struct Entry {
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct EntryPoint {
     pub signature: u32,
     pub checksum: u8,
     pub len: u8,
@@ -44,15 +53,42 @@ pub struct Entry {
     pub bcd_revision: u8,
 }
 
+/// The version number associated with the Smbios `EntryPoint`
+#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct SmbiosVersion {
+    pub major: u8,
+    pub minor: u8,
+}
+
+impl From<(usize, usize)> for SmbiosVersion {
+    fn from(other: (usize, usize)) -> SmbiosVersion {
+        SmbiosVersion {
+            major: other.0 as u8,
+            minor: other.1 as u8,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+struct SmbiosBound {
+    len: u16,
+    count: u16,
+}
+
+/// Failure type for trying to find the SMBIOS `EntryPoint` structure in memory.
 #[derive(Debug, Fail)]
-pub enum InvalidEntryError {
-    #[fail(display = "Input did not contain a valid SMBIOS entry")]
+pub enum InvalidEntryPointError {
+    /// The SMBIOS `EntryPoint` structure was not found in the memory buffer.
+    #[fail(display = "Input did not contain a valid SMBIOS entry point")]
     NotFound,
+    /// The SMBIOS `EntryPoint` structure was versioned before 2.0.
     #[fail(display = "Input version number was below 2.0: {}", _0)]
     TooOldVersion(u8),
+    /// The SMBIOS `EntryPoint` structure was smaller than the size of the SMBIOS 2.1 structure.
     #[fail(display = "Input contained an invalid-sized SMBIOS entry: {}", _0)]
     BadSize(u8),
-    #[fail(display = "SMBIOS entry has an invalid checksum: {}", _0)]
+    /// The SMBIOS `EntryPoint` structure had an invalid checksum.
+    #[fail(display = "SMBIOS entry point has an invalid checksum: {}", _0)]
     BadChecksum(u8),
 }
 
@@ -68,6 +104,7 @@ fn find_signature(buffer: &[u8]) -> Option<usize> {
     None
 }
 
+#[doc(hidden)]
 macro_rules! lib_ensure {
     ($cond:expr, $e:expr) => {
         if !($cond) {
@@ -76,46 +113,98 @@ macro_rules! lib_ensure {
     };
 }
 
-impl Entry {
-    pub fn new(buffer: &[u8]) -> Result<Entry, InvalidEntryError> {
+impl EntryPoint {
+    /// Search for an instance of an SMBIOS `EntryPoint` structure in a memory `buffer`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate dmidecode;
+    /// use dmidecode::EntryPoint;
+    ///
+    /// const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
+    ///
+    /// let entry_point = EntryPoint::search(ENTRY_BIN);
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// If this function fails to find a valid SMBIOS `EntryPoint` structure, it will return
+    /// an `InvalidEntryPointError` variant.
+    pub fn search(buffer: &[u8]) -> Result<EntryPoint, InvalidEntryPointError> {
         find_signature(buffer)
-            .ok_or_else(|| InvalidEntryError::NotFound)
+            .ok_or_else(|| InvalidEntryPointError::NotFound)
             .and_then(|start| {
                 let sub_buffer = &buffer[start..];
                 lib_ensure!(
-                    sub_buffer.len() >= mem::size_of::<Entry>(),
-                    InvalidEntryError::BadSize(sub_buffer.len() as u8)
+                    sub_buffer.len() >= mem::size_of::<EntryPoint>(),
+                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                 );
 
-                let entry: Entry = unsafe { std::ptr::read(sub_buffer.as_ptr() as *const _) };
+                let_as_struct!(entry_point, EntryPoint, sub_buffer);
                 lib_ensure!(
-                    entry.len as usize >= mem::size_of::<Entry>(),
-                    InvalidEntryError::BadSize(entry.len)
-                );
-
-                lib_ensure!(
-                    entry.major >= 2,
-                    InvalidEntryError::TooOldVersion(entry.major)
+                    entry_point.len as usize >= mem::size_of::<EntryPoint>(),
+                    InvalidEntryPointError::BadSize(entry_point.len)
                 );
 
                 lib_ensure!(
-                    sub_buffer.len() as u8 >= entry.len,
-                    InvalidEntryError::BadSize(sub_buffer.len() as u8)
+                    entry_point.major >= 2,
+                    InvalidEntryPointError::TooOldVersion(entry_point.major)
+                );
+
+                lib_ensure!(
+                    sub_buffer.len() as u8 >= entry_point.len,
+                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                 );
 
                 let mut sum = 0u8;
-                for val in &sub_buffer[0..(entry.len as usize)] {
+                for val in &sub_buffer[0..(entry_point.len as usize)] {
                     sum = sum.wrapping_add(*val);
                 }
-                lib_ensure!(sum == 0, InvalidEntryError::BadChecksum(sum));
+                lib_ensure!(sum == 0, InvalidEntryPointError::BadChecksum(sum));
 
-                Ok(entry)
+                Ok(entry_point)
             })
     }
 
-    pub fn structures<'a, 'b>(&'a self, buffer: &'b [u8]) -> Structures<'a, 'b> {
+    fn to_version(&self) -> SmbiosVersion {
+        SmbiosVersion {
+            major: self.major,
+            minor: self.minor,
+        }
+    }
+
+    fn to_bound(&self) -> SmbiosBound {
+        SmbiosBound {
+            len: self.smbios_len,
+            count: self.smbios_count,
+        }
+    }
+
+    /// Create an iterator across the SMBIOS structures found in `buffer`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate failure;
+    /// # extern crate dmidecode;
+    /// # use failure::Error;
+    /// use dmidecode::EntryPoint;
+    /// # fn try_main() -> Result<(), Error> {
+    /// #
+    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
+    ///
+    /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
+    /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address as usize..]) {
+    ///   let table = s?;
+    /// }
+    /// Ok(())
+    /// # }
+    /// ```
+    pub fn structures<'buffer>(&self, buffer: &'buffer [u8]) -> Structures<'buffer> {
         Structures {
-            entry: self,
+            smbios_version: self.to_version(),
+            smbios_bound: self.to_bound(),
             count: 0,
             idx: 0u16,
             buffer: buffer,
@@ -123,21 +212,41 @@ impl Entry {
     }
 }
 
-pub struct Structures<'a, 'b> {
-    entry: &'a Entry,
+/// An iterator that traverses the SMBIOS structure tables.
+/// This struct is produced by the `structures` method on `EntryPoint`. See its documentation for more details.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Structures<'buffer> {
+    smbios_version: SmbiosVersion,
+    smbios_bound: SmbiosBound,
     count: u16,
     idx: u16,
-    buffer: &'b [u8],
+    buffer: &'buffer [u8],
 }
 
+/// Variant structure for decoding the SMBIOS table types.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum Structure<'buffer> {
+    System(System<'buffer>),
+    BaseBoard(BaseBoard<'buffer>),
+    Processor(Processor<'buffer>),
+    Other(RawStructure<'buffer>)
+}
+
+/// Failure type for trying to decode the SMBIOS `Structures` iterator into the `Structure` variant type.
 #[derive(Debug, Fail)]
-pub enum InvalidStructureError {
+pub enum MalformedStructureError {
+    /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
     #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
     BadSize(u16, u8),
+    /// The SMBIOS structure contains an unterminated strings section.
     #[fail(display = "Structure at offset {} with unterminated strings", _0)]
     UnterminatedStrings(u16),
+    /// The SMBIOS structure contains an invalid string index.
+    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
+    InvalidStringIndex(InfoType, u16, u8),
 }
 
+#[doc(hidden)]
 /// Finds the final nul nul terminator of a buffer and returns the index of the final nul
 fn find_nulnul(buf: &[u8]) -> Option<usize> {
     for i in 0..buf.len() {
@@ -153,36 +262,36 @@ fn find_nulnul(buf: &[u8]) -> Option<usize> {
     None
 }
 
-impl<'entry, 'b> Iterator for Structures<'entry, 'b> {
-    type Item = Result<Structure<'b, 'entry>, InvalidStructureError>;
+impl<'buffer> Iterator for Structures<'buffer> {
+    type Item = Result<Structure<'buffer>, MalformedStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len
-            || self.count >= self.entry.smbios_count
+        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.smbios_bound.len
+            || self.count >= self.smbios_bound.count
         {
             return None;
         }
 
         let working = &self.buffer[(self.idx as usize)..];
-        let header: HeaderPacked = unsafe { std::ptr::read(working.as_ptr() as *const _) };
+        let_as_struct!(header, HeaderPacked, working);
 
         let strings_idx: u16 = self.idx + header.len as u16;
-        if strings_idx >= self.entry.smbios_len {
-            return Some(Err(InvalidStructureError::BadSize(self.idx, header.len)));
+        if strings_idx >= self.smbios_bound.len {
+            return Some(Err(MalformedStructureError::BadSize(self.idx, header.len)));
         }
 
         let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
         let strings_len = match term {
             Some(terminator) => (terminator + 1) as u16,
             None => {
-                return Some(Err(InvalidStructureError::UnterminatedStrings(self.idx)));
+                return Some(Err(MalformedStructureError::UnterminatedStrings(self.idx)));
             }
         };
 
-        let structure = Structure {
-            info: header._type.into(),
+        let structure = RawStructure {
+            version: self.smbios_version,
+            info: header.kind.into(),
             handle: header.handle,
-            entry: self.entry,
             data: &self.buffer
                 [(self.idx + mem::size_of::<HeaderPacked>() as u16) as usize..strings_idx as usize],
             strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
@@ -191,36 +300,37 @@ impl<'entry, 'b> Iterator for Structures<'entry, 'b> {
         self.idx = strings_idx + strings_len;
         self.count += 1;
 
-        Some(Ok(structure))
+        Some(match structure.info {
+            InfoType::System => System::try_from(structure).map(Structure::System),
+            InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
+            InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
+            _ => Ok(Structure::Other(structure))
+        })
     }
 }
 
+#[doc(hidden)]
 #[repr(C)]
 #[repr(packed)]
-pub struct HeaderPacked {
-    pub _type: u8,
-    pub len: u8,
-    pub handle: u16,
+struct HeaderPacked {
+    kind: u8,
+    len: u8,
+    handle: u16,
 }
 
-pub struct Structure<'a, 'entry> {
+/// The raw SMBIOS structure information for structures that are not handled by this crate, such as Oem structures.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct RawStructure<'buffer> {
+    pub version: SmbiosVersion,
     pub info: InfoType,
     pub handle: u16,
-    entry: &'entry Entry,
-    data: &'a [u8],
-    strings: &'a [u8],
+    pub data: &'buffer [u8],
+    strings: &'buffer [u8],
 }
 
-#[derive(Debug, Fail)]
-pub enum MalformedStructureError {
-    #[fail(display = "Structure {:?} with handle {} cannot be decoded to {}", _0, _1, _2)]
-    BadType(InfoType, u16, &'static str),
-    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
-    InvalidStringIndex(InfoType, u16, u8),
-}
-
-impl<'a, 'entry> Structure<'a, 'entry> {
-    fn strings(&self) -> impl Iterator<Item = &'a str> {
+impl<'buffer> RawStructure<'buffer> {
+    /// Return an iterator over the strings in the strings table.
+    fn strings(&self) -> impl Iterator<Item = &'buffer str> {
         self.strings.split(|elm| *elm == 0).filter_map(|slice| {
             if slice.is_empty() {
                 None
@@ -230,7 +340,13 @@ impl<'a, 'entry> Structure<'a, 'entry> {
         })
     }
 
-    fn find_string(&self, idx: u8) -> Result<&'a str, MalformedStructureError> {
+    /// Find a string in the strings table by the string index.
+    /// If the string index is 0, the empty string is returned. Otherwise, the string corresponding
+    /// to that string index in the strings table is returned.
+    ///
+    /// # Errors
+    /// Returns a `MalformedStructureError::InvalidStringIndex` if the index is outside of the strings table.
+    pub fn find_string(&self, idx: u8) -> Result<&'buffer str, MalformedStructureError> {
         if idx == 0 {
             Ok("")
         } else {
@@ -239,36 +355,10 @@ impl<'a, 'entry> Structure<'a, 'entry> {
                 .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
         }
     }
-
-    pub fn system(&self) -> Result<System<'a>, MalformedStructureError> {
-        lib_ensure!(
-            self.info == InfoType::System,
-            MalformedStructureError::BadType(self.info, self.handle, "System")
-        );
-
-        System::new(&self)
-    }
-
-    pub fn baseboard(&self) -> Result<BaseBoard<'a>, MalformedStructureError> {
-        lib_ensure!(
-            self.info == InfoType::BaseBoard,
-            MalformedStructureError::BadType(self.info, self.handle, "BaseBoard")
-        );
-
-        BaseBoard::new(&self)
-    }
-
-    pub fn processor(&self) -> Result<Processor<'a>, MalformedStructureError> {
-        lib_ensure!(
-            self.info == InfoType::Processor,
-            MalformedStructureError::BadType(self.info, self.handle, "Processor")
-        );
-
-        Processor::new(&self)
-    }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+/// SMBIOS Table information variant
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum InfoType {
     Bios,
     System,
@@ -287,8 +377,8 @@ pub enum InfoType {
 }
 
 impl From<u8> for InfoType {
-    fn from(_type: u8) -> InfoType {
-        match _type {
+    fn from(kind: u8) -> InfoType {
+        match kind {
             0 => InfoType::Bios,
             1 => InfoType::System,
             2 => InfoType::BaseBoard,
@@ -311,20 +401,20 @@ impl From<u8> for InfoType {
 mod tests {
     use super::*;
 
-    const DMIDECODE_BIN: &'static [u8] = include_bytes!("./dmidecode.bin");
-    const ENTRY_BIN: &'static [u8] = include_bytes!("./entry.bin");
-    const DMI_BIN: &'static [u8] = include_bytes!("./dmi.bin");
+    const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
+    const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
+    const DMI_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
 
     #[test]
     fn found_smbios_entry() {
-        Entry::new(ENTRY_BIN).unwrap();
-        Entry::new(DMIDECODE_BIN).unwrap();
+        EntryPoint::search(ENTRY_BIN).unwrap();
+        EntryPoint::search(DMIDECODE_BIN).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn doesnt_find_smbios_entry() {
-        Entry::new(DMI_BIN).unwrap();
+        EntryPoint::search(DMI_BIN).unwrap();
     }
 
     #[test]
@@ -341,42 +431,9 @@ mod tests {
 
     #[test]
     fn iterator_through_structures() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        for s in entry.structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..]) {
-            s.unwrap();
-        }
-    }
-
-    #[test]
-    fn iterator_through_structures_baseboard() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry
-            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
-            .filter_map(|s| s.ok());
-        for s in structures.filter(|s| s.info == InfoType::BaseBoard) {
-            println!("{:?}", s.baseboard().unwrap());
-        }
-    }
-
-    #[test]
-    fn iterator_through_structures_system() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry
-            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
-            .filter_map(|s| s.ok());
-        for s in structures.filter(|s| s.info == InfoType::System) {
-            println!("{:?}", s.system().unwrap());
-        }
-    }
-
-    #[test]
-    fn iterator_through_structures_processor() {
-        let entry = Entry::new(DMIDECODE_BIN).unwrap();
-        let structures = entry
-            .structures(&DMIDECODE_BIN[(entry.smbios_address as usize)..])
-            .filter_map(|s| s.ok());
-        for s in structures.filter(|s| s.info == InfoType::Processor) {
-            println!("{:?}", s.processor().unwrap());
+        let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
+        for s in entry_point.structures(&DMIDECODE_BIN[(entry_point.smbios_address as usize)..]).filter_map(|s| s.ok()) {
+            println!("{:?}", s);
         }
     }
 

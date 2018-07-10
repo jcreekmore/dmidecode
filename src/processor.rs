@@ -1,5 +1,6 @@
+/// The processor types defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ProcessorType {
     Other,
     Unknown,
@@ -25,6 +26,7 @@ impl From<u8> for ProcessorType {
 }
 
 bitflags! {
+    /// The processor status flags defined in the SMBIOS specification.
     pub struct ProcessorStatus: u8 {
         const CPU_SOCKET_POPULATED = 0b0100_0000;
         const CPU_ENABLED = 0b0000_0001;
@@ -36,6 +38,7 @@ bitflags! {
 }
 
 bitflags! {
+    /// The processor characteristic flags defined in the SMBIOS specification.
     pub struct ProcessorCharacteristics: u16 {
         const RESERVED = 0b0000_0001;
         const UNKNOWN = 0b0000_0010;
@@ -48,14 +51,19 @@ bitflags! {
     }
 }
 
-#[derive(Debug)]
-pub struct Processor<'a> {
-    pub socket_designation: &'a str,
+/// The `Processor` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Processor<'buffer> {
+    pub handle: u16,
+    pub socket_designation: &'buffer str,
     pub processor_type: ProcessorType,
     pub processor_family: u16,
-    pub processor_manufacturer: &'a str,
+    pub processor_manufacturer: &'buffer str,
     pub processor_id: u64,
-    pub processor_version: &'a str,
+    pub processor_version: &'buffer str,
     pub voltage: u8,
     pub external_clock: u16,
     pub max_speed: u16,
@@ -65,9 +73,9 @@ pub struct Processor<'a> {
     pub l1_cache_handle: Option<u16>,
     pub l2_cache_handle: Option<u16>,
     pub l3_cache_handle: Option<u16>,
-    pub serial_number: Option<&'a str>,
-    pub asset_tag: Option<&'a str>,
-    pub part_number: Option<&'a str>,
+    pub serial_number: Option<&'buffer str>,
+    pub asset_tag: Option<&'buffer str>,
+    pub part_number: Option<&'buffer str>,
     pub core_count: Option<u16>,
     pub core_enabled: Option<u16>,
     pub thread_count: Option<u16>,
@@ -75,8 +83,8 @@ pub struct Processor<'a> {
 }
 
 
-impl<'a> Processor<'a> {
-    pub fn new<'entry>(structure: &super::Structure<'a, 'entry>) -> Result<Processor<'a>, super::MalformedStructureError> {
+impl<'buffer> Processor<'buffer> {
+    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct ProcessorPacked_2_0 {
@@ -223,10 +231,11 @@ impl<'a> Processor<'a> {
             thread_count_2: u16,
         }
 
-        if structure.entry.major == 2 && structure.entry.minor < 1 {
+        if structure.version < (2, 1).into() {
             let_as_struct!(packed, ProcessorPacked_2_0, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -250,10 +259,11 @@ impl<'a> Processor<'a> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.entry.major == 2 && structure.entry.minor < 3 {
+        } else if structure.version < (2, 3).into() {
             let_as_struct!(packed, ProcessorPacked_2_1, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -277,10 +287,11 @@ impl<'a> Processor<'a> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.entry.major == 2 && structure.entry.minor < 5 {
+        } else if structure.version < (2, 5).into() {
             let_as_struct!(packed, ProcessorPacked_2_3, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -304,10 +315,11 @@ impl<'a> Processor<'a> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.entry.major == 2 && structure.entry.minor < 6 {
+        } else if structure.version < (2, 6).into() {
             let_as_struct!(packed, ProcessorPacked_2_5, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family as u16,
@@ -331,10 +343,11 @@ impl<'a> Processor<'a> {
                 thread_count: Some(packed.thread_count as u16),
                 processor_characteristics: None,
             })
-        } else if structure.entry.major < 3 {
+        } else if structure.version < (3, 0).into() {
             let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family_2,
@@ -362,6 +375,7 @@ impl<'a> Processor<'a> {
             let_as_struct!(packed, ProcessorPacked_3_0, structure.data);
 
             Ok(Processor {
+                handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family_2,
