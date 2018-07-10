@@ -53,6 +53,18 @@ pub struct EntryPoint {
     pub bcd_revision: u8,
 }
 
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct SmbiosVersion {
+    pub major: u8,
+    pub minor: u8,
+}
+
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) struct SmbiosBound {
+    pub len: u16,
+    pub count: u16,
+}
+
 /// Failure type for trying to find the SMBIOS `EntryPoint` structure in memory.
 #[derive(Debug, Fail)]
 pub enum InvalidEntryPointError {
@@ -145,6 +157,20 @@ impl EntryPoint {
             })
     }
 
+    fn to_version(&self) -> SmbiosVersion {
+        SmbiosVersion {
+            major: self.major,
+            minor: self.minor,
+        }
+    }
+
+    fn to_bound(&self) -> SmbiosBound {
+        SmbiosBound {
+            len: self.smbios_len,
+            count: self.smbios_count,
+        }
+    }
+
     /// Create an iterator across the SMBIOS structures found in `buffer`.
     ///
     /// # Example
@@ -165,9 +191,10 @@ impl EntryPoint {
     /// Ok(())
     /// # }
     /// ```
-    pub fn structures<'entry, 'buffer>(&'entry self, buffer: &'buffer [u8]) -> Structures<'entry, 'buffer> {
+    pub fn structures<'buffer>(&self, buffer: &'buffer [u8]) -> Structures<'buffer> {
         Structures {
-            entry: self,
+            smbios_version: self.to_version(),
+            smbios_bound: self.to_bound(),
             count: 0,
             idx: 0u16,
             buffer: buffer,
@@ -176,10 +203,11 @@ impl EntryPoint {
 }
 
 /// An iterator that traverses the SMBIOS structure tables.
-/// This struct is produced by the `structures` method on `Entry`. See its documentation for more details.
+/// This struct is produced by the `structures` method on `EntryPoint`. See its documentation for more details.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct Structures<'entry, 'buffer> {
-    entry: &'entry EntryPoint,
+pub struct Structures<'buffer> {
+    smbios_version: SmbiosVersion,
+    smbios_bound: SmbiosBound,
     count: u16,
     idx: u16,
     buffer: &'buffer [u8],
@@ -187,11 +215,11 @@ pub struct Structures<'entry, 'buffer> {
 
 /// Variant structure for decoding the SMBIOS table types.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub enum Structure<'entry, 'buffer> {
+pub enum Structure<'buffer> {
     System(System<'buffer>),
     BaseBoard(BaseBoard<'buffer>),
     Processor(Processor<'buffer>),
-    Other(RawStructure<'entry, 'buffer>)
+    Other(RawStructure<'buffer>)
 }
 
 /// Failure type for trying to decode the SMBIOS `Structures` iterator into the `Structure` variant type.
@@ -224,21 +252,21 @@ fn find_nulnul(buf: &[u8]) -> Option<usize> {
     None
 }
 
-impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
-    type Item = Result<Structure<'entry, 'buffer>, MalformedStructureError>;
+impl<'buffer> Iterator for Structures<'buffer> {
+    type Item = Result<Structure<'buffer>, MalformedStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.entry.smbios_len
-            || self.count >= self.entry.smbios_count
+        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.smbios_bound.len
+            || self.count >= self.smbios_bound.count
         {
             return None;
         }
 
         let working = &self.buffer[(self.idx as usize)..];
-        let header: HeaderPacked = unsafe { std::ptr::read(working.as_ptr() as *const _) };
+        let_as_struct!(header, HeaderPacked, working);
 
         let strings_idx: u16 = self.idx + header.len as u16;
-        if strings_idx >= self.entry.smbios_len {
+        if strings_idx >= self.smbios_bound.len {
             return Some(Err(MalformedStructureError::BadSize(self.idx, header.len)));
         }
 
@@ -251,9 +279,9 @@ impl<'entry, 'buffer> Iterator for Structures<'entry, 'buffer> {
         };
 
         let structure = RawStructure {
+            version: self.smbios_version,
             info: header.kind.into(),
             handle: header.handle,
-            entry: self.entry,
             data: &self.buffer
                 [(self.idx + mem::size_of::<HeaderPacked>() as u16) as usize..strings_idx as usize],
             strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
@@ -282,15 +310,15 @@ struct HeaderPacked {
 
 /// The raw SMBIOS structure information for structures that are not handled by this crate, such as Oem structures.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct RawStructure<'entry, 'buffer> {
+pub struct RawStructure<'buffer> {
+    pub version: SmbiosVersion,
     pub info: InfoType,
     pub handle: u16,
-    pub entry: &'entry EntryPoint,
     pub data: &'buffer [u8],
     strings: &'buffer [u8],
 }
 
-impl<'entry, 'buffer> RawStructure<'entry, 'buffer> {
+impl<'buffer> RawStructure<'buffer> {
     /// Return an iterator over the strings in the strings table.
     fn strings(&self) -> impl Iterator<Item = &'buffer str> {
         self.strings.split(|elm| *elm == 0).filter_map(|slice| {

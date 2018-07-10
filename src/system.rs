@@ -49,7 +49,7 @@ pub struct System<'buffer> {
 }
 
 impl<'buffer> System<'buffer> {
-    pub(crate) fn try_from<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {
@@ -75,7 +75,7 @@ impl<'buffer> System<'buffer> {
             family: u8,
         }
 
-        if structure.entry.major == 2 && structure.entry.minor < 1 {
+        if structure.version.major == 2 && structure.version.minor < 1 {
             let_as_struct!(packed, SystemPacked_2_0, structure.data);
 
             Ok(System {
@@ -90,7 +90,7 @@ impl<'buffer> System<'buffer> {
                 family: None,
             })
 
-        } else if structure.entry.major == 2 && structure.entry.minor < 4 {
+        } else if structure.version.major == 2 && structure.version.minor < 4 {
             let_as_struct!(packed, SystemPacked_2_1, structure.data);
 
             Ok(System {

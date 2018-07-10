@@ -84,7 +84,7 @@ pub struct Processor<'buffer> {
 
 
 impl<'buffer> Processor<'buffer> {
-    pub(crate) fn try_from<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<Processor<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct ProcessorPacked_2_0 {
@@ -231,7 +231,7 @@ impl<'buffer> Processor<'buffer> {
             thread_count_2: u16,
         }
 
-        if structure.entry.major == 2 && structure.entry.minor < 1 {
+        if structure.version.major == 2 && structure.version.minor < 1 {
             let_as_struct!(packed, ProcessorPacked_2_0, structure.data);
 
             Ok(Processor {
@@ -259,7 +259,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.entry.major == 2 && structure.entry.minor < 3 {
+        } else if structure.version.major == 2 && structure.version.minor < 3 {
             let_as_struct!(packed, ProcessorPacked_2_1, structure.data);
 
             Ok(Processor {
@@ -287,7 +287,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.entry.major == 2 && structure.entry.minor < 5 {
+        } else if structure.version.major == 2 && structure.version.minor < 5 {
             let_as_struct!(packed, ProcessorPacked_2_3, structure.data);
 
             Ok(Processor {
@@ -315,7 +315,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.entry.major == 2 && structure.entry.minor < 6 {
+        } else if structure.version.major == 2 && structure.version.minor < 6 {
             let_as_struct!(packed, ProcessorPacked_2_5, structure.data);
 
             Ok(Processor {
@@ -343,7 +343,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: Some(packed.thread_count as u16),
                 processor_characteristics: None,
             })
-        } else if structure.entry.major < 3 {
+        } else if structure.version.major < 3 {
             let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
 
             Ok(Processor {

@@ -70,7 +70,7 @@ pub struct BaseBoard<'buffer> {
 
 
 impl<'buffer> BaseBoard<'buffer> {
-    pub(crate) fn try_from<'entry>(structure: super::RawStructure<'entry, 'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {
