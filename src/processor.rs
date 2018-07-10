@@ -231,7 +231,7 @@ impl<'buffer> Processor<'buffer> {
             thread_count_2: u16,
         }
 
-        if structure.version.major == 2 && structure.version.minor < 1 {
+        if structure.version < (2, 1).into() {
             let_as_struct!(packed, ProcessorPacked_2_0, structure.data);
 
             Ok(Processor {
@@ -259,7 +259,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.version.major == 2 && structure.version.minor < 3 {
+        } else if structure.version < (2, 3).into() {
             let_as_struct!(packed, ProcessorPacked_2_1, structure.data);
 
             Ok(Processor {
@@ -287,7 +287,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.version.major == 2 && structure.version.minor < 5 {
+        } else if structure.version < (2, 5).into() {
             let_as_struct!(packed, ProcessorPacked_2_3, structure.data);
 
             Ok(Processor {
@@ -315,7 +315,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: None,
                 processor_characteristics: None,
             })
-        } else if structure.version.major == 2 && structure.version.minor < 6 {
+        } else if structure.version < (2, 6).into() {
             let_as_struct!(packed, ProcessorPacked_2_5, structure.data);
 
             Ok(Processor {
@@ -343,7 +343,7 @@ impl<'buffer> Processor<'buffer> {
                 thread_count: Some(packed.thread_count as u16),
                 processor_characteristics: None,
             })
-        } else if structure.version.major < 3 {
+        } else if structure.version < (3, 0).into() {
             let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
 
             Ok(Processor {

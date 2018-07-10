@@ -75,7 +75,7 @@ impl<'buffer> System<'buffer> {
             family: u8,
         }
 
-        if structure.version.major == 2 && structure.version.minor < 1 {
+        if structure.version < (2, 1).into() {
             let_as_struct!(packed, SystemPacked_2_0, structure.data);
 
             Ok(System {
@@ -90,7 +90,7 @@ impl<'buffer> System<'buffer> {
                 family: None,
             })
 
-        } else if structure.version.major == 2 && structure.version.minor < 4 {
+        } else if structure.version < (2, 4).into() {
             let_as_struct!(packed, SystemPacked_2_1, structure.data);
 
             Ok(System {

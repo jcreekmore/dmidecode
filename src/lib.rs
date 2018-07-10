@@ -53,10 +53,20 @@ pub struct EntryPoint {
     pub bcd_revision: u8,
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+/// The version number associated with the Smbios `EntryPoint`
+#[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct SmbiosVersion {
     pub major: u8,
     pub minor: u8,
+}
+
+impl From<(usize, usize)> for SmbiosVersion {
+    fn from(other: (usize, usize)) -> SmbiosVersion {
+        SmbiosVersion {
+            major: other.0 as u8,
+            minor: other.1 as u8,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
