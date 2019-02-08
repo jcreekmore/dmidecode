@@ -1,6 +1,7 @@
+#![no_std]
+
 #[macro_use]
 extern crate bitflags;
-extern crate core;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
@@ -17,6 +18,15 @@ macro_rules! let_as_struct {
     };
 }
 
+#[doc(hidden)]
+macro_rules! lib_ensure {
+    ($cond:expr, $e:expr) => {
+        if !($cond) {
+            return Err($e);
+        }
+    };
+}
+
 pub mod system;
 pub use system::System;
 
@@ -26,8 +36,162 @@ pub use baseboard::BaseBoard;
 pub mod processor;
 pub use processor::Processor;
 
+enum EntryPointFormat {
+    V2,
+    V3
+}
+
+pub enum EntryPoint {
+    V2(EntryPointV2),
+    V3(EntryPointV3),
+}
+
+impl EntryPoint {
+    pub fn len(&self) -> u8 {
+        match self {
+            EntryPoint::V2(point) => point.len,
+            EntryPoint::V3(point) => point.len
+        }
+    }
+    pub fn major(&self) -> u8 {
+        match self {
+            EntryPoint::V2(point) => point.major,
+            EntryPoint::V3(point) => point.major
+        }
+    }
+    pub fn minor(&self) -> u8 {
+        match self {
+            EntryPoint::V2(point) => point.minor,
+            EntryPoint::V3(point) => point.minor
+        }
+    }
+    pub fn revision(&self) -> u8 {
+        match self {
+            EntryPoint::V2(point) => point.revision,
+            EntryPoint::V3(point) => point.revision
+        }
+    }
+    pub fn smbios_address(&self) -> u64 {
+        match self {
+            EntryPoint::V2(point) => point.smbios_address as u64,
+            EntryPoint::V3(point) => point.smbios_address
+        }
+    }
+    pub fn smbios_len(&self) -> u32 {
+        match self {
+            EntryPoint::V2(point) => point.smbios_len as u32,
+            EntryPoint::V3(point) => point.smbios_len_max
+        }
+    }
+    pub fn to_version(&self) -> SmbiosVersion {
+        SmbiosVersion {
+            major: self.major(),
+            minor: self.minor(),
+        }
+    }
+
+    /// Create an iterator across the SMBIOS structures found in `buffer`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate failure;
+    /// # extern crate dmidecode;
+    /// # use failure::Error;
+    /// use dmidecode::EntryPoint;
+    /// # fn try_main() -> Result<(), Error> {
+    /// #
+    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
+    ///
+    /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
+    /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address() as usize..]) {
+    ///   let table = s?;
+    /// }
+    /// Ok(())
+    /// # }
+    /// ```
+    pub fn structures<'buffer>(&self, buffer: &'buffer [u8]) -> Structures<'buffer> {
+        Structures {
+            smbios_version: self.to_version(),
+            smbios_len: self.smbios_len(),
+            idx: 0u32,
+            buffer: buffer,
+        }
+    }
+
+    /// Search for an instance of an SMBIOS `EntryPoint` in a memory `buffer`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # extern crate dmidecode;
+    /// use dmidecode::EntryPoint;
+    ///
+    /// const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
+    ///
+    /// let entry_point = EntryPoint::search(ENTRY_BIN);
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// If this function fails to find a valid SMBIOS `EntryPoint`, it will return
+    /// an `InvalidEntryPointError` variant.
+    pub fn search(buffer: &[u8]) -> Result<EntryPoint, InvalidEntryPointError> {
+        find_signature(buffer)
+            .ok_or_else(|| InvalidEntryPointError::NotFound)
+            .and_then(|(kind, start)| {
+                let sub_buffer = &buffer[start..];
+
+                let entry_point = match kind {
+                    EntryPointFormat::V2 => {
+                        lib_ensure!(
+                            sub_buffer.len() >= mem::size_of::<EntryPointV2>(),
+                            InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
+                        );
+                        let_as_struct!(entry_point, EntryPointV2, sub_buffer);
+                        lib_ensure!(
+                            entry_point.len as usize >= mem::size_of::<EntryPointV2>(),
+                            InvalidEntryPointError::BadSize(entry_point.len)
+                        );
+                        EntryPoint::V2(entry_point)
+                    },
+                    EntryPointFormat::V3 => {
+                        lib_ensure!(
+                            sub_buffer.len() >= mem::size_of::<EntryPointV3>(),
+                            InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
+                        );
+                        let_as_struct!(entry_point, EntryPointV3, sub_buffer);
+                        lib_ensure!(
+                            entry_point.len as usize >= mem::size_of::<EntryPointV3>(),
+                            InvalidEntryPointError::BadSize(entry_point.len)
+                        );
+                        EntryPoint::V3(entry_point)
+                    }
+                };
+
+                lib_ensure!(
+                    entry_point.major() >= 2,
+                    InvalidEntryPointError::TooOldVersion(entry_point.major())
+                );
+
+                lib_ensure!(
+                    sub_buffer.len() as u8 >= entry_point.len(),
+                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
+                );
+
+                let mut sum = 0u8;
+                for val in &sub_buffer[0..(entry_point.len() as usize)] {
+                    sum = sum.wrapping_add(*val);
+                }
+                lib_ensure!(sum == 0, InvalidEntryPointError::BadChecksum(sum));
+
+                Ok(entry_point)
+            })
+    }
+}
+
 ///
-/// An SMBIOS `EntryPoint` structure.
+/// An SMBIOSv2 `EntryPoint` structure.
 ///
 /// The SMBIOS `EntryPoint` structure is used to verify that a set of SMBIOS tables exist
 /// in memory and what version of the SMBIOS specification should be used to
@@ -36,13 +200,13 @@ pub use processor::Processor;
 #[repr(C)]
 #[repr(packed)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct EntryPoint {
+pub struct EntryPointV2 {
     pub signature: u32,
     pub checksum: u8,
     pub len: u8,
     pub major: u8,
     pub minor: u8,
-    pub max: u16,
+    pub struct_max: u16,
     pub revision: u8,
     pub formatted: [u8; 5],
     pub dmi_signature: [u8; 5],
@@ -51,6 +215,25 @@ pub struct EntryPoint {
     pub smbios_address: u32,
     pub smbios_count: u16,
     pub bcd_revision: u8,
+}
+
+///
+/// An SMBIOSv3 `EntryPoint` structure.
+///
+#[repr(C)]
+#[repr(packed)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct EntryPointV3 {
+    pub signature: [u8; 5],
+    pub checksum: u8,
+    pub len: u8,
+    pub major: u8,
+    pub minor: u8,
+    pub docrev: u8,
+    pub revision: u8,
+    _reserved: u8,
+    pub smbios_len_max: u32,
+    pub smbios_address: u64,
 }
 
 /// The version number associated with the Smbios `EntryPoint`
@@ -92,124 +275,20 @@ pub enum InvalidEntryPointError {
     BadChecksum(u8),
 }
 
-fn find_signature(buffer: &[u8]) -> Option<usize> {
+fn find_signature(buffer: &[u8]) -> Option<(EntryPointFormat, usize)> {
     static STRIDE: usize = 16;
-    static SIG: &[u8; 4] = &[0x5f, 0x53, 0x4d, 0x5f];
+    static V2_SIG: &[u8; 4] = &[0x5f, 0x53, 0x4d, 0x5f];
+    static V3_SIG: &[u8; 5] = &[0x5f, 0x53, 0x4d, 0x33, 0x5f];
+
     for (idx, chunk) in buffer.chunks(STRIDE).enumerate() {
-        if chunk.starts_with(SIG) {
-            return Some(idx * STRIDE);
+        if chunk.starts_with(V2_SIG) {
+            return Some((EntryPointFormat::V2, idx * STRIDE));
+        } else if chunk.starts_with(V3_SIG) {
+            return Some((EntryPointFormat::V3, idx * STRIDE));
         }
     }
 
     None
-}
-
-#[doc(hidden)]
-macro_rules! lib_ensure {
-    ($cond:expr, $e:expr) => {
-        if !($cond) {
-            return Err($e);
-        }
-    };
-}
-
-impl EntryPoint {
-    /// Search for an instance of an SMBIOS `EntryPoint` structure in a memory `buffer`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # extern crate dmidecode;
-    /// use dmidecode::EntryPoint;
-    ///
-    /// const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
-    ///
-    /// let entry_point = EntryPoint::search(ENTRY_BIN);
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// If this function fails to find a valid SMBIOS `EntryPoint` structure, it will return
-    /// an `InvalidEntryPointError` variant.
-    pub fn search(buffer: &[u8]) -> Result<EntryPoint, InvalidEntryPointError> {
-        find_signature(buffer)
-            .ok_or_else(|| InvalidEntryPointError::NotFound)
-            .and_then(|start| {
-                let sub_buffer = &buffer[start..];
-                lib_ensure!(
-                    sub_buffer.len() >= mem::size_of::<EntryPoint>(),
-                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
-                );
-
-                let_as_struct!(entry_point, EntryPoint, sub_buffer);
-                lib_ensure!(
-                    entry_point.len as usize >= mem::size_of::<EntryPoint>(),
-                    InvalidEntryPointError::BadSize(entry_point.len)
-                );
-
-                lib_ensure!(
-                    entry_point.major >= 2,
-                    InvalidEntryPointError::TooOldVersion(entry_point.major)
-                );
-
-                lib_ensure!(
-                    sub_buffer.len() as u8 >= entry_point.len,
-                    InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
-                );
-
-                let mut sum = 0u8;
-                for val in &sub_buffer[0..(entry_point.len as usize)] {
-                    sum = sum.wrapping_add(*val);
-                }
-                lib_ensure!(sum == 0, InvalidEntryPointError::BadChecksum(sum));
-
-                Ok(entry_point)
-            })
-    }
-
-    fn to_version(&self) -> SmbiosVersion {
-        SmbiosVersion {
-            major: self.major,
-            minor: self.minor,
-        }
-    }
-
-    fn to_bound(&self) -> SmbiosBound {
-        SmbiosBound {
-            len: self.smbios_len,
-            count: self.smbios_count,
-        }
-    }
-
-    /// Create an iterator across the SMBIOS structures found in `buffer`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # extern crate failure;
-    /// # extern crate dmidecode;
-    /// # use failure::Error;
-    /// use dmidecode::EntryPoint;
-    /// # fn try_main() -> Result<(), Error> {
-    /// #
-    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
-    ///
-    /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
-    /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address as usize..]) {
-    ///   let table = s?;
-    /// }
-    /// Ok(())
-    /// # }
-    /// ```
-    pub fn structures<'buffer>(&self, buffer: &'buffer [u8]) -> Structures<'buffer> {
-        Structures {
-            smbios_version: self.to_version(),
-            smbios_bound: self.to_bound(),
-            count: 0,
-            idx: 0u16,
-            buffer: buffer,
-        }
-    }
 }
 
 /// An iterator that traverses the SMBIOS structure tables.
@@ -217,9 +296,8 @@ impl EntryPoint {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Structures<'buffer> {
     smbios_version: SmbiosVersion,
-    smbios_bound: SmbiosBound,
-    count: u16,
-    idx: u16,
+    smbios_len: u32,
+    idx: u32,
     buffer: &'buffer [u8],
 }
 
@@ -237,10 +315,10 @@ pub enum Structure<'buffer> {
 pub enum MalformedStructureError {
     /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
     #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
-    BadSize(u16, u8),
+    BadSize(u32, u8),
     /// The SMBIOS structure contains an unterminated strings section.
     #[fail(display = "Structure at offset {} with unterminated strings", _0)]
-    UnterminatedStrings(u16),
+    UnterminatedStrings(u32),
     /// The SMBIOS structure contains an invalid string index.
     #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
     InvalidStringIndex(InfoType, u16, u8),
@@ -266,8 +344,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
     type Item = Result<Structure<'buffer>, MalformedStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.idx + mem::size_of::<HeaderPacked>() as u16) > self.smbios_bound.len
-            || self.count >= self.smbios_bound.count
+        if (self.idx + mem::size_of::<HeaderPacked>() as u32) > self.smbios_len
         {
             return None;
         }
@@ -275,14 +352,14 @@ impl<'buffer> Iterator for Structures<'buffer> {
         let working = &self.buffer[(self.idx as usize)..];
         let_as_struct!(header, HeaderPacked, working);
 
-        let strings_idx: u16 = self.idx + header.len as u16;
-        if strings_idx >= self.smbios_bound.len {
+        let strings_idx: u32 = self.idx + header.len as u32;
+        if strings_idx >= self.smbios_len {
             return Some(Err(MalformedStructureError::BadSize(self.idx, header.len)));
         }
 
         let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
         let strings_len = match term {
-            Some(terminator) => (terminator + 1) as u16,
+            Some(terminator) => (terminator + 1) as u32,
             None => {
                 return Some(Err(MalformedStructureError::UnterminatedStrings(self.idx)));
             }
@@ -293,12 +370,11 @@ impl<'buffer> Iterator for Structures<'buffer> {
             info: header.kind.into(),
             handle: header.handle,
             data: &self.buffer
-                [(self.idx + mem::size_of::<HeaderPacked>() as u16) as usize..strings_idx as usize],
+                [(self.idx + mem::size_of::<HeaderPacked>() as u32) as usize..strings_idx as usize],
             strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
         };
 
         self.idx = strings_idx + strings_len;
-        self.count += 1;
 
         Some(match structure.info {
             InfoType::System => System::try_from(structure).map(Structure::System),
@@ -398,72 +474,93 @@ impl From<u8> for InfoType {
 }
 
 #[cfg(test)]
+#[macro_use]
+extern crate std;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
-    const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
-    const DMI_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
+    const ENTRY_V2_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
+    const DMI_V2_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
+    const ENTRY_V3_BIN: &'static [u8] = include_bytes!("./test-data/entry_v3.bin");
+    const DMI_V3_BIN: &'static [u8] = include_bytes!("./test-data/dmi_v3.bin");
 
     #[test]
     fn found_smbios_entry() {
-        EntryPoint::search(ENTRY_BIN).unwrap();
+        EntryPoint::search(ENTRY_V2_BIN).unwrap();
         EntryPoint::search(DMIDECODE_BIN).unwrap();
+    }
+
+    #[test]
+    fn found_smbios_entry_v3() {
+        EntryPoint::search(ENTRY_V3_BIN).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn doesnt_find_smbios_entry() {
-        EntryPoint::search(DMI_BIN).unwrap();
+        EntryPoint::search(DMI_V2_BIN).unwrap();
     }
 
     #[test]
     fn found_signature() {
-        find_signature(ENTRY_BIN).unwrap();
+        find_signature(ENTRY_V2_BIN).unwrap();
+        find_signature(ENTRY_V3_BIN).unwrap();
         find_signature(DMIDECODE_BIN).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn doesnt_find_signature() {
-        find_signature(DMI_BIN).unwrap();
+        find_signature(DMI_V2_BIN).unwrap();
+        find_signature(DMI_V3_BIN).unwrap();
     }
 
     #[test]
     fn iterator_through_structures() {
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
-        for s in entry_point.structures(&DMIDECODE_BIN[(entry_point.smbios_address as usize)..]).filter_map(|s| s.ok()) {
+        for s in entry_point.structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..]).filter_map(|s| s.ok()) {
+            println!("{:?}", s);
+        }
+    }
+
+    #[test]
+    fn iterator_through_structures_v3() {
+        let entry_point = EntryPoint::search(ENTRY_V3_BIN).unwrap();
+        for s in entry_point.structures(DMI_V3_BIN).filter_map(|s| s.ok()) {
             println!("{:?}", s);
         }
     }
 
     #[test]
     fn find_nulnul_empty() {
-        let buf = vec![];
+        let buf = [];
         assert_eq!(find_nulnul(&buf), None);
     }
 
     #[test]
     fn find_nulnul_single_char() {
-        let buf = vec![0];
+        let buf = [0];
         assert_eq!(find_nulnul(&buf), None);
     }
 
     #[test]
     fn find_nulnul_trivial() {
-        let buf = vec![0, 0];
+        let buf = [0, 0];
         assert_eq!(find_nulnul(&buf), Some(1));
     }
 
     #[test]
     fn find_nulnul_with_data() {
-        let buf = vec![1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0];
+        let buf = [1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0];
         assert_eq!(find_nulnul(&buf), Some(11));
     }
 
     #[test]
     fn find_nulnul_with_data_more_at_end() {
-        let buf = vec![1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3];
+        let buf = [1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3];
         assert_eq!(find_nulnul(&buf), Some(11));
     }
 }
