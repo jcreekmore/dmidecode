@@ -376,6 +376,14 @@ impl<'buffer> Iterator for Structures<'buffer> {
 
         self.idx = strings_idx + strings_len;
 
+        /*
+        * For SMBIOS v3 we have no exact table length and no item count,
+        * so stop at the end-of-table marker.
+        */
+        if self.smbios_version.major >= 3 && structure.info == InfoType::End {
+            self.smbios_len = self.idx;
+        }
+
         Some(match structure.info {
             InfoType::System => System::try_from(structure).map(Structure::System),
             InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
@@ -486,6 +494,8 @@ mod tests {
     const DMI_V2_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
     const ENTRY_V3_BIN: &'static [u8] = include_bytes!("./test-data/entry_v3.bin");
     const DMI_V3_BIN: &'static [u8] = include_bytes!("./test-data/dmi_v3.bin");
+    const DMI_V3_SHORT: &'static [u8] = include_bytes!("./test-data/dmi_v3_short.bin");
+    const ENTRY_V3_SHORT: &'static [u8] = include_bytes!("./test-data/entry_v3_short.bin");
 
     #[test]
     fn found_smbios_entry() {
@@ -522,6 +532,14 @@ mod tests {
     fn iterator_through_structures() {
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
         for s in entry_point.structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..]).filter_map(|s| s.ok()) {
+            println!("{:?}", s);
+        }
+    }
+
+    #[test]
+    fn iterator_through_structures_v3_short() {
+        let entry_point = EntryPoint::search(ENTRY_V3_SHORT).unwrap();
+        for s in entry_point.structures(DMI_V3_SHORT).filter_map(|s| s.ok()) {
             println!("{:?}", s);
         }
     }
