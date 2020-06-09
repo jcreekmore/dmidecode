@@ -14,7 +14,7 @@ use core::str;
 macro_rules! let_as_struct {
     ($name:ident, $ty:ty, $data:expr) => {
         use core::ptr;
-        let $name: $ty = unsafe { ptr::read($data.as_ptr() as * const _) };
+        let $name: $ty = unsafe { ptr::read($data.as_ptr() as *const _) };
     };
 }
 
@@ -27,6 +27,9 @@ macro_rules! lib_ensure {
     };
 }
 
+pub mod memory;
+pub use memory::MemoryDevice;
+
 pub mod system;
 pub use system::System;
 
@@ -38,7 +41,7 @@ pub use processor::Processor;
 
 enum EntryPointFormat {
     V2,
-    V3
+    V3,
 }
 
 pub enum EntryPoint {
@@ -50,37 +53,37 @@ impl EntryPoint {
     pub fn len(&self) -> u8 {
         match self {
             EntryPoint::V2(point) => point.len,
-            EntryPoint::V3(point) => point.len
+            EntryPoint::V3(point) => point.len,
         }
     }
     pub fn major(&self) -> u8 {
         match self {
             EntryPoint::V2(point) => point.major,
-            EntryPoint::V3(point) => point.major
+            EntryPoint::V3(point) => point.major,
         }
     }
     pub fn minor(&self) -> u8 {
         match self {
             EntryPoint::V2(point) => point.minor,
-            EntryPoint::V3(point) => point.minor
+            EntryPoint::V3(point) => point.minor,
         }
     }
     pub fn revision(&self) -> u8 {
         match self {
             EntryPoint::V2(point) => point.revision,
-            EntryPoint::V3(point) => point.revision
+            EntryPoint::V3(point) => point.revision,
         }
     }
     pub fn smbios_address(&self) -> u64 {
         match self {
             EntryPoint::V2(point) => point.smbios_address as u64,
-            EntryPoint::V3(point) => point.smbios_address
+            EntryPoint::V3(point) => point.smbios_address,
         }
     }
     pub fn smbios_len(&self) -> u32 {
         match self {
             EntryPoint::V2(point) => point.smbios_len as u32,
-            EntryPoint::V3(point) => point.smbios_len_max
+            EntryPoint::V3(point) => point.smbios_len_max,
         }
     }
     pub fn to_version(&self) -> SmbiosVersion {
@@ -154,7 +157,7 @@ impl EntryPoint {
                             InvalidEntryPointError::BadSize(entry_point.len)
                         );
                         EntryPoint::V2(entry_point)
-                    },
+                    }
                     EntryPointFormat::V3 => {
                         lib_ensure!(
                             sub_buffer.len() >= mem::size_of::<EntryPointV3>(),
@@ -307,21 +310,30 @@ pub enum Structure<'buffer> {
     System(System<'buffer>),
     BaseBoard(BaseBoard<'buffer>),
     Processor(Processor<'buffer>),
-    Other(RawStructure<'buffer>)
+    MemoryDevice(MemoryDevice<'buffer>),
+    Other(RawStructure<'buffer>),
 }
 
 /// Failure type for trying to decode the SMBIOS `Structures` iterator into the `Structure` variant type.
 #[derive(Debug, Fail)]
 pub enum MalformedStructureError {
     /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
-    #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
+    #[fail(
+        display = "Structure at offset {} with length {} extends beyond SMBIOS",
+        _0, _1
+    )]
     BadSize(u32, u8),
     /// The SMBIOS structure contains an unterminated strings section.
     #[fail(display = "Structure at offset {} with unterminated strings", _0)]
     UnterminatedStrings(u32),
     /// The SMBIOS structure contains an invalid string index.
-    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
+    #[fail(
+        display = "Structure {:?} with handle {} has invalid string index {}",
+        _0, _1, _2
+    )]
     InvalidStringIndex(InfoType, u16, u8),
+    #[fail(display = "{}", _0)]
+    InvalidSlice(#[fail(cause)] core::array::TryFromSliceError),
 }
 
 #[doc(hidden)]
@@ -344,8 +356,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
     type Item = Result<Structure<'buffer>, MalformedStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.idx + mem::size_of::<HeaderPacked>() as u32) > self.smbios_len
-        {
+        if (self.idx + mem::size_of::<HeaderPacked>() as u32) > self.smbios_len {
             return None;
         }
 
@@ -377,9 +388,9 @@ impl<'buffer> Iterator for Structures<'buffer> {
         self.idx = strings_idx + strings_len;
 
         /*
-        * For SMBIOS v3 we have no exact table length and no item count,
-        * so stop at the end-of-table marker.
-        */
+         * For SMBIOS v3 we have no exact table length and no item count,
+         * so stop at the end-of-table marker.
+         */
         if self.smbios_version.major >= 3 && structure.info == InfoType::End {
             self.smbios_len = self.idx;
         }
@@ -388,7 +399,10 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::System => System::try_from(structure).map(Structure::System),
             InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
             InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
-            _ => Ok(Structure::Other(structure))
+            InfoType::MemoryDevice => {
+                MemoryDevice::try_from(structure).map(Structure::MemoryDevice)
+            }
+            _ => Ok(Structure::Other(structure)),
         })
     }
 }
@@ -434,9 +448,9 @@ impl<'buffer> RawStructure<'buffer> {
         if idx == 0 {
             Ok("")
         } else {
-            self.strings()
-                .nth((idx - 1) as usize)
-                .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
+            self.strings().nth((idx - 1) as usize).ok_or_else(|| {
+                MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx)
+            })
         }
     }
 }
@@ -531,7 +545,10 @@ mod tests {
     #[test]
     fn iterator_through_structures() {
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
-        for s in entry_point.structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..]).filter_map(|s| s.ok()) {
+        for s in entry_point
+            .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])
+            .filter_map(|s| s.ok())
+        {
             println!("{:?}", s);
         }
     }
