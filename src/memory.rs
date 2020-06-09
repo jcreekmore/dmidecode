@@ -1,3 +1,4 @@
+use super::MalformedStructureError;
 use core::convert::TryInto;
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -364,17 +365,17 @@ pub struct MemoryDevice<'buffer> {
 impl<'buffer> MemoryDevice<'buffer> {
     pub(crate) fn try_from(
         structure: super::RawStructure<'buffer>,
-    ) -> Result<MemoryDevice<'buffer>, super::MalformedStructureError> {
+    ) -> Result<MemoryDevice<'buffer>, MalformedStructureError> {
         let mut memory = MemoryDevice::default();
         let mut mem_pointer = 0;
         if structure.version > (2, 1).into() {
             memory.handle = structure.handle;
-            memory.physical_memory_handle = get_word(&mut mem_pointer, &structure.data);
+            memory.physical_memory_handle = get_word(&mut mem_pointer, &structure.data)?;
             memory.memory_error_handle =
-                get_optional_word(&mut mem_pointer, &structure.data, 0xFFFE);
-            memory.total_width = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF);
-            memory.data_width = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF);
-            memory.size = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF);
+                get_optional_word(&mut mem_pointer, &structure.data, 0xFFFE)?;
+            memory.total_width = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF)?;
+            memory.data_width = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF)?;
+            memory.size = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF)?;
 
             memory.form_factor = FormFactor::from(structure.data[mem_pointer]);
             // Advance the pointer
@@ -396,10 +397,10 @@ impl<'buffer> MemoryDevice<'buffer> {
             mem_pointer += 1;
 
             memory.type_detail =
-                Detail::from_bits_truncate(get_word(&mut mem_pointer, &structure.data));
+                Detail::from_bits_truncate(get_word(&mut mem_pointer, &structure.data)?);
         }
         if structure.version > (2, 3).into() {
-            memory.speed = get_optional_word(&mut mem_pointer, &structure.data, 0);
+            memory.speed = get_optional_word(&mut mem_pointer, &structure.data, 0)?;
             memory.manufacturer = find_string(&structure, &mut mem_pointer)?;
             memory.serial = find_string(&structure, &mut mem_pointer)?;
             memory.asset_tag = find_string(&structure, &mut mem_pointer)?;
@@ -410,14 +411,14 @@ impl<'buffer> MemoryDevice<'buffer> {
             mem_pointer += 1;
         }
         if structure.version > (2, 7).into() {
-            memory.extended_size = get_dword(&mut mem_pointer, &structure.data);
+            memory.extended_size = get_dword(&mut mem_pointer, &structure.data)?;
             memory.configured_memory_speed =
-                get_optional_word(&mut mem_pointer, &structure.data, 0);
+                get_optional_word(&mut mem_pointer, &structure.data, 0)?;
         }
         if structure.version > (2, 8).into() {
-            memory.minimum_voltage = get_optional_word(&mut mem_pointer, &structure.data, 0);
-            memory.maximum_voltage = get_optional_word(&mut mem_pointer, &structure.data, 0);
-            memory.configured_voltage = get_optional_word(&mut mem_pointer, &structure.data, 0);
+            memory.minimum_voltage = get_optional_word(&mut mem_pointer, &structure.data, 0)?;
+            memory.maximum_voltage = get_optional_word(&mut mem_pointer, &structure.data, 0)?;
+            memory.configured_voltage = get_optional_word(&mut mem_pointer, &structure.data, 0)?;
         }
         if structure.version > (3, 2).into() {
             memory.memory_technology = Some(MemoryTechnology::from(structure.data[mem_pointer]));
@@ -425,27 +426,27 @@ impl<'buffer> MemoryDevice<'buffer> {
             memory.operating_mode_capability = Some(OperatingModes::from_bits_truncate(get_word(
                 &mut mem_pointer,
                 &structure.data,
-            )));
+            )?));
             memory.firmware_version = Some(find_string(&structure, &mut mem_pointer)?);
-            memory.module_manufacturer = Some(get_word(&mut mem_pointer, &structure.data));
-            memory.module_product_id = Some(get_word(&mut mem_pointer, &structure.data));
+            memory.module_manufacturer = Some(get_word(&mut mem_pointer, &structure.data)?);
+            memory.module_product_id = Some(get_word(&mut mem_pointer, &structure.data)?);
             memory.memory_subsystem_controller_manufacturer_id =
-                Some(get_word(&mut mem_pointer, &structure.data));
+                Some(get_word(&mut mem_pointer, &structure.data)?);
             memory.memory_subsystem_controller_product_id =
-                Some(get_word(&mut mem_pointer, &structure.data));
+                Some(get_word(&mut mem_pointer, &structure.data)?);
             memory.non_volatile_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF)?;
             memory.volatile_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF)?;
             memory.cache_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF)?;
             memory.logical_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF)?;
         }
         if structure.version > (3, 3).into() {
-            memory.extended_speed = Some(get_dword(&mut mem_pointer, &structure.data));
+            memory.extended_speed = Some(get_dword(&mut mem_pointer, &structure.data)?);
             memory.extended_configured_memory_speed =
-                Some(get_dword(&mut mem_pointer, &structure.data));
+                Some(get_dword(&mut mem_pointer, &structure.data)?);
         }
 
         Ok(memory)
@@ -455,44 +456,64 @@ impl<'buffer> MemoryDevice<'buffer> {
 fn find_string<'buffer>(
     structure: &super::RawStructure<'buffer>,
     pointer: &mut usize,
-) -> Result<&'buffer str, super::MalformedStructureError> {
+) -> Result<&'buffer str, MalformedStructureError> {
     let s = structure.find_string(structure.data[*pointer])?;
     *pointer += 1;
     Ok(s)
 }
 
-fn get_optional_qword(pointer: &mut usize, data: &[u8], none_val: u64) -> Option<u64> {
-    let word = get_qword(pointer, data);
+fn get_optional_qword(
+    pointer: &mut usize,
+    data: &[u8],
+    none_val: u64,
+) -> Result<Option<u64>, MalformedStructureError> {
+    let word = get_qword(pointer, data)?;
     if word == none_val {
-        None
+        Ok(None)
     } else {
-        Some(word)
+        Ok(Some(word))
     }
 }
 
-fn get_optional_word(pointer: &mut usize, data: &[u8], none_val: u16) -> Option<u16> {
-    let word = get_word(pointer, data);
+fn get_optional_word(
+    pointer: &mut usize,
+    data: &[u8],
+    none_val: u16,
+) -> Result<Option<u16>, MalformedStructureError> {
+    let word = get_word(pointer, data)?;
     if word == none_val {
-        None
+        Ok(None)
     } else {
-        Some(word)
+        Ok(Some(word))
     }
 }
 
-fn get_word(pointer: &mut usize, data: &[u8]) -> u16 {
-    let word = u16::from_le_bytes(data[*pointer..(*pointer + 2)].try_into().unwrap());
+fn get_word(pointer: &mut usize, data: &[u8]) -> Result<u16, MalformedStructureError> {
+    let word = u16::from_le_bytes(
+        data[*pointer..(*pointer + 2)]
+            .try_into()
+            .map_err(|e| MalformedStructureError::InvalidSlice(e))?,
+    );
     *pointer += 2;
-    word
+    Ok(word)
 }
 
-fn get_dword(pointer: &mut usize, data: &[u8]) -> u32 {
-    let dword = u32::from_le_bytes(data[*pointer..(*pointer + 4)].try_into().unwrap());
+fn get_dword(pointer: &mut usize, data: &[u8]) -> Result<u32, MalformedStructureError> {
+    let dword = u32::from_le_bytes(
+        data[*pointer..(*pointer + 4)]
+            .try_into()
+            .map_err(|e| MalformedStructureError::InvalidSlice(e))?,
+    );
     *pointer += 4;
-    dword
+    Ok(dword)
 }
 
-fn get_qword(pointer: &mut usize, data: &[u8]) -> u64 {
-    let qword = u64::from_le_bytes(data[*pointer..(*pointer + 8)].try_into().unwrap());
+fn get_qword(pointer: &mut usize, data: &[u8]) -> Result<u64, MalformedStructureError> {
+    let qword = u64::from_le_bytes(
+        data[*pointer..(*pointer + 8)]
+            .try_into()
+            .map_err(|e| MalformedStructureError::InvalidSlice(e))?,
+    );
     *pointer += 8;
-    qword
+    Ok(qword)
 }

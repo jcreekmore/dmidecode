@@ -332,6 +332,8 @@ pub enum MalformedStructureError {
         _0, _1, _2
     )]
     InvalidStringIndex(InfoType, u16, u8),
+    #[fail(display = "{}", _0)]
+    InvalidSlice(#[fail(cause)] core::array::TryFromSliceError),
 }
 
 #[doc(hidden)]
