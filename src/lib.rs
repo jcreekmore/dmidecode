@@ -502,7 +502,6 @@ mod tests {
     use super::*;
 
     const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
-    const DMIDECODE_CUSTOM: &'static [u8] = include_bytes!("./test-data/dmidecode-custom.bin");
     const ENTRY_V2_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
     const DMI_V2_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
     const ENTRY_V3_BIN: &'static [u8] = include_bytes!("./test-data/entry_v3.bin");
@@ -596,16 +595,5 @@ mod tests {
     fn find_nulnul_with_data_more_at_end() {
         let buf = [1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3];
         assert_eq!(find_nulnul(&buf), Some(11));
-    }
-
-    #[test]
-    fn test_custom() {
-        let entry_point = EntryPoint::search(DMIDECODE_CUSTOM).unwrap();
-        for s in entry_point
-            .structures(&DMIDECODE_CUSTOM[(entry_point.smbios_address() as usize)..])
-            .filter_map(|s| s.ok())
-        {
-            println!("{:?}", s);
-        }
     }
 }

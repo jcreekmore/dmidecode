@@ -371,10 +371,10 @@ impl<'buffer> MemoryDevice<'buffer> {
             memory.handle = structure.handle;
             memory.physical_memory_handle = get_word(&mut mem_pointer, &structure.data);
             memory.memory_error_handle =
-                get_optional_word(&mut mem_pointer, &structure.data, 65534);
-            memory.total_width = get_optional_word(&mut mem_pointer, &structure.data, 65535);
-            memory.data_width = get_optional_word(&mut mem_pointer, &structure.data, 65535);
-            memory.size = get_optional_word(&mut mem_pointer, &structure.data, 65535);
+                get_optional_word(&mut mem_pointer, &structure.data, 0xFFFE);
+            memory.total_width = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF);
+            memory.data_width = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF);
+            memory.size = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFF);
 
             memory.form_factor = FormFactor::from(structure.data[mem_pointer]);
             // Advance the pointer
@@ -434,13 +434,13 @@ impl<'buffer> MemoryDevice<'buffer> {
             memory.memory_subsystem_controller_product_id =
                 Some(get_word(&mut mem_pointer, &structure.data));
             memory.non_volatile_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 18446744073709551615);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
             memory.volatile_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 18446744073709551615);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
             memory.cache_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 18446744073709551615);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
             memory.logical_size =
-                get_optional_qword(&mut mem_pointer, &structure.data, 18446744073709551615);
+                get_optional_qword(&mut mem_pointer, &structure.data, 0xFFFFFFFFFFFFFFFF);
         }
         if structure.version > (3, 3).into() {
             memory.extended_speed = Some(get_dword(&mut mem_pointer, &structure.data));
