@@ -39,11 +39,13 @@ pub use baseboard::BaseBoard;
 pub mod processor;
 pub use processor::Processor;
 
+#[derive(Debug, PartialEq)]
 enum EntryPointFormat {
     V2,
     V3,
 }
 
+#[derive(Debug)]
 pub enum EntryPoint {
     V2(EntryPointV2),
     V3(EntryPointV3),
@@ -283,11 +285,17 @@ fn find_signature(buffer: &[u8]) -> Option<(EntryPointFormat, usize)> {
     static V2_SIG: &[u8; 4] = &[0x5f, 0x53, 0x4d, 0x5f];
     static V3_SIG: &[u8; 5] = &[0x5f, 0x53, 0x4d, 0x33, 0x5f];
 
+    // First look for a V3 signature
+    for (idx, chunk) in buffer.chunks(STRIDE).enumerate() {
+        if chunk.starts_with(V3_SIG) {
+            return Some((EntryPointFormat::V3, idx * STRIDE));
+        }
+    }
+
+    // Fallback on searching for a V2 signature
     for (idx, chunk) in buffer.chunks(STRIDE).enumerate() {
         if chunk.starts_with(V2_SIG) {
             return Some((EntryPointFormat::V2, idx * STRIDE));
-        } else if chunk.starts_with(V3_SIG) {
-            return Some((EntryPointFormat::V3, idx * STRIDE));
         }
     }
 
@@ -510,6 +518,7 @@ mod tests {
     const DMI_V3_BIN: &'static [u8] = include_bytes!("./test-data/dmi_v3.bin");
     const DMI_V3_SHORT: &'static [u8] = include_bytes!("./test-data/dmi_v3_short.bin");
     const ENTRY_V3_SHORT: &'static [u8] = include_bytes!("./test-data/entry_v3_short.bin");
+    const ENTRY_V3_COMBINED: &'static [u8] = include_bytes!("./test-data/entry_v3_combined.bin");
 
     #[test]
     fn found_smbios_entry() {
@@ -533,6 +542,9 @@ mod tests {
         find_signature(ENTRY_V2_BIN).unwrap();
         find_signature(ENTRY_V3_BIN).unwrap();
         find_signature(DMIDECODE_BIN).unwrap();
+        let result = find_signature(ENTRY_V3_COMBINED).unwrap();
+        println!("result: {:?}", result);
+        assert_eq!(result.0, EntryPointFormat::V3);
     }
 
     #[test]
