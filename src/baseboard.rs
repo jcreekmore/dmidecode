@@ -30,10 +30,10 @@ impl From<u8> for BoardType {
             7 => BoardType::IoModule,
             8 => BoardType::MemoryModule,
             9 => BoardType::DaughterBoard,
-           10 => BoardType::MotherBoard,
-           11 => BoardType::ProcessorMemoryModule,
-           12 => BoardType::ProcessorIoModule,
-           13 => BoardType::InterconnectBoard,
+            10 => BoardType::MotherBoard,
+            11 => BoardType::ProcessorMemoryModule,
+            12 => BoardType::ProcessorIoModule,
+            13 => BoardType::InterconnectBoard,
             t => BoardType::Undefined(t),
         }
     }
@@ -61,16 +61,17 @@ pub struct BaseBoard<'buffer> {
     pub product: &'buffer str,
     pub version: &'buffer str,
     pub serial: &'buffer str,
-    pub asset: &'buffer str,
-    pub feature_flags: BaseBoardFlags,
-    pub location_in_chassis: &'buffer str,
-    pub chassis_handle: u16,
-    pub board_type: BoardType,
+    pub asset: Option<&'buffer str>,
+    pub feature_flags: Option<BaseBoardFlags>,
+    pub location_in_chassis: Option<&'buffer str>,
+    pub chassis_handle: Option<u16>,
+    pub board_type: Option<BoardType>,
 }
 
-
 impl<'buffer> BaseBoard<'buffer> {
-    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(
+        structure: super::RawStructure<'buffer>,
+    ) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {
@@ -87,17 +88,43 @@ impl<'buffer> BaseBoard<'buffer> {
 
         let_as_struct!(packed, BaseBoardPacked, structure.data);
 
+        let asset = if structure.data.len() > 4 {
+            Some(structure.find_string(packed.asset)?)
+        } else {
+            None
+        };
+        let feature_flags = if structure.data.len() > 5 {
+            Some(BaseBoardFlags::from_bits_truncate(packed.feature_flags))
+        } else {
+            None
+        };
+        let location_in_chassis = if structure.data.len() > 6 {
+            Some(structure.find_string(packed.location_in_chassis)?)
+        } else {
+            None
+        };
+        let chassis_handle = if structure.data.len() > 7 {
+            Some(packed.chassis_handle)
+        } else {
+            None
+        };
+        let board_type = if structure.data.len() > 9 {
+            Some(packed.board_type.into())
+        } else {
+            None
+        };
+
         Ok(BaseBoard {
             handle: structure.handle,
             manufacturer: structure.find_string(packed.manufacturer)?,
             product: structure.find_string(packed.product)?,
             version: structure.find_string(packed.version)?,
             serial: structure.find_string(packed.serial)?,
-            asset: structure.find_string(packed.asset)?,
-            feature_flags: BaseBoardFlags::from_bits_truncate(packed.feature_flags),
-            location_in_chassis: structure.find_string(packed.location_in_chassis)?,
-            chassis_handle: packed.chassis_handle,
-            board_type: packed.board_type.into(),
+            asset,
+            feature_flags,
+            location_in_chassis,
+            chassis_handle,
+            board_type,
         })
     }
 }
