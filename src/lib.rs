@@ -29,6 +29,7 @@ macro_rules! lib_ensure {
 
 pub mod memory;
 pub use memory::MemoryDevice;
+pub use memory::PhysicalMemoryArray;
 
 pub mod system;
 pub use system::System;
@@ -311,6 +312,7 @@ pub enum Structure<'buffer> {
     BaseBoard(BaseBoard<'buffer>),
     Processor(Processor<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
+    PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
 }
 
@@ -399,6 +401,9 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::System => System::try_from(structure).map(Structure::System),
             InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
             InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
+            InfoType::PhysicalMemoryArray => {
+                PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
+            }
             InfoType::MemoryDevice => {
                 MemoryDevice::try_from(structure).map(Structure::MemoryDevice)
             }
