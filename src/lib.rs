@@ -39,6 +39,7 @@ pub use baseboard::BaseBoard;
 
 pub mod processor;
 pub use processor::Processor;
+pub use processor::Cache;
 
 enum EntryPointFormat {
     V2,
@@ -311,6 +312,7 @@ pub enum Structure<'buffer> {
     System(System<'buffer>),
     BaseBoard(BaseBoard<'buffer>),
     Processor(Processor<'buffer>),
+    Cache(Cache<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
@@ -401,6 +403,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::System => System::try_from(structure).map(Structure::System),
             InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
             InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
+            InfoType::Cache => Cache::try_from(structure).map(Structure::Cache),
             InfoType::PhysicalMemoryArray => {
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
             }
