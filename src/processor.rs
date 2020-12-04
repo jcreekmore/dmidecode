@@ -85,6 +85,7 @@ pub struct Processor<'buffer> {
     pub processor_characteristics: Option<ProcessorCharacteristics>,
 }
 
+
 /// The `Cache Information` table defined in the SMBIOS specification.
 ///
 /// Optional fields will only be set if the version of the parsed SMBIOS table
@@ -561,6 +562,7 @@ impl<'buffer> Processor<'buffer> {
 }
 
 
+
 impl<'buffer> Cache<'buffer> {
     pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<Cache<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
@@ -679,9 +681,9 @@ impl From<u16> for CacheConfiguration {
 }
 
 impl From<u16> for CacheSize {
-    fn from(dword: u16) -> CacheSize {
-        let val = dword & (!(1 << 15));
-        if dword & (1 << 15) == 0 {
+    fn from(word: u16) -> CacheSize {
+        let val = word & (!(1 << 15));
+        if word & (1 << 15) == 0 {
             CacheSize::Granularity1K(val)
         } else {
             CacheSize::Granularity64K(val)
@@ -698,8 +700,8 @@ impl CacheSize {
 }
 
 impl From<u16> for CacheLevel {
-    fn from(byte: u16) -> CacheLevel {
-        match byte {
+    fn from(word: u16) -> CacheLevel {
+        match word {
             0 => CacheLevel::L1,
             1 => CacheLevel::L2,
             2 => CacheLevel::L3,
@@ -728,8 +730,8 @@ impl fmt::Display for CacheLevel {
 }
 
 impl From<u16> for CacheLocation {
-    fn from(byte: u16) -> CacheLocation {
-        match byte {
+    fn from(word: u16) -> CacheLocation {
+        match word {
             0 => CacheLocation::Internal,
             1 => CacheLocation::External,
             2 => CacheLocation::Reserved,
@@ -750,8 +752,8 @@ impl fmt::Display for CacheLocation {
 }
 
 impl From<u16> for CacheOperationalMode  {
-    fn from(byte: u16) -> CacheOperationalMode {
-        match byte {
+    fn from(word: u16) -> CacheOperationalMode {
+        match word {
             0 => CacheOperationalMode::WriteThrough,
             1 => CacheOperationalMode::WriteBack,
             2 => CacheOperationalMode::ValuesWithMemoryAddress,
@@ -889,7 +891,6 @@ impl CacheSize2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn cache_configuration() {
         let data = 0b0000_0010_1010_1010;
