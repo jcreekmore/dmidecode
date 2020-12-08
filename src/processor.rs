@@ -67,8 +67,11 @@ pub struct Processor<'buffer> {
     pub processor_type: ProcessorType,
     /// Processor Family field
     pub processor_family: ProcessorFamily,
+    /// String number of Processor Manufacturer
     pub processor_manufacturer: &'buffer str,
+    /// Raw processor identification data
     pub processor_id: u64,
+    /// String number describing the Processor
     pub processor_version: &'buffer str,
     pub voltage: u8,
     pub external_clock: u16,
@@ -338,6 +341,28 @@ pub enum ProcessorFamily {
     ForFutureUse,
     ProcessorFamily2,
 }
+
+/// Two forms of information can be specified by the SMBIOS in this field, dependent on the value
+/// present in bit 7 (the most-significant bit). If bit 7 is 0 (legacy mode), the remaining bits of
+/// the field represent the specific voltages that the processor socket can accept. If bit 7 is set
+/// to 1, the remaining seven bits of the field are set to contain the processor’s current voltage
+/// times 10.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum Voltage {
+    Legacy(VoltageLegacy),
+    Current(u8),
+    Undefined(u8),
+}
+
+bitflags! {
+    /// Voltage Capability. A set bit indicates that the voltage is supported
+    pub struct VoltageLegacy: u8 {
+        const VOLTAGE_CAPABILITY_5V0  = 0b0000_0001;
+        const VOLTAGE_CAPABILITY_3V3  = 0b0000_0010;
+        const VOLTAGE_CAPABILITY_2V9  = 0b0000_0100;
+    }
+}
+
 
 /// The `Cache Information` table defined in the SMBIOS specification.
 ///
@@ -1292,6 +1317,37 @@ impl fmt::Display for ProcessorFamily {
     }
 }
 
+impl From<u8> for Voltage {
+    fn from(byte: u8) -> Self {
+        if (byte & 0b1000_0000) == 0 {
+            if (byte & 0b0111_1000) != 0 {
+                Self::Undefined(byte)
+            } else {
+                Self::Legacy(VoltageLegacy::from_bits_truncate(byte))
+            }
+        } else {
+            Self::Current(byte & 0b0111_1111)
+        }
+    }
+}
+impl fmt::Display for Voltage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Current(v)     => write!(f, "Current voltage: {:.1} V", *v as f32 / 10.0),
+            Self::Undefined(n)          => write!(f, "Undefined {:#b}", n),
+            Self::Legacy(legacy)    => {
+                let s55 = if legacy.contains(VoltageLegacy::VOLTAGE_CAPABILITY_5V0) { "5.5V " } else { "" };
+                let s33 = if legacy.contains(VoltageLegacy::VOLTAGE_CAPABILITY_3V3) { "3.3V " } else { "" };
+                let s29 = if legacy.contains(VoltageLegacy::VOLTAGE_CAPABILITY_2V9) { "2.9V " } else { "" };
+                if s55.is_empty() && s33.is_empty() && s29.is_empty() {
+                    write!(f, "Voltage capability unknown")
+                } else {
+                    write!(f, "Processor socket accept: {}{}{}", s55, s33, s29)
+                }
+            },
+        }
+    }
+}
 
 impl<'buffer> Cache<'buffer> {
     pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<Cache<'buffer>, super::MalformedStructureError> {
@@ -1664,7 +1720,31 @@ mod tests {
             assert_eq!(s, format!("{}", e));
         }
     }
-
+    #[test]
+    fn processor_voltage() {
+        let test_data = [
+            (0b0000_0000, Voltage::Legacy(VoltageLegacy::empty()), "Voltage capability unknown"),
+            (0b0000_0001, Voltage::Legacy(VoltageLegacy::VOLTAGE_CAPABILITY_5V0), "Processor socket accept: 5.5V "),
+            (0b0000_0010, Voltage::Legacy(VoltageLegacy::VOLTAGE_CAPABILITY_3V3), "Processor socket accept: 3.3V "),
+            (
+                0b0000_0111,
+                Voltage::Legacy(
+                    VoltageLegacy::VOLTAGE_CAPABILITY_5V0 |
+                    VoltageLegacy::VOLTAGE_CAPABILITY_3V3 |
+                    VoltageLegacy::VOLTAGE_CAPABILITY_2V9
+                ),
+                "Processor socket accept: 5.5V 3.3V 2.9V "
+            ),
+            (0b0000_1000, Voltage::Undefined(8), "Undefined 0b1000"),
+            (0b1001_0010, Voltage::Current(18), "Current voltage: 1.8 V"),
+            (0b1111_1111, Voltage::Current(127), "Current voltage: 12.7 V"),
+        ];
+        for (byte, sample, display) in test_data.iter() {
+            let result = Voltage::from(*byte);
+            assert_eq!(*sample, result, "Byte: {:#b}", byte);
+            assert_eq!(format!("{}", result), format!("{}", display), "Byte: {:#b}", byte);
+        }
+    }
     #[test]
     fn cache_configuration() {
         let data = 0b0000_0010_1010_1010;
