@@ -73,21 +73,41 @@ pub struct Processor<'buffer> {
     pub processor_id: u64,
     /// String number describing the Processor
     pub processor_version: &'buffer str,
+    /// Voltage
     pub voltage: u8,
+    /// External Clock Frequency, in MHz. If the value is unknown, the field is set to 0.
     pub external_clock: u16,
+    /// Maximum processor speed (in MHz) supported by the system for this processor socket
     pub max_speed: u16,
+    /// This field identifies the processor's speed at system boot; the processor may support more
+    /// than one speed.
     pub current_speed: u16,
+    /// Status
     pub status: ProcessorStatus,
-    pub processor_upgrade: u8,
+    /// Processor Upgrade field
+    pub processor_upgrade: ProcessorUpgrade,
+    /// Handle of a Cache Information structure that defines the attributes of the primary
+    /// (Level 1) cache for this processor
     pub l1_cache_handle: Option<u16>,
+    /// Handle of a Cache Information structure that defines the attributes of the secondary
+    /// (Level 2) cache for this processor
     pub l2_cache_handle: Option<u16>,
+    /// Handle of a Cache Information structure that defines the attributes of the tertiary
+    /// (Level 3) cache for this processor
     pub l3_cache_handle: Option<u16>,
+    /// String number for the serial number of this processor
     pub serial_number: Option<&'buffer str>,
+    /// String number for the asset tag of this processor
     pub asset_tag: Option<&'buffer str>,
+    /// String number for the part number of this processor
     pub part_number: Option<&'buffer str>,
+    /// Number of cores per processor socket
     pub core_count: Option<u16>,
+    /// Number of enabled cores per processor socket
     pub core_enabled: Option<u16>,
+    /// Number of threads per processor socket
     pub thread_count: Option<u16>,
+    /// Defines which functions the processor supports
     pub processor_characteristics: Option<ProcessorCharacteristics>,
 }
 
@@ -363,6 +383,72 @@ bitflags! {
     }
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum ProcessorUpgrade {
+    Other,
+    Unknown,
+    DaughterBoard,
+    ZIFSocket,
+    ReplaceablePiggyBack,
+    None,
+    LIFSocket,
+    Slot1,
+    Slot2,
+    Socket370,
+    SlotA,
+    SlotM,
+    Socket423,
+    SocketA,
+    Socket478,
+    Socket754,
+    Socket940,
+    Socket939,
+    SocketmPGA604,
+    SocketLGA771,
+    SocketLGA775,
+    SocketS1,
+    SocketAM2,
+    SocketF,
+    SocketLGA1366,
+    SocketG34,
+    SocketAM3,
+    SocketC32,
+    SocketLGA1156,
+    SocketLGA1567,
+    SocketPGA988A,
+    SocketBGA1288,
+    SocketrPGA988B,
+    SocketBGA1023,
+    SocketBGA1224,
+    SocketLGA1155,
+    SocketLGA1356,
+    SocketLGA2011,
+    SocketFS1,
+    SocketFS2,
+    SocketFM1,
+    SocketFM2,
+    SocketLGA2011Three,
+    SocketLGA1356Three,
+    SocketLGA1150,
+    SocketBGA1168,
+    SocketBGA1234,
+    SocketBGA1364,
+    SocketAM4,
+    SocketLGA1151,
+    SocketBGA1356,
+    SocketBGA1440,
+    SocketBGA1515,
+    SocketLGA3647,
+    SocketSP3,
+    SocketSP3r2,
+    SocketLGA2066,
+    SocketBGA1392,
+    SocketBGA1510,
+    SocketBGA1528,
+    SocketLGA4189,
+    SocketLGA1200,
+    Undefined(u8),
+}
 
 /// The `Cache Information` table defined in the SMBIOS specification.
 ///
@@ -1349,6 +1435,145 @@ impl fmt::Display for Voltage {
     }
 }
 
+impl From<u8> for ProcessorUpgrade {
+    fn from(byte: u8) -> Self {
+        match byte {
+            0x01 => ProcessorUpgrade::Other,
+            0x02 => ProcessorUpgrade::Unknown,
+            0x03 => ProcessorUpgrade::DaughterBoard,
+            0x04 => ProcessorUpgrade::ZIFSocket,
+            0x05 => ProcessorUpgrade::ReplaceablePiggyBack,
+            0x06 => ProcessorUpgrade::None,
+            0x07 => ProcessorUpgrade::LIFSocket,
+            0x08 => ProcessorUpgrade::Slot1,
+            0x09 => ProcessorUpgrade::Slot2,
+            0x0a => ProcessorUpgrade::Socket370,
+            0x0b => ProcessorUpgrade::SlotA,
+            0x0c => ProcessorUpgrade::SlotM,
+            0x0d => ProcessorUpgrade::Socket423,
+            0x0e => ProcessorUpgrade::SocketA,
+            0x0f => ProcessorUpgrade::Socket478,
+            0x10 => ProcessorUpgrade::Socket754,
+            0x11 => ProcessorUpgrade::Socket940,
+            0x12 => ProcessorUpgrade::Socket939,
+            0x13 => ProcessorUpgrade::SocketmPGA604,
+            0x14 => ProcessorUpgrade::SocketLGA771,
+            0x15 => ProcessorUpgrade::SocketLGA775,
+            0x16 => ProcessorUpgrade::SocketS1,
+            0x17 => ProcessorUpgrade::SocketAM2,
+            0x18 => ProcessorUpgrade::SocketF,
+            0x19 => ProcessorUpgrade::SocketLGA1366,
+            0x1a => ProcessorUpgrade::SocketG34,
+            0x1b => ProcessorUpgrade::SocketAM3,
+            0x1c => ProcessorUpgrade::SocketC32,
+            0x1d => ProcessorUpgrade::SocketLGA1156,
+            0x1e => ProcessorUpgrade::SocketLGA1567,
+            0x1f => ProcessorUpgrade::SocketPGA988A,
+            0x20 => ProcessorUpgrade::SocketBGA1288,
+            0x21 => ProcessorUpgrade::SocketrPGA988B,
+            0x22 => ProcessorUpgrade::SocketBGA1023,
+            0x23 => ProcessorUpgrade::SocketBGA1224,
+            0x24 => ProcessorUpgrade::SocketLGA1155,
+            0x25 => ProcessorUpgrade::SocketLGA1356,
+            0x26 => ProcessorUpgrade::SocketLGA2011,
+            0x27 => ProcessorUpgrade::SocketFS1,
+            0x28 => ProcessorUpgrade::SocketFS2,
+            0x29 => ProcessorUpgrade::SocketFM1,
+            0x2a => ProcessorUpgrade::SocketFM2,
+            0x2b => ProcessorUpgrade::SocketLGA2011Three,
+            0x2c => ProcessorUpgrade::SocketLGA1356Three,
+            0x2d => ProcessorUpgrade::SocketLGA1150,
+            0x2e => ProcessorUpgrade::SocketBGA1168,
+            0x2f => ProcessorUpgrade::SocketBGA1234,
+            0x30 => ProcessorUpgrade::SocketBGA1364,
+            0x31 => ProcessorUpgrade::SocketAM4,
+            0x32 => ProcessorUpgrade::SocketLGA1151,
+            0x33 => ProcessorUpgrade::SocketBGA1356,
+            0x34 => ProcessorUpgrade::SocketBGA1440,
+            0x35 => ProcessorUpgrade::SocketBGA1515,
+            0x36 => ProcessorUpgrade::SocketLGA3647,
+            0x37 => ProcessorUpgrade::SocketSP3,
+            0x38 => ProcessorUpgrade::SocketSP3r2,
+            0x39 => ProcessorUpgrade::SocketLGA2066,
+            0x3a => ProcessorUpgrade::SocketBGA1392,
+            0x3b => ProcessorUpgrade::SocketBGA1510,
+            0x3c => ProcessorUpgrade::SocketBGA1528,
+            0x3d => ProcessorUpgrade::SocketLGA4189,
+            0x3e => ProcessorUpgrade::SocketLGA1200,
+            n    => ProcessorUpgrade::Undefined(n),
+        }
+    }
+}
+impl fmt::Display for ProcessorUpgrade {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ProcessorUpgrade::Other                 => write!(f, "Other"),
+            ProcessorUpgrade::Unknown               => write!(f, "Unknown"),
+            ProcessorUpgrade::DaughterBoard         => write!(f, "Daughter Board"),
+            ProcessorUpgrade::ZIFSocket             => write!(f, "ZIF Socket"),
+            ProcessorUpgrade::ReplaceablePiggyBack  => write!(f, "Replaceable Piggy Back"),
+            ProcessorUpgrade::None                  => write!(f, "None"),
+            ProcessorUpgrade::LIFSocket             => write!(f, "LIF Socket"),
+            ProcessorUpgrade::Slot1                 => write!(f, "Slot 1"),
+            ProcessorUpgrade::Slot2                 => write!(f, "Slot 2"),
+            ProcessorUpgrade::Socket370             => write!(f, "370-pin socket"),
+            ProcessorUpgrade::SlotA                 => write!(f, "Slot A"),
+            ProcessorUpgrade::SlotM                 => write!(f, "Slot M"),
+            ProcessorUpgrade::Socket423             => write!(f, "Socket 423"),
+            ProcessorUpgrade::SocketA               => write!(f, "Socket A (Socket 462)"),
+            ProcessorUpgrade::Socket478             => write!(f, "Socket 478"),
+            ProcessorUpgrade::Socket754             => write!(f, "Socket 754"),
+            ProcessorUpgrade::Socket940             => write!(f, "Socket 940"),
+            ProcessorUpgrade::Socket939             => write!(f, "Socket 939"),
+            ProcessorUpgrade::SocketmPGA604         => write!(f, "Socket mPGA604"),
+            ProcessorUpgrade::SocketLGA771          => write!(f, "Socket LGA771"),
+            ProcessorUpgrade::SocketLGA775          => write!(f, "Socket LGA775"),
+            ProcessorUpgrade::SocketS1              => write!(f, "Socket S1"),
+            ProcessorUpgrade::SocketAM2             => write!(f, "Socket AM2"),
+            ProcessorUpgrade::SocketF               => write!(f, "Socket F (1207)"),
+            ProcessorUpgrade::SocketLGA1366         => write!(f, "Socket LGA1366"),
+            ProcessorUpgrade::SocketG34             => write!(f, "Socket G34"),
+            ProcessorUpgrade::SocketAM3             => write!(f, "Socket AM3"),
+            ProcessorUpgrade::SocketC32             => write!(f, "Socket C32"),
+            ProcessorUpgrade::SocketLGA1156         => write!(f, "Socket LGA1156"),
+            ProcessorUpgrade::SocketLGA1567         => write!(f, "Socket LGA1567"),
+            ProcessorUpgrade::SocketPGA988A         => write!(f, "Socket PGA988A"),
+            ProcessorUpgrade::SocketBGA1288         => write!(f, "Socket BGA1288"),
+            ProcessorUpgrade::SocketrPGA988B        => write!(f, "Socket rPGA988B"),
+            ProcessorUpgrade::SocketBGA1023         => write!(f, "Socket BGA1023"),
+            ProcessorUpgrade::SocketBGA1224         => write!(f, "Socket BGA1224"),
+            ProcessorUpgrade::SocketLGA1155         => write!(f, "Socket LGA1155"),
+            ProcessorUpgrade::SocketLGA1356         => write!(f, "Socket LGA1356"),
+            ProcessorUpgrade::SocketLGA2011         => write!(f, "Socket LGA2011"),
+            ProcessorUpgrade::SocketFS1             => write!(f, "Socket FS1"),
+            ProcessorUpgrade::SocketFS2             => write!(f, "Socket FS2"),
+            ProcessorUpgrade::SocketFM1             => write!(f, "Socket FM1"),
+            ProcessorUpgrade::SocketFM2             => write!(f, "Socket FM2"),
+            ProcessorUpgrade::SocketLGA2011Three    => write!(f, "Socket LGA2011-3"),
+            ProcessorUpgrade::SocketLGA1356Three    => write!(f, "Socket LGA1356-3"),
+            ProcessorUpgrade::SocketLGA1150         => write!(f, "Socket LGA1150"),
+            ProcessorUpgrade::SocketBGA1168         => write!(f, "Socket BGA1168"),
+            ProcessorUpgrade::SocketBGA1234         => write!(f, "Socket BGA1234"),
+            ProcessorUpgrade::SocketBGA1364         => write!(f, "Socket BGA1364"),
+            ProcessorUpgrade::SocketAM4             => write!(f, "Socket AM4"),
+            ProcessorUpgrade::SocketLGA1151         => write!(f, "Socket LGA1151"),
+            ProcessorUpgrade::SocketBGA1356         => write!(f, "Socket BGA1356"),
+            ProcessorUpgrade::SocketBGA1440         => write!(f, "Socket BGA1440"),
+            ProcessorUpgrade::SocketBGA1515         => write!(f, "Socket BGA1515"),
+            ProcessorUpgrade::SocketLGA3647         => write!(f, "Socket LGA3647-1"),
+            ProcessorUpgrade::SocketSP3             => write!(f, "Socket SP3"),
+            ProcessorUpgrade::SocketSP3r2           => write!(f, "Socket SP3r2"),
+            ProcessorUpgrade::SocketLGA2066         => write!(f, "Socket LGA2066"),
+            ProcessorUpgrade::SocketBGA1392         => write!(f, "Socket BGA1392"),
+            ProcessorUpgrade::SocketBGA1510         => write!(f, "Socket BGA1510"),
+            ProcessorUpgrade::SocketBGA1528         => write!(f, "Socket BGA1528"),
+            ProcessorUpgrade::SocketLGA4189         => write!(f, "Socket LGA4189"),
+            ProcessorUpgrade::SocketLGA1200         => write!(f, "Socket LGA1200"),
+            ProcessorUpgrade::Undefined(n)          => write!(f, "Undefined {}", n),
+        }
+    }
+}
+
 impl<'buffer> Cache<'buffer> {
     pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<Cache<'buffer>, super::MalformedStructureError> {
         #[repr(C)]
@@ -1743,6 +1968,23 @@ mod tests {
             let result = Voltage::from(*byte);
             assert_eq!(*sample, result, "Byte: {:#b}", byte);
             assert_eq!(format!("{}", result), format!("{}", display), "Byte: {:#b}", byte);
+        }
+    }
+    #[test]
+    fn processor_upgrade() {
+        use super::ProcessorUpgrade::*;
+        for i in 0..=0xFF {
+            let (e, s) = match i {
+                0x01 => (Other, "Other".into()),
+                0x13 => (SocketmPGA604, "Socket mPGA604".into()),
+                0x18 => (SocketF, "Socket F (1207)".into()),
+                0x2B => (SocketLGA2011Three, "Socket LGA2011-3".into()),
+                0x3E => (SocketLGA1200, "Socket LGA1200".into()),
+                n @ 0x3F..=0xFF => (Undefined(n), format!("Undefined {}", n)),
+                _ => continue,
+            };
+            assert_eq!(e, i.into(), "{:#x}", i);
+            assert_eq!(s, format!("{}", e));
         }
     }
     #[test]
