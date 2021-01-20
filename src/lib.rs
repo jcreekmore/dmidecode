@@ -106,7 +106,7 @@ impl EntryPoint {
     /// use dmidecode::EntryPoint;
     /// # fn try_main() -> Result<(), Error> {
     /// #
-    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
+    /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmidecode.bin");
     ///
     /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
     /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address() as usize..]) {
@@ -132,7 +132,7 @@ impl EntryPoint {
     /// # extern crate dmidecode;
     /// use dmidecode::EntryPoint;
     ///
-    /// const ENTRY_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
+    /// const ENTRY_BIN: &'static [u8] = include_bytes!("../tests/data/entry.bin");
     ///
     /// let entry_point = EntryPoint::search(ENTRY_BIN);
     /// ```
@@ -511,13 +511,13 @@ extern crate std;
 mod tests {
     use super::*;
 
-    const DMIDECODE_BIN: &'static [u8] = include_bytes!("./test-data/dmidecode.bin");
-    const ENTRY_V2_BIN: &'static [u8] = include_bytes!("./test-data/entry.bin");
-    const DMI_V2_BIN: &'static [u8] = include_bytes!("./test-data/dmi.bin");
-    const ENTRY_V3_BIN: &'static [u8] = include_bytes!("./test-data/entry_v3.bin");
-    const DMI_V3_BIN: &'static [u8] = include_bytes!("./test-data/dmi_v3.bin");
-    const DMI_V3_SHORT: &'static [u8] = include_bytes!("./test-data/dmi_v3_short.bin");
-    const ENTRY_V3_SHORT: &'static [u8] = include_bytes!("./test-data/entry_v3_short.bin");
+    const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmidecode.bin");
+    const ENTRY_V2_BIN: &'static [u8] = include_bytes!("../tests/data/entry.bin");
+    const DMI_V2_BIN: &'static [u8] = include_bytes!("../tests/data/dmi.bin");
+    const ENTRY_V3_BIN: &'static [u8] = include_bytes!("../tests/data/entry_v3.bin");
+    const DMI_V3_BIN: &'static [u8] = include_bytes!("../tests/data/dmi_v3.bin");
+    const DMI_V3_SHORT: &'static [u8] = include_bytes!("../tests/data/dmi_v3_short.bin");
+    const ENTRY_V3_SHORT: &'static [u8] = include_bytes!("../tests/data/entry_v3_short.bin");
 
     #[test]
     fn found_smbios_entry() {
