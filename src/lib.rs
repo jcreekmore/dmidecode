@@ -1,13 +1,19 @@
 #![no_std]
 
-#[macro_use]
-extern crate bitflags;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
 
+#[macro_use]
+extern crate bitflags;
+#[cfg(test)]
+extern crate lazy_static;
+#[cfg(test)]
+extern crate pretty_assertions;
+
 use core::mem;
 use core::str;
+use core::fmt;
 
 #[macro_export]
 #[doc(hidden)]
@@ -27,6 +33,12 @@ macro_rules! lib_ensure {
     };
 }
 
+pub mod bitfield;
+
+pub mod bios;
+pub use bios::Bios;
+pub use bios::BiosLanguage;
+
 pub mod memory;
 pub use memory::MemoryDevice;
 pub use memory::PhysicalMemoryArray;
@@ -36,6 +48,9 @@ pub use system::System;
 
 pub mod baseboard;
 pub use baseboard::BaseBoard;
+
+pub mod enclosure;
+pub use enclosure::Enclosure;
 
 pub mod processor;
 pub use processor::Processor;
@@ -195,6 +210,7 @@ impl EntryPoint {
     }
 }
 
+
 ///
 /// An SMBIOSv2 `EntryPoint` structure.
 ///
@@ -309,10 +325,13 @@ pub struct Structures<'buffer> {
 /// Variant structure for decoding the SMBIOS table types.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Structure<'buffer> {
+    Bios(Bios<'buffer>),
     System(System<'buffer>),
     BaseBoard(BaseBoard<'buffer>),
+    Enclosure(Enclosure<'buffer>),
     Processor(Processor<'buffer>),
     Cache(Cache<'buffer>),
+    BiosLanguage(BiosLanguage<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
@@ -400,10 +419,13 @@ impl<'buffer> Iterator for Structures<'buffer> {
         }
 
         Some(match structure.info {
+            InfoType::Bios => Bios::try_from(structure).map(Structure::Bios),
             InfoType::System => System::try_from(structure).map(Structure::System),
             InfoType::BaseBoard => BaseBoard::try_from(structure).map(Structure::BaseBoard),
+            InfoType::Enclosure => Enclosure::try_from(structure).map(Structure::Enclosure),
             InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
             InfoType::Cache => Cache::try_from(structure).map(Structure::Cache),
+            InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
             InfoType::PhysicalMemoryArray => {
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
             }
@@ -473,6 +495,7 @@ pub enum InfoType {
     Processor,
     Cache,
     SystemSlots,
+    BiosLanguage,
     PhysicalMemoryArray,
     MemoryDevice,
     MemoryArrayMappedAddress,
@@ -492,6 +515,7 @@ impl From<u8> for InfoType {
             4 => InfoType::Processor,
             7 => InfoType::Cache,
             9 => InfoType::SystemSlots,
+            13 => InfoType::BiosLanguage,
             16 => InfoType::PhysicalMemoryArray,
             17 => InfoType::MemoryDevice,
             19 => InfoType::MemoryArrayMappedAddress,
@@ -502,6 +526,61 @@ impl From<u8> for InfoType {
         }
     }
 }
+impl fmt::Display for InfoType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InfoType::Bios                      => write!(f, "BIOS Information"),
+            InfoType::System                    => write!(f, "System Information"),
+            InfoType::BaseBoard                 => write!(f, "Baseboard (or Module) Information"),
+            InfoType::Enclosure                 => write!(f, "System Enclosure or Chassis"),
+            InfoType::Processor                 => write!(f, "Processor Information"),
+            //InfoType::                          => write!(f, "Memory Controller Information"),
+            //InfoType::                          => write!(f, "Memory Module Information"),
+            InfoType::Cache                     => write!(f, "Cache Information"),
+            //InfoType::                          => write!(f, "Port Connector Information"),
+            InfoType::SystemSlots               => write!(f, "System Slots"),
+            //InfoType::                          => write!(f, "On Board Devices Information"),
+            //InfoType::                          => write!(f, "OEM Strings"),
+            //InfoType::                          => write!(f, "System Configuration Options"),
+            InfoType::BiosLanguage              => write!(f, "BIOS Language Information"),
+            //InfoType::                          => write!(f, "Group Associations"),
+            //InfoType::                          => write!(f, "System Event Log"),
+            InfoType::PhysicalMemoryArray       => write!(f, "Physical Memory Array"),
+            InfoType::MemoryDevice              => write!(f, "Memory Device"),
+            //InfoType::                          => write!(f, "32-Bit Memory Error Information"),
+            InfoType::MemoryArrayMappedAddress  => write!(f, "Memory Array Mapped Address"),
+            InfoType::MemoryDeviceMappedAddress => write!(f, "Memory Device Mapped Address"),
+            //InfoType::                          => write!(f, "Built-in Pointing Device"),
+            //InfoType::                          => write!(f, "Portable Battery"),
+            //InfoType::                          => write!(f, "System Reset"),
+            //InfoType::                          => write!(f, "Hardware Security"),
+            //InfoType::                          => write!(f, "System Power Controls"),
+            //InfoType::                          => write!(f, "Voltage Probe"),
+            //InfoType::                          => write!(f, "Cooling Device"),
+            //InfoType::                          => write!(f, "Temperature Probe"),
+            //InfoType::                          => write!(f, "Electrical Current Probe"),
+            //InfoType::                          => write!(f, "Out-of-Band Remote Access"),
+            //InfoType::                          => write!(f, "Boot Integrity Services (BIS) Entry Point"),
+            InfoType::SystemBoot                => write!(f, "System Boot Information"),
+            //InfoType::                          => write!(f, "64-Bit Memory Error Information"),
+            //InfoType::                          => write!(f, "Management Device"),
+            //InfoType::                          => write!(f, "Management Device Component"),
+            //InfoType::                          => write!(f, "Management Device Threshold Data"),
+            //InfoType::                          => write!(f, "Memory Channel"),
+            //InfoType::                          => write!(f, "IPMI Device Information"),
+            //InfoType::                          => write!(f, "System Power Supply"),
+            //InfoType::                          => write!(f, "Additional Information"),
+            //InfoType::                          => write!(f, "Onboard Devices Extended Information"),
+            //InfoType::                          => write!(f, "Management Controller Host Interface"),
+            //InfoType::                          => write!(f, "TPM Device"),
+            //InfoType::                          => write!(f, "Processor Additional Information"),
+            //InfoType::                          => write!(f, "Inactive"),
+            InfoType::End                       => write!(f, "End-of-Table"),
+            InfoType::Oem(t)                    => write!(f, "OEM: {}", t),
+        }
+    }
+}
+
 
 #[cfg(test)]
 #[macro_use]

@@ -1,3 +1,5 @@
+use core::fmt;
+
 /// The baseboard type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -35,6 +37,26 @@ impl From<u8> for BoardType {
             12 => BoardType::ProcessorIoModule,
             13 => BoardType::InterconnectBoard,
             t => BoardType::Undefined(t),
+        }
+    }
+}
+impl fmt::Display for BoardType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BoardType::Unknown                => write!(f, "Unknown"),
+            BoardType::Other                  => write!(f, "Other"),
+            BoardType::ServerBlade            => write!(f, "Server Blade"),
+            BoardType::ConnectivitySwitch     => write!(f, "Connectivity Switch"),
+            BoardType::SystemManagementModule => write!(f, "System Management Module"),
+            BoardType::ProcessorModule        => write!(f, "Processor Module"),
+            BoardType::IoModule               => write!(f, "I/O Module"),
+            BoardType::MemoryModule           => write!(f, "Memory Module"),
+            BoardType::DaughterBoard          => write!(f, "Daughter board"),
+            BoardType::MotherBoard            => write!(f, "Motherboard (includes processor, memory, and I/O)"),
+            BoardType::ProcessorMemoryModule  => write!(f, "Processor/Memory Module"),
+            BoardType::ProcessorIoModule      => write!(f, "Processor/IO Module"),
+            BoardType::InterconnectBoard      => write!(f, "Interconnect board"),
+            BoardType::Undefined(t)           => write!(f, "Undefined: {}", t),
         }
     }
 }
