@@ -103,7 +103,6 @@ pub trait BitField<'a> {
 /// # }
 /// ```
 /// It is mandatory to have trailing comma on last item!
-#[macro_export]
 macro_rules! layout {
     // Initial call
     (length = $len:expr; $($tail:tt)*) => {

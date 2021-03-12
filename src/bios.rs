@@ -1,10 +1,12 @@
-//! BIOS Information
+//! BIOS related information
 //!
-//! Includes information about Type 0 and BIOS Type 13 SMBIOS structures
+//! [BIOS Information](Bios "Bios") (Type 0) and [BIOS Language Information](BiosLanguage
+//! "BiosLanguage") (Type 13)
+
 use core::fmt;
 
 use crate::bitfield::{BitField, FlagType, Layout};
-use crate::{MalformedStructureError, RawStructure, layout};
+use crate::{MalformedStructureError, RawStructure,};
 
 /// BIOS Information (Type 0)
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]

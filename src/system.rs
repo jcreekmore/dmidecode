@@ -1,3 +1,13 @@
+//! System related information
+//!
+//! This module handle following types:
+//! - [System](System "System") (Type 1)
+////! - [System Configuration Options](SystemConfigurationOptions "SystemConfigurationOptions") (Type 12)
+////! - [System Event Log](SystemEventLog "SystemEventLog") (Type 15)
+////! - [System Reset](SystemReset "SystemReset") (Type 23)
+////! - [System Boot](SystemBoot "SystemBoot") (Type 32)
+
+
 /// The wakeup type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]

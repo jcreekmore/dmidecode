@@ -1,3 +1,9 @@
+//! Processor related information
+//!
+//! This module handle [Processor](Processor "Processor") (Type 4) and [Cache](Cache
+//! "Cache") (Type 7)
+
+
 use core::fmt;
 
 
