@@ -1,3 +1,9 @@
+//! Baseboard related information
+//!
+//! This module handle following types:
+//! - [Baseboard](BaseBoard "BaseBoard") (Type 2)
+////! - [On Board Devices](OnBoardDevices "OnBoardDevices") (Type 10)
+////! - [Onboard Devices Extended Information](OnboardDevicesExtended "OnboardDevicesExtended") (Type 41)
 use core::fmt;
 
 /// The baseboard type defined in the SMBIOS specification.

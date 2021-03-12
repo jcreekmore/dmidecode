@@ -1,3 +1,12 @@
+//! Memory related information
+//!
+//! This module handle following types:
+////! - [Memory Controller Information](MemoryController "MemoryController") (Type 5)
+////! - [Memory Module Information](MemoryModule "MemoryModule") (Type 6)
+//! - [Physical Memory Array](PhysicalMemoryArray "PhysicalMemoryArray") (Type 16)
+//! - [Memory Device](MemoryDevice "MemoryDevice") (Type 17
+
+
 use super::MalformedStructureError;
 use core::convert::TryInto;
 use core::fmt;
