@@ -12,7 +12,7 @@
 //! - Memory Controller Information (Type 5, Obsolete)
 //! - Memory Module Information (Type 6, Obsolete)
 //! - [Cache Information](processor::Cache "processor::Cache") (Type 7)
-//! - Port Connector Information (Type 8)
+//! - [Port Connector Information](connector::PortConnector "connector::PortConnector") (Type 8)
 //! - System Slots (Type 9)
 //! - On Board Devices Information (Type 10, Obsolete)
 //! - OEM Strings (Type 11)
@@ -111,6 +111,9 @@ pub use enclosure::Enclosure;
 pub mod processor;
 pub use processor::Processor;
 pub use processor::Cache;
+
+pub mod connector;
+pub use connector::PortConnector;
 
 enum EntryPointFormat {
     V2,
@@ -387,6 +390,7 @@ pub enum Structure<'buffer> {
     Enclosure(Enclosure<'buffer>),
     Processor(Processor<'buffer>),
     Cache(Cache<'buffer>),
+    PortConnector(PortConnector<'buffer>),
     BiosLanguage(BiosLanguage<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
@@ -481,6 +485,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::Enclosure => Enclosure::try_from(structure).map(Structure::Enclosure),
             InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
             InfoType::Cache => Cache::try_from(structure).map(Structure::Cache),
+            InfoType::PortConnector => PortConnector::try_from(structure).map(Structure::PortConnector),
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
             InfoType::PhysicalMemoryArray => {
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
@@ -550,6 +555,7 @@ pub enum InfoType {
     Enclosure,
     Processor,
     Cache,
+    PortConnector,
     SystemSlots,
     BiosLanguage,
     PhysicalMemoryArray,
@@ -570,6 +576,7 @@ impl From<u8> for InfoType {
             3 => InfoType::Enclosure,
             4 => InfoType::Processor,
             7 => InfoType::Cache,
+            8 => InfoType::PortConnector,
             9 => InfoType::SystemSlots,
             13 => InfoType::BiosLanguage,
             16 => InfoType::PhysicalMemoryArray,
@@ -593,7 +600,7 @@ impl fmt::Display for InfoType {
             //InfoType::                          => write!(f, "Memory Controller Information"),
             //InfoType::                          => write!(f, "Memory Module Information"),
             InfoType::Cache                     => write!(f, "Cache Information"),
-            //InfoType::                          => write!(f, "Port Connector Information"),
+            InfoType::PortConnector             => write!(f, "Port Connector Information"),
             InfoType::SystemSlots               => write!(f, "System Slots"),
             //InfoType::                          => write!(f, "On Board Devices Information"),
             //InfoType::                          => write!(f, "OEM Strings"),
