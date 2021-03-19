@@ -13,7 +13,7 @@
 //! - Memory Module Information (Type 6, Obsolete)
 //! - [Cache Information](processor::Cache "processor::Cache") (Type 7)
 //! - [Port Connector Information](connector::PortConnector "connector::PortConnector") (Type 8)
-//! - System Slots (Type 9)
+//! - [System Slots](slot::SystemSlots "slot::SystemSlots") (Type 9)
 //! - On Board Devices Information (Type 10, Obsolete)
 //! - OEM Strings (Type 11)
 //! - System Configuration Options (Type 12)
@@ -116,6 +116,9 @@ pub use processor::Cache;
 
 pub mod connector;
 pub use connector::PortConnector;
+
+pub mod slot;
+pub use slot::SystemSlots;
 
 enum EntryPointFormat {
     V2,
@@ -393,6 +396,7 @@ pub enum Structure<'buffer> {
     Processor(Processor<'buffer>),
     Cache(Cache<'buffer>),
     PortConnector(PortConnector<'buffer>),
+    SystemSlots(SystemSlots<'buffer>),
     BiosLanguage(BiosLanguage<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
@@ -496,6 +500,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::Processor => Processor::try_from(structure).map(Structure::Processor),
             InfoType::Cache => Cache::try_from(structure).map(Structure::Cache),
             InfoType::PortConnector => PortConnector::try_from(structure).map(Structure::PortConnector),
+            InfoType::SystemSlots => SystemSlots::try_from(structure).map(Structure::SystemSlots),
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
             InfoType::PhysicalMemoryArray => {
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
@@ -590,7 +595,7 @@ impl<'buffer> RawStructure<'buffer> {
             })
         }
     }
-    /// Get value by offset declared in SMBIOS Reference Specification
+    /// Get value by offset declared in SMBIOS Reference Specification.\
     /// Type meaning data length is mandatory:
     /// - *BYTE*: u8
     /// - *WORD*: u16
