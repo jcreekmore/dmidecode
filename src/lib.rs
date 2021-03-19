@@ -69,6 +69,8 @@ extern crate pretty_assertions;
 use core::mem;
 use core::str;
 use core::fmt;
+use core::convert::TryInto;
+use core::array::TryFromSliceError;
 
 #[macro_export]
 #[doc(hidden)]
@@ -415,8 +417,16 @@ pub enum MalformedStructureError {
         _0, _1, _2
     )]
     InvalidStringIndex(InfoType, u16, u8),
+    /// This error returned when a conversion from a slice to an array fails.
     #[fail(display = "{}", _0)]
     InvalidSlice(#[fail(cause)] core::array::TryFromSliceError),
+    /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
+    /// specification
+    #[fail(
+        display = "Formatted section length of structure {:?} should be {} bytes",
+        _0, _1
+    )]
+    InvalidFormattedSectionLength(InfoType, &'static str),
 }
 
 #[doc(hidden)]
@@ -517,6 +527,42 @@ pub struct RawStructure<'buffer> {
     strings: &'buffer [u8],
 }
 
+/// General trait for slice -> unsigned conversion
+pub trait TryFromBytes<'a, T>: Sized {
+    fn try_from_bytes(&'a [u8]) -> Result<Self, TryFromSliceError>;
+}
+
+impl<'a> TryFromBytes<'a, u8> for u8 {
+    fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
+        bytes.try_into()
+            .map(|arr| u8::from_le_bytes(arr))
+    }
+}
+impl<'a> TryFromBytes<'a, u16> for u16 {
+    fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
+        bytes.try_into()
+            .map(|arr| u16::from_le_bytes(arr))
+    }
+}
+impl<'a> TryFromBytes<'a, u32> for u32 {
+    fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
+        bytes.try_into()
+            .map(|arr| u32::from_le_bytes(arr))
+    }
+}
+impl<'a> TryFromBytes<'a, u64> for u64 {
+    fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
+        bytes.try_into()
+            .map(|arr| u64::from_le_bytes(arr))
+    }
+}
+impl<'a> TryFromBytes<'a, u128> for u128 {
+    fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
+        bytes.try_into()
+            .map(|arr| u128::from_le_bytes(arr))
+    }
+}
+
 impl<'buffer> RawStructure<'buffer> {
     /// Return an iterator over the strings in the strings table.
     fn strings(&self) -> impl Iterator<Item = &'buffer str> {
@@ -543,6 +589,35 @@ impl<'buffer> RawStructure<'buffer> {
                 MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx)
             })
         }
+    }
+    /// Get value by offset declared in SMBIOS Reference Specification
+    /// Type meaning data length is mandatory:
+    /// - *BYTE*: u8
+    /// - *WORD*: u16
+    /// - *DWORD*: u32
+    /// - *QWORD*: u64
+    ///
+    /// The only error this method returned: [MalformedStructureError::InvalidSlice] (actually is
+    /// [core::array::TryFromSliceError]). If getting value index exceedes length of *Formatted
+    /// section* it may be ignored to return [None] value of structure field. In this case *Formatted
+    /// section* length automatically hide non-existing values
+    pub fn get<T: TryFromBytes<'buffer, T>>(&self, offset: usize) -> Result<T, MalformedStructureError> {
+        // Ignore header
+        let start = offset - 4;
+        let size = core::mem::size_of::<T>();
+        let slice = self.data.get(start..(start + size))
+            .unwrap_or(&[]);
+        TryFromBytes::try_from_bytes(slice)
+            .map_err(|e| MalformedStructureError::InvalidSlice(e))
+    }
+    /// Wrapper to self.data.get(..) with header offset correction
+    pub fn get_slice(&self, offset: usize, size: usize) -> Option<&'buffer [u8]> {
+        self.data.get(offset - 4 .. offset - 4 + size)
+    }
+    /// Get *STRING* by offset declared in SMBIOS Reference Specification
+    pub fn get_string(&self, offset: usize) -> Result<&'buffer str, MalformedStructureError> {
+        self.get::<u8>(offset)
+            .and_then(|idx| self.find_string(idx))
     }
 }
 
