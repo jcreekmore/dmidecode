@@ -570,14 +570,8 @@ impl<'a> TryFromBytes<'a, u128> for u128 {
 
 impl<'buffer> RawStructure<'buffer> {
     /// Return an iterator over the strings in the strings table.
-    fn strings(&self) -> impl Iterator<Item = &'buffer str> {
-        self.strings.split(|elm| *elm == 0).filter_map(|slice| {
-            if slice.is_empty() {
-                None
-            } else {
-                unsafe { Some(str::from_utf8_unchecked(slice)) }
-            }
-        })
+    fn strings(&self) -> StructureStrings<'buffer> {
+        StructureStrings::new(self.strings)
     }
 
     /// Find a string in the strings table by the string index.
@@ -623,6 +617,31 @@ impl<'buffer> RawStructure<'buffer> {
     pub fn get_string(&self, offset: usize) -> Result<&'buffer str, MalformedStructureError> {
         self.get::<u8>(offset)
             .and_then(|idx| self.find_string(idx))
+    }
+}
+
+/// An iterator over structure strings
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub struct StructureStrings<'a> {
+    bytes: &'a [u8],
+    start: usize,
+}
+
+impl<'a> StructureStrings<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self { bytes, start: 0 }
+    }
+}
+impl<'a> Iterator for StructureStrings<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let slice = self.bytes.get(self.start..)?
+            .split(|elm| *elm == 0)
+            .nth(0)
+            .filter(|slice| !slice.is_empty())?;
+        self.start += slice.len() + 1;
+        str::from_utf8(slice).ok()
     }
 }
 
@@ -827,5 +846,31 @@ mod tests {
     fn find_nulnul_with_data_more_at_end() {
         let buf = [1, 2, 3, 4, 0, 5, 4, 3, 2, 1, 0, 0, 1, 2, 3];
         assert_eq!(find_nulnul(&buf), Some(11));
+    }
+
+    #[test]
+    fn structure_strings() {
+        use std::prelude::v1::*;
+        use pretty_assertions::{assert_eq,};
+
+        let regular_bytes = &[65, 66, 67, 0, 68, 69, 0, 70, 0, 71, 72, 73, 0, 0];
+        let regular_ss = StructureStrings::new(regular_bytes).collect::<Vec<_>>();
+        assert_eq!(vec!["ABC","DE","F", "GHI"], regular_ss, "Regular bytes");
+
+        let zero_bytes = &[0, 0];
+        let zero_ss = StructureStrings::new(zero_bytes).collect::<Vec<_>>();
+        assert_eq!(vec![""; 0], zero_ss, "Zero bytes");
+
+        let no_tail_bytes = &[65, 66, 67, 0, 68, 69, 0, 70, 0, 71, 72, 73];
+        let no_tail_ss = StructureStrings::new(no_tail_bytes).collect::<Vec<_>>();
+        assert_eq!(vec!["ABC","DE","F", "GHI"], no_tail_ss, "Regular bytes");
+
+        let invalid_order1_bytes = &[65, 66, 67, 0, 0, 68, 69, 0, 0, 0, 0, 0];
+        let invalid_order1_ss = StructureStrings::new(invalid_order1_bytes).collect::<Vec<_>>();
+        assert_eq!(vec!["ABC"], invalid_order1_ss, "Invalid order 1 bytes");
+
+        let invalid_order2_bytes = &[0, 0, 65, 66, 67];
+        let invalid_order2_ss = StructureStrings::new(invalid_order2_bytes).collect::<Vec<&str>>();
+        assert_eq!(vec![""; 0], invalid_order2_ss, "Invalid order 2 bytes");
     }
 }
