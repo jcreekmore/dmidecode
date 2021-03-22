@@ -15,7 +15,7 @@
 //! - [Port Connector Information](connector::PortConnector "connector::PortConnector") (Type 8)
 //! - [System Slots](slot::SystemSlots "slot::SystemSlots") (Type 9)
 //! - On Board Devices Information (Type 10, Obsolete)
-//! - OEM Strings (Type 11)
+//! - [OEM Strings](misc::OemStrings "misc::OemStrings") (Type 11)
 //! - System Configuration Options (Type 12)
 //! - [BIOS Language Information](bios::BiosLanguage "bios::BiosLanguage") (Type 13)
 //! - Group Associations (Type 14)
@@ -119,6 +119,9 @@ pub use connector::PortConnector;
 
 pub mod slot;
 pub use slot::SystemSlots;
+
+pub mod misc;
+pub use misc::OemStrings;
 
 enum EntryPointFormat {
     V2,
@@ -397,6 +400,7 @@ pub enum Structure<'buffer> {
     Cache(Cache<'buffer>),
     PortConnector(PortConnector<'buffer>),
     SystemSlots(SystemSlots<'buffer>),
+    OemStrings(OemStrings<'buffer>),
     BiosLanguage(BiosLanguage<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
@@ -501,6 +505,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::Cache => Cache::try_from(structure).map(Structure::Cache),
             InfoType::PortConnector => PortConnector::try_from(structure).map(Structure::PortConnector),
             InfoType::SystemSlots => SystemSlots::try_from(structure).map(Structure::SystemSlots),
+            InfoType::OemStrings => OemStrings::try_from(structure).map(Structure::OemStrings),
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
             InfoType::PhysicalMemoryArray => {
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
@@ -656,6 +661,7 @@ pub enum InfoType {
     Cache,
     PortConnector,
     SystemSlots,
+    OemStrings,
     BiosLanguage,
     PhysicalMemoryArray,
     MemoryDevice,
@@ -677,6 +683,7 @@ impl From<u8> for InfoType {
             7 => InfoType::Cache,
             8 => InfoType::PortConnector,
             9 => InfoType::SystemSlots,
+            11 => InfoType::OemStrings,
             13 => InfoType::BiosLanguage,
             16 => InfoType::PhysicalMemoryArray,
             17 => InfoType::MemoryDevice,
@@ -702,7 +709,7 @@ impl fmt::Display for InfoType {
             InfoType::PortConnector             => write!(f, "Port Connector Information"),
             InfoType::SystemSlots               => write!(f, "System Slots"),
             //InfoType::                          => write!(f, "On Board Devices Information"),
-            //InfoType::                          => write!(f, "OEM Strings"),
+            InfoType::OemStrings                => write!(f, "OEM Strings"),
             //InfoType::                          => write!(f, "System Configuration Options"),
             InfoType::BiosLanguage              => write!(f, "BIOS Language Information"),
             //InfoType::                          => write!(f, "Group Associations"),
