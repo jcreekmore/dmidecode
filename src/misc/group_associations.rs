@@ -1,11 +1,9 @@
 //! Group Associations (Type 14)
 //!
-//! The Group Associations structure is provided for OEMs who want to specify the arrangement or
+//! The Group Associations SMBIOS structure is provided for OEMs who want to specify the arrangement or
 //! hierarchy of certain components (including other Group Associations) within the system. For
 //! example, you can use the Group Associations structure to indicate that two CPUs share a common
 //! external cache system.
-
-use core::convert::{TryFrom, TryInto};
 
 use crate::{
     InfoType,
@@ -14,10 +12,10 @@ use crate::{
         InvalidFormattedSectionLength
     },
     RawStructure,
+    TryFromBytes,
 };
 
-
-/// Group Associations (Type 14) structure
+/// Named group with member items
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct GroupAssociations<'a> {
     /// Specifies the structure’s handle
@@ -75,20 +73,10 @@ impl<'a> Iterator for GroupItems<'a> {
         let slice = self.data
             .get(start..end)?;
         self.index = end;
-        slice.try_into().ok()
-    }
-}
-
-impl<'a> TryFrom<&'a [u8]> for GroupItem {
-    type Error = core::array::TryFromSliceError;
-    fn try_from(slice: &'a [u8]) -> Result<Self, Self::Error> {
-        slice.try_into()
-            .map(|arr: [u8; 3]| {
-                Self {
-                    type_: arr[0],
-                    handle: u16::from_le_bytes([arr[1], arr[2]])
-                }
-            })
+        let type_ = *slice.get(0)?;
+        let handle = slice.get(1..)
+            .and_then(|s| u16::try_from_bytes(s).ok())?;
+        Some(GroupItem { type_, handle })
     }
 }
 

@@ -9,7 +9,7 @@
 
 
 pub mod system_configuration_options;
-pub use self::system_configuration_options::*;
+pub use self::system_configuration_options::SystemConfigurationOptions;
 
 
 /// The wakeup type defined in the SMBIOS specification.
