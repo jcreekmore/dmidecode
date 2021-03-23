@@ -596,6 +596,7 @@ mod tests {
         let structure = RawStructure {
             version: (0, 0).into(),
             info: InfoType::BiosLanguage,
+            length: 0x1A,
             handle: 0,
             data: &[],
             strings: &[
@@ -795,6 +796,7 @@ mod tests {
                         RawStructure {
                             version: (3, 2).into(),
                             info: InfoType::BiosLanguage,
+                            length: 0x16,
                             handle: 0x0D00,
                             data: &[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                             strings: &[0x65,0x6E,0x7C,0x55,0x53,0x7C,0x69,0x73,0x6F,0x38,0x38,0x35,0x39,0x2D,0x31,0x00,0x00]

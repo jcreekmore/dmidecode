@@ -1064,6 +1064,7 @@ mod tests {
                 let structure = RawStructure {
                     version: SmbiosVersion { major, minor },
                     info: InfoType::SystemSlots,
+                    length: 0,
                     handle: 666,
                     data: &[],
                     strings: &[],
@@ -1138,6 +1139,7 @@ mod tests {
         let structure = RawStructure {
             version: (3, 4).into(),
             info: InfoType::SystemSlots,
+            length: 0,
             handle: 0x0023,
             // Remove 4 bytes from `dmidecode -H 8 -u` 'Header and Data'
             data: &[
