@@ -18,7 +18,7 @@
 //! - [OEM Strings](misc::OemStrings "misc::OemStrings") (Type 11)
 //! - [System Configuration Options](system::SystemConfigurationOptions "system::SystemConfigurationOptions") (Type 12)
 //! - [BIOS Language Information](bios::BiosLanguage "bios::BiosLanguage") (Type 13)
-//! - Group Associations (Type 14)
+//! - [Group Associations](misc::GroupAssociations "misc::GroupAssociations") (Type 14)
 //! - System Event Log (Type 15)
 //! - [Physical Memory Array](memory::PhysicalMemoryArray "memory::PhysicalMemoryArray") (Type 16)
 //! - [Memory Device](memory::MemoryDevice "memory::MemoryDevice") (Type 17)
@@ -123,6 +123,7 @@ pub use slot::SystemSlots;
 
 pub mod misc;
 pub use misc::OemStrings;
+pub use misc::GroupAssociations;
 
 enum EntryPointFormat {
     V2,
@@ -404,6 +405,7 @@ pub enum Structure<'buffer> {
     OemStrings(OemStrings<'buffer>),
     SystemConfigurationOptions(SystemConfigurationOptions<'buffer>),
     BiosLanguage(BiosLanguage<'buffer>),
+    GroupAssociations(GroupAssociations<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
@@ -482,6 +484,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
         let structure = RawStructure {
             version: self.smbios_version,
             info: header.kind.into(),
+            length: header.len,
             handle: header.handle,
             data: &self.buffer
                 [(self.idx + mem::size_of::<HeaderPacked>() as u32) as usize..strings_idx as usize],
@@ -511,6 +514,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::SystemConfigurationOptions =>
                 SystemConfigurationOptions::try_from(structure).map(Structure::SystemConfigurationOptions),
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
+            InfoType::GroupAssociations =>
+                GroupAssociations::try_from(structure).map(Structure::GroupAssociations),
             InfoType::PhysicalMemoryArray =>
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray),
             InfoType::MemoryDevice =>
@@ -534,6 +539,7 @@ struct HeaderPacked {
 pub struct RawStructure<'buffer> {
     pub version: SmbiosVersion,
     pub info: InfoType,
+    pub length: u8,
     pub handle: u16,
     pub data: &'buffer [u8],
     strings: &'buffer [u8],
@@ -665,6 +671,7 @@ pub enum InfoType {
     SystemSlots,
     OemStrings,
     SystemConfigurationOptions,
+    GroupAssociations,
     BiosLanguage,
     PhysicalMemoryArray,
     MemoryDevice,
@@ -689,6 +696,7 @@ impl From<u8> for InfoType {
             11 => InfoType::OemStrings,
             12 => InfoType::SystemConfigurationOptions,
             13 => InfoType::BiosLanguage,
+            14 => InfoType::GroupAssociations,
             16 => InfoType::PhysicalMemoryArray,
             17 => InfoType::MemoryDevice,
             19 => InfoType::MemoryArrayMappedAddress,
@@ -716,7 +724,7 @@ impl fmt::Display for InfoType {
             InfoType::OemStrings                => write!(f, "OEM Strings"),
             InfoType::SystemConfigurationOptions => write!(f, "System Configuration Options"),
             InfoType::BiosLanguage              => write!(f, "BIOS Language Information"),
-            //InfoType::                          => write!(f, "Group Associations"),
+            InfoType::GroupAssociations         => write!(f, "Group Associations"),
             //InfoType::                          => write!(f, "System Event Log"),
             InfoType::PhysicalMemoryArray       => write!(f, "Physical Memory Array"),
             InfoType::MemoryDevice              => write!(f, "Memory Device"),

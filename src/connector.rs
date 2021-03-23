@@ -389,6 +389,7 @@ mod test {
         let structure = RawStructure {
             version: (0, 0).into(),
             info: InfoType::PortConnector,
+            length: 0,
             handle: 0x0008,
             // Remove 4 bytes from `dmidecode -H 8 -u` 'Header and Data'
             data: &[0x01,0x00,0x02,0x0F,0x0D],

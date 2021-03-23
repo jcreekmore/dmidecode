@@ -56,6 +56,7 @@ mod tests {
         let structure = RawStructure {
             version: (3, 4).into(),
             info: InfoType::SystemConfigurationOptions,
+            length: 0x05,
             handle: 0x001F,
             // Remove 4 bytes from `dmidecode -H 8 -u` 'Header and Data'
             data: &[ 
