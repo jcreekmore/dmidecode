@@ -2,10 +2,14 @@
 //!
 //! This module handle following types:
 //! - [System](System "System") (Type 1)
-////! - [System Configuration Options](SystemConfigurationOptions "SystemConfigurationOptions") (Type 12)
+//! - [System Configuration Options](SystemConfigurationOptions "SystemConfigurationOptions") (Type 12)
 ////! - [System Event Log](SystemEventLog "SystemEventLog") (Type 15)
 ////! - [System Reset](SystemReset "SystemReset") (Type 23)
 ////! - [System Boot](SystemBoot "SystemBoot") (Type 32)
+
+
+pub mod system_configuration_options;
+pub use self::system_configuration_options::*;
 
 
 /// The wakeup type defined in the SMBIOS specification.

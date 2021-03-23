@@ -16,7 +16,7 @@
 //! - [System Slots](slot::SystemSlots "slot::SystemSlots") (Type 9)
 //! - On Board Devices Information (Type 10, Obsolete)
 //! - [OEM Strings](misc::OemStrings "misc::OemStrings") (Type 11)
-//! - System Configuration Options (Type 12)
+//! - [System Configuration Options](system::SystemConfigurationOptions "system::SystemConfigurationOptions") (Type 12)
 //! - [BIOS Language Information](bios::BiosLanguage "bios::BiosLanguage") (Type 13)
 //! - Group Associations (Type 14)
 //! - System Event Log (Type 15)
@@ -103,6 +103,7 @@ pub use memory::PhysicalMemoryArray;
 
 pub mod system;
 pub use system::System;
+pub use system::SystemConfigurationOptions;
 
 pub mod baseboard;
 pub use baseboard::BaseBoard;
@@ -401,6 +402,7 @@ pub enum Structure<'buffer> {
     PortConnector(PortConnector<'buffer>),
     SystemSlots(SystemSlots<'buffer>),
     OemStrings(OemStrings<'buffer>),
+    SystemConfigurationOptions(SystemConfigurationOptions<'buffer>),
     BiosLanguage(BiosLanguage<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
@@ -506,13 +508,13 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::PortConnector => PortConnector::try_from(structure).map(Structure::PortConnector),
             InfoType::SystemSlots => SystemSlots::try_from(structure).map(Structure::SystemSlots),
             InfoType::OemStrings => OemStrings::try_from(structure).map(Structure::OemStrings),
+            InfoType::SystemConfigurationOptions =>
+                SystemConfigurationOptions::try_from(structure).map(Structure::SystemConfigurationOptions),
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
-            InfoType::PhysicalMemoryArray => {
-                PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
-            }
-            InfoType::MemoryDevice => {
-                MemoryDevice::try_from(structure).map(Structure::MemoryDevice)
-            }
+            InfoType::PhysicalMemoryArray =>
+                PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray),
+            InfoType::MemoryDevice =>
+                MemoryDevice::try_from(structure).map(Structure::MemoryDevice),
             _ => Ok(Structure::Other(structure)),
         })
     }
@@ -662,6 +664,7 @@ pub enum InfoType {
     PortConnector,
     SystemSlots,
     OemStrings,
+    SystemConfigurationOptions,
     BiosLanguage,
     PhysicalMemoryArray,
     MemoryDevice,
@@ -684,6 +687,7 @@ impl From<u8> for InfoType {
             8 => InfoType::PortConnector,
             9 => InfoType::SystemSlots,
             11 => InfoType::OemStrings,
+            12 => InfoType::SystemConfigurationOptions,
             13 => InfoType::BiosLanguage,
             16 => InfoType::PhysicalMemoryArray,
             17 => InfoType::MemoryDevice,
@@ -710,7 +714,7 @@ impl fmt::Display for InfoType {
             InfoType::SystemSlots               => write!(f, "System Slots"),
             //InfoType::                          => write!(f, "On Board Devices Information"),
             InfoType::OemStrings                => write!(f, "OEM Strings"),
-            //InfoType::                          => write!(f, "System Configuration Options"),
+            InfoType::SystemConfigurationOptions => write!(f, "System Configuration Options"),
             InfoType::BiosLanguage              => write!(f, "BIOS Language Information"),
             //InfoType::                          => write!(f, "Group Associations"),
             //InfoType::                          => write!(f, "System Event Log"),
