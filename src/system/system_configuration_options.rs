@@ -1,7 +1,7 @@
-//! OEM Strings (Type 11)
+//! System Configuration Options (Type 12)
 //!
-//! This structure contains free-form strings defined by the OEM. Examples of this are part numbers
-//! for system reference documents, contact information for the manufacturer, etc.
+//! This SMBIOS structure contains information required to configure the baseboard’s Jumpers and
+//! Switches.
 
 
 use crate::{
@@ -11,21 +11,16 @@ use crate::{
 };
 
 
-/// An iterator through available strings
+/// Contains an iterator through configuration strings
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SystemConfigurationOptions<'a> {
+    /// Specifies the structure’s handle
     pub handle: u16,
-    strings: StructureStrings<'a>
+    /// Configuration strings
+    pub strings: StructureStrings<'a>
 }
 
 
-impl<'a> Iterator for SystemConfigurationOptions<'a> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.strings.next()
-    }
-}
 impl<'a> SystemConfigurationOptions<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
         let count: u8 = structure.get::<u8>(0x04)?;
@@ -74,7 +69,7 @@ mod tests {
         let result = SystemConfigurationOptions::try_from(structure)
             .unwrap();
 
-        assert_eq!(sample, result.collect::<Vec<_>>());
+        assert_eq!(sample, result.strings.collect::<Vec<_>>());
     }
 
     #[test]
@@ -122,6 +117,6 @@ mod tests {
             "NVRAM_CLR: Clear user settable NVRAM areas and set defaults",
             "PWRD_EN: Close to enable password",
         ];
-        assert_eq!(string_sample, result.collect::<Vec<_>>(), "Strings"); 
+        assert_eq!(string_sample, result.strings.collect::<Vec<_>>(), "Strings"); 
     }
 }
