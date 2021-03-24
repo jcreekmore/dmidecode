@@ -1,5 +1,7 @@
 //! System Slots (Type 9)
 //!
+//! Information in this structure defines the attributes of a system slot. One structure is
+//! provided for each slot in the system.
 
 use core::fmt;
 use core::slice::Chunks;
@@ -19,8 +21,10 @@ use crate::{
     },
 };
 
-/// Information in this structure defines the attributes of a system slot. One structure is
-/// provided for each slot in the system.
+/// The `System Slots` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
 #[derive(Clone, Debug, Eq, Hash, PartialEq,)]
 pub struct SystemSlots<'a> {
     /// Specifies the structure’s handle
@@ -1195,7 +1199,7 @@ mod tests {
     fn dmi_bin() {
         use crate::{Structure, EntryPoint,};
         use super::*;
-        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmi.0.bin");
+        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
         let slots = entry_point
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])

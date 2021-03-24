@@ -1,11 +1,22 @@
 //! Port Connector Information (Type 8)
 //!
+//! Information in this structure defines the attributes of a system port connector (for example,
+//! parallel, serial, keyboard, or mouse ports). The port’s type and connector information are
+//! provided. One structure is present for each port provided by the system.
 
 use core::fmt;
 
-/// Information in this structure defines the attributes of a system port connector (for example,
-/// parallel, serial, keyboard, or mouse ports). The port’s type and connector information are
-/// provided. One structure is present for each port provided by the system.
+use crate::{
+    MalformedStructureError::{
+        self,
+    },
+    RawStructure,
+};
+
+/// The `Port Connector Information` table defined in the SMBIOS specification.
+///
+/// Optional fields will only be set if the version of the parsed SMBIOS table
+/// is high enough to have defined the field.
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
 pub struct PortConnector<'a> {
     /// Specifies the structure’s handle
@@ -119,7 +130,7 @@ pub enum PortType {
 
 
 impl<'a> PortConnector<'a> {
-    pub(crate) fn try_from(structure: super::RawStructure<'a>) -> Result<PortConnector<'a>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<PortConnector<'a>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct PortConnectorPacked {
@@ -407,7 +418,7 @@ mod test {
     fn dmi_bin() {
         use crate::{Structure, EntryPoint,};
         use super::*;
-        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmi.0.bin");
+        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
         let connectors = entry_point
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])

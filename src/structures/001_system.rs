@@ -1,16 +1,14 @@
-//! System related information
+//! System Information (Type 1)
 //!
-//! This module handle following types:
-//! - [System](System "System") (Type 1)
-//! - [System Configuration Options](SystemConfigurationOptions "SystemConfigurationOptions") (Type 12)
-////! - [System Event Log](SystemEventLog "SystemEventLog") (Type 15)
-////! - [System Reset](SystemReset "SystemReset") (Type 23)
-////! - [System Boot](SystemBoot "SystemBoot") (Type 32)
+//! The information in this structure defines attributes of the overall system and is intended to
+//! be associated with the Component ID group of the system’s MIF. An SMBIOS implementation is
+//! associated with a single system instance and contains one and only one System Information
+//! (Type 1) structure.
 
-
-pub mod system_configuration_options;
-pub use self::system_configuration_options::SystemConfigurationOptions;
-
+use crate::{
+    MalformedStructureError,
+    RawStructure,
+};
 
 /// The wakeup type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
@@ -63,7 +61,7 @@ pub struct System<'buffer> {
 }
 
 impl<'buffer> System<'buffer> {
-    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<System<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<System<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {

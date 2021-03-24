@@ -9,6 +9,11 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::slice::Chunks;
 
+use crate::{
+    MalformedStructureError,
+    RawStructure,
+};
+
 // Each SMBIOS structure begins with a four-byte header 
 const STRUCTURE_HEADER_LENGTH: u8 = 0x4;
 
@@ -164,7 +169,7 @@ pub enum ContainedElementType {
 
 
 impl<'buffer> Enclosure<'buffer> {
-    pub(crate) fn try_from(structure: super::RawStructure<'buffer>) -> Result<Enclosure<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Enclosure<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct EnclosurePacked_2_3 {
@@ -701,7 +706,7 @@ mod tests {
     #[test]
     fn dmi_bin() {
         use super::*;
-        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmi.0.bin");
+        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = crate::EntryPoint::search(DMIDECODE_BIN).unwrap();
         let enc = entry_point
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])

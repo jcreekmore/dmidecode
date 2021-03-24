@@ -1,10 +1,14 @@
-//! Baseboard related information
+//! Baseboard (or Module) Information (Type 2)
 //!
-//! This module handle following types:
-//! - [Baseboard](BaseBoard "BaseBoard") (Type 2)
-////! - [On Board Devices](OnBoardDevices "OnBoardDevices") (Type 10)
-////! - [Onboard Devices Extended Information](OnboardDevicesExtended "OnboardDevicesExtended") (Type 41)
+//! The information in this structure defines attributes of a system baseboard (for example, a
+//! motherboard, planar, server blade, or other standard system module).
 use core::fmt;
+
+use crate::{
+    MalformedStructureError,
+    RawStructure,
+};
+
 
 /// The baseboard type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
@@ -97,9 +101,9 @@ pub struct BaseBoard<'buffer> {
 }
 
 impl<'buffer> BaseBoard<'buffer> {
-    pub(crate) fn try_from(
-        structure: super::RawStructure<'buffer>,
-    ) -> Result<BaseBoard<'buffer>, super::MalformedStructureError> {
+    pub(crate) fn try_from(structure: RawStructure<'buffer>) ->
+        Result<BaseBoard<'buffer>, MalformedStructureError>
+    {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {
