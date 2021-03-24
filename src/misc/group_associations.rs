@@ -45,13 +45,11 @@ pub struct GroupItem {
 
 impl<'a> GroupAssociations<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
+        let handle = structure.handle;
         let slice = structure.get_slice(0x05, structure.length as usize - 0x05)
-            .ok_or({
-                let msg = "5 + (3 bytes for each item in the group)";
-                InvalidFormattedSectionLength(InfoType::GroupAssociations, msg)
-            })?;
+            .ok_or(InvalidFormattedSectionLength(InfoType::GroupAssociations, handle, "", structure.length))?;
         Ok(GroupAssociations {
-            handle: structure.handle,
+            handle,
             group_name: structure.get_string(0x04)?,
             items: GroupItems::new(slice),
         })
