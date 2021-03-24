@@ -4,24 +4,24 @@
 //! to the SMBIOS/DMI standard. Each SMBIOS type refers to separate struct.
 //!
 //! SMBIOS specification defines the following data structures:
-//! - [BIOS Information](bios::Bios "bios::Bios") (Type 0)
-//! - [System Information](system::System "system::System") (Type 1)
-//! - [Baseboard (or Module) Information](baseboard::BaseBoard "baseboard::BaseBoard") (Type 2)
-//! - [System Enclosure or Chassis](enclosure::Enclosure "enclosure::Enclosure") (Type 3)
-//! - [Processor Information](processor::Processor "processor::Processor") (Type 4)
+//! - [BIOS Information](structures::bios "structures::bios") (Type 0)
+//! - [System Information](structures::system "structures::system") (Type 1)
+//! - [Baseboard (or Module) Information](structures::baseboard "structures::baseboard") (Type 2)
+//! - [System Enclosure or Chassis](structures::enclosure "structures::enclosure") (Type 3)
+//! - [Processor Information](structures::processor "structures::processor") (Type 4)
 //! - Memory Controller Information (Type 5, Obsolete)
 //! - Memory Module Information (Type 6, Obsolete)
-//! - [Cache Information](processor::Cache "processor::Cache") (Type 7)
-//! - [Port Connector Information](connector::PortConnector "connector::PortConnector") (Type 8)
-//! - [System Slots](slot::SystemSlots "slot::SystemSlots") (Type 9)
+//! - [Cache Information](structures::cache "structures::cache") (Type 7)
+//! - [Port Connector Information](structures::port_connector "structures::port_connector") (Type 8)
+//! - [System Slots](structures::system_slots "structures::system_slots") (Type 9)
 //! - On Board Devices Information (Type 10, Obsolete)
-//! - [OEM Strings](misc::OemStrings "misc::OemStrings") (Type 11)
-//! - [System Configuration Options](system::SystemConfigurationOptions "system::SystemConfigurationOptions") (Type 12)
-//! - [BIOS Language Information](bios::BiosLanguage "bios::BiosLanguage") (Type 13)
-//! - [Group Associations](misc::GroupAssociations "misc::GroupAssociations") (Type 14)
+//! - [OEM Strings](structures::oem_strings "structures::oem_strings") (Type 11)
+//! - [System Configuration Options](structures::system_configuration_options "structures::system_configuration_options") (Type 12)
+//! - [BIOS Language Information](structures::bios_language "structures::bios_language") (Type 13)
+//! - [Group Associations](structures::group_associations "structures::group_associations") (Type 14)
 //! - System Event Log (Type 15)
-//! - [Physical Memory Array](memory::PhysicalMemoryArray "memory::PhysicalMemoryArray") (Type 16)
-//! - [Memory Device](memory::MemoryDevice "memory::MemoryDevice") (Type 17)
+//! - [Physical Memory Array](structures::physical_memory_array "structures::physical_memory_array") (Type 16)
+//! - [Memory Device](structures::memory_device "structures::memory_device") (Type 17)
 //! - 32-Bit Memory Error Information (Type 18)
 //! - Memory Array Mapped Address (Type 19)
 //! - Memory Device Mapped Address (Type 20)
@@ -93,37 +93,8 @@ macro_rules! lib_ensure {
 #[macro_use]
 pub mod bitfield;
 
-pub mod bios;
-pub use bios::Bios;
-pub use bios::BiosLanguage;
-
-pub mod memory;
-pub use memory::MemoryDevice;
-pub use memory::PhysicalMemoryArray;
-
-pub mod system;
-pub use system::System;
-pub use system::SystemConfigurationOptions;
-
-pub mod baseboard;
-pub use baseboard::BaseBoard;
-
-pub mod enclosure;
-pub use enclosure::Enclosure;
-
-pub mod processor;
-pub use processor::Processor;
-pub use processor::Cache;
-
-pub mod connector;
-pub use connector::PortConnector;
-
-pub mod slot;
-pub use slot::SystemSlots;
-
-pub mod misc;
-pub use misc::OemStrings;
-pub use misc::GroupAssociations;
+pub mod structures;
+pub use structures::*;
 
 enum EntryPointFormat {
     V2,
