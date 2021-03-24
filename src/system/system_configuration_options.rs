@@ -5,7 +5,11 @@
 
 
 use crate::{
-    MalformedStructureError,
+    InfoType,
+    MalformedStructureError::{
+        self,
+        InvalidStringIndex,
+    },
     RawStructure,
     StructureStrings,
 };
@@ -26,7 +30,7 @@ impl<'a> SystemConfigurationOptions<'a> {
         let count: u8 = structure.get::<u8>(0x04)?;
         let strings = structure.strings();
         if count as usize != strings.count() {
-            Err(MalformedStructureError::BadSize(0, 0))
+            Err(InvalidStringIndex(InfoType::OemStrings, structure.handle, count))
         } else {
             Ok(SystemConfigurationOptions {
                 handle: structure.handle,

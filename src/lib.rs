@@ -435,10 +435,10 @@ pub enum MalformedStructureError {
     /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
     /// specification
     #[fail(
-        display = "Formatted section length of structure {:?} should be {} bytes",
-        _0, _1
+        display = "Formatted section length of structure {:?} with handle {} should be {}{} bytes",
+        _0, _1, _2, _3
     )]
-    InvalidFormattedSectionLength(InfoType, &'static str),
+    InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
 }
 
 #[doc(hidden)]

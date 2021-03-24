@@ -9,7 +9,7 @@ use crate::{
     RawStructure,
     MalformedStructureError::{
         self,
-        InvalidFormattedSectionLength as DataLengthError,
+        InvalidFormattedSectionLength,
     },
     InfoType,
     bitfield::{
@@ -346,24 +346,25 @@ pub struct SlotPitch(u16);
 impl<'a> SystemSlots<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<SystemSlots<'a>, MalformedStructureError> {
         let data_len = structure.data.len() + 4;
+        let handle = structure.handle;
         match ((structure.version.major, structure.version.minor), data_len) {
             (v, l) if v >= (2, 0) && v < (2, 1) && l != 0x0C => {
-               Err(DataLengthError(InfoType::SystemSlots, "0Ch"))
+               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0C))
             },
             (v, l) if v >= (2, 1) && v < (2, 6) && l != 0x0D => {
-               Err(DataLengthError(InfoType::SystemSlots, "0Dh"))
+               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0D))
             },
             (v, l) if v >= (2, 6) && v < (3, 2) && l != 0x11 => {
-               Err(DataLengthError(InfoType::SystemSlots, "11h"))
+               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x11))
             },
             (v, l) if v >= (3, 2) && l < 0x11 => {
-               Err(DataLengthError(InfoType::SystemSlots, "minimum of 11h"))
+               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "minimum of ", 0x11))
             },
             _ => {
                 let peer_grouping_count: u8 = structure.get::<u8>(0x12).unwrap_or(0).into();
                 let n = peer_grouping_count as usize;
                 Ok(SystemSlots {
-                    handle: structure.handle,
+                    handle,
                     slot_designation: structure.get_string(0x04)?,
                     slot_type: structure.get::<u8>(0x05)?.into(),
                     slot_data_bus_width: structure.get::<u8>(0x06)?.into(),
@@ -1072,16 +1073,32 @@ mod tests {
                 let result = SystemSlots::try_from(structure);
                 match ((major, minor), result) {
                     (v, Err(e)) if ((2,0)..(2,1)).contains(&v) => {
-                        assert_eq!("Formatted section length of structure SystemSlots should be 0Ch bytes", format!("{}", e));
+                        assert_eq!(
+                            "Formatted section length of structure SystemSlots with handle 666 \
+                            should be 12 bytes",
+                            format!("{}", e)
+                        );
                     },
                     (v, Err(e)) if ((2,1)..(2,6)).contains(&v) => {
-                        assert_eq!("Formatted section length of structure SystemSlots should be 0Dh bytes", format!("{}", e));
+                        assert_eq!(
+                            "Formatted section length of structure SystemSlots with handle 666 \
+                            should be 13 bytes",
+                            format!("{}", e)
+                        );
                     },
                     (v, Err(e)) if ((2,6)..(3,2)).contains(&v) => {
-                        assert_eq!("Formatted section length of structure SystemSlots should be 11h bytes", format!("{}", e));
+                        assert_eq!(
+                            "Formatted section length of structure SystemSlots with handle 666 \
+                            should be 17 bytes",
+                            format!("{}", e)
+                            );
                     },
                     (v, Err(e)) if ((3,2)..).contains(&v) => {
-                        assert_eq!("Formatted section length of structure SystemSlots should be minimum of 11h bytes", format!("{}", e));
+                        assert_eq!(
+                            "Formatted section length of structure SystemSlots with handle 666 \
+                            should be minimum of 17 bytes",
+                            format!("{}", e)
+                        );
                     },
                     (_, Err(e)) => {
                         assert_eq!("could not convert slice to array", format!("{}", e));
