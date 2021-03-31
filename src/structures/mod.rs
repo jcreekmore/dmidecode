@@ -52,6 +52,10 @@ pub use self::bios_language::BiosLanguage;
 pub mod group_associations;
 pub use self::group_associations::GroupAssociations;
 
+#[path = "015_system_event_log/mod.rs"]
+pub mod system_event_log;
+pub use self::system_event_log::SystemEventLog;
+
 #[path = "016_physical_memory_array.rs"]
 pub mod physical_memory_array;
 pub use self::physical_memory_array::PhysicalMemoryArray;

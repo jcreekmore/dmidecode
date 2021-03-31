@@ -19,7 +19,7 @@
 //! - [System Configuration Options](structures::system_configuration_options "structures::system_configuration_options") (Type 12)
 //! - [BIOS Language Information](structures::bios_language "structures::bios_language") (Type 13)
 //! - [Group Associations](structures::group_associations "structures::group_associations") (Type 14)
-//! - System Event Log (Type 15)
+//! - [System Event Log](structures::system_event_log "structures::system_event_log") (Type 15)
 //! - [Physical Memory Array](structures::physical_memory_array "structures::physical_memory_array") (Type 16)
 //! - [Memory Device](structures::memory_device "structures::memory_device") (Type 17)
 //! - 32-Bit Memory Error Information (Type 18)
@@ -377,6 +377,7 @@ pub enum Structure<'buffer> {
     SystemConfigurationOptions(SystemConfigurationOptions<'buffer>),
     BiosLanguage(BiosLanguage<'buffer>),
     GroupAssociations(GroupAssociations<'buffer>),
+    SystemEventLog(SystemEventLog<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
@@ -487,6 +488,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
             InfoType::GroupAssociations =>
                 GroupAssociations::try_from(structure).map(Structure::GroupAssociations),
+            InfoType::SystemEventLog =>
+                SystemEventLog::try_from(structure).map(Structure::SystemEventLog),
             InfoType::PhysicalMemoryArray =>
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray),
             InfoType::MemoryDevice =>
@@ -643,6 +646,7 @@ pub enum InfoType {
     OemStrings,
     SystemConfigurationOptions,
     GroupAssociations,
+    SystemEventLog,
     BiosLanguage,
     PhysicalMemoryArray,
     MemoryDevice,
@@ -668,6 +672,7 @@ impl From<u8> for InfoType {
             12 => InfoType::SystemConfigurationOptions,
             13 => InfoType::BiosLanguage,
             14 => InfoType::GroupAssociations,
+            15 => InfoType::SystemEventLog,
             16 => InfoType::PhysicalMemoryArray,
             17 => InfoType::MemoryDevice,
             19 => InfoType::MemoryArrayMappedAddress,
@@ -696,7 +701,7 @@ impl fmt::Display for InfoType {
             InfoType::SystemConfigurationOptions => write!(f, "System Configuration Options"),
             InfoType::BiosLanguage              => write!(f, "BIOS Language Information"),
             InfoType::GroupAssociations         => write!(f, "Group Associations"),
-            //InfoType::                          => write!(f, "System Event Log"),
+            InfoType::SystemEventLog            => write!(f, "System Event Log"),
             InfoType::PhysicalMemoryArray       => write!(f, "Physical Memory Array"),
             InfoType::MemoryDevice              => write!(f, "Memory Device"),
             //InfoType::                          => write!(f, "32-Bit Memory Error Information"),
