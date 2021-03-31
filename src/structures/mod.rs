@@ -75,3 +75,7 @@ pub use self::memory_array_mapped_address::MemoryArrayMappedAddress;
 #[path = "020_memory_device_mapped_address.rs"]
 pub mod memory_device_mapped_address;
 pub use self::memory_device_mapped_address::MemoryDeviceMappedAddress;
+
+#[path = "021_built_in_pointing_device.rs"]
+pub mod built_in_pointing_device;
+pub use self::built_in_pointing_device::BuiltInPointingDevice;

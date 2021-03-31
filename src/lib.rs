@@ -383,6 +383,7 @@ pub enum Structure<'buffer> {
     MemoryError32(MemoryError32),
     MemoryArrayMappedAddress(MemoryArrayMappedAddress),
     MemoryDeviceMappedAddress(MemoryDeviceMappedAddress),
+    BuiltInPointingDevice(BuiltInPointingDevice),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
 }
@@ -504,6 +505,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
                 MemoryArrayMappedAddress::try_from(structure).map(Structure::MemoryArrayMappedAddress),
             InfoType::MemoryDeviceMappedAddress =>
                 MemoryDeviceMappedAddress::try_from(structure).map(Structure::MemoryDeviceMappedAddress),
+            InfoType::BuiltInPointingDevice =>
+                BuiltInPointingDevice::try_from(structure).map(Structure::BuiltInPointingDevice),
             _ => Ok(Structure::Other(structure)),
         })
     }
@@ -663,6 +666,7 @@ pub enum InfoType {
     MemoryError32,
     MemoryArrayMappedAddress,
     MemoryDeviceMappedAddress,
+    BuiltInPointingDevice,
     SystemBoot,
     Oem(u8),
     End,
@@ -689,6 +693,7 @@ impl From<u8> for InfoType {
             18 => InfoType::MemoryError32,
             19 => InfoType::MemoryArrayMappedAddress,
             20 => InfoType::MemoryDeviceMappedAddress,
+            21 => InfoType::BuiltInPointingDevice,
             32 => InfoType::SystemBoot,
             127 => InfoType::End,
             t => InfoType::Oem(t),
@@ -719,7 +724,7 @@ impl fmt::Display for InfoType {
             InfoType::MemoryError32             => write!(f, "32-Bit Memory Error Information"),
             InfoType::MemoryArrayMappedAddress  => write!(f, "Memory Array Mapped Address"),
             InfoType::MemoryDeviceMappedAddress => write!(f, "Memory Device Mapped Address"),
-            //InfoType::                          => write!(f, "Built-in Pointing Device"),
+            InfoType::BuiltInPointingDevice      => write!(f, "Built-in Pointing Device"),
             //InfoType::                          => write!(f, "Portable Battery"),
             //InfoType::                          => write!(f, "System Reset"),
             //InfoType::                          => write!(f, "Hardware Security"),
