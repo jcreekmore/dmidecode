@@ -22,7 +22,7 @@
 //! - [System Event Log](structures::system_event_log "structures::system_event_log") (Type 15)
 //! - [Physical Memory Array](structures::physical_memory_array "structures::physical_memory_array") (Type 16)
 //! - [Memory Device](structures::memory_device "structures::memory_device") (Type 17)
-//! - 32-Bit Memory Error Information (Type 18)
+//! - [32-Bit Memory Error Information](structures::memory_error_32 "structures::memory_error_32") (Type 18)
 //! - Memory Array Mapped Address (Type 19)
 //! - Memory Device Mapped Address (Type 20)
 //! - Built-in Pointing Device (Type 21)
@@ -379,6 +379,7 @@ pub enum Structure<'buffer> {
     GroupAssociations(GroupAssociations<'buffer>),
     SystemEventLog(SystemEventLog<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
+    MemoryError32(MemoryError32),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
 }
@@ -494,6 +495,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
                 PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray),
             InfoType::MemoryDevice =>
                 MemoryDevice::try_from(structure).map(Structure::MemoryDevice),
+            InfoType::MemoryError32 =>
+                MemoryError32::try_from(structure).map(Structure::MemoryError32),
             _ => Ok(Structure::Other(structure)),
         })
     }
@@ -650,6 +653,7 @@ pub enum InfoType {
     BiosLanguage,
     PhysicalMemoryArray,
     MemoryDevice,
+    MemoryError32,
     MemoryArrayMappedAddress,
     MemoryDeviceMappedAddress,
     SystemBoot,
@@ -675,6 +679,7 @@ impl From<u8> for InfoType {
             15 => InfoType::SystemEventLog,
             16 => InfoType::PhysicalMemoryArray,
             17 => InfoType::MemoryDevice,
+            18 => InfoType::MemoryError32,
             19 => InfoType::MemoryArrayMappedAddress,
             20 => InfoType::MemoryDeviceMappedAddress,
             32 => InfoType::SystemBoot,
@@ -704,7 +709,7 @@ impl fmt::Display for InfoType {
             InfoType::SystemEventLog            => write!(f, "System Event Log"),
             InfoType::PhysicalMemoryArray       => write!(f, "Physical Memory Array"),
             InfoType::MemoryDevice              => write!(f, "Memory Device"),
-            //InfoType::                          => write!(f, "32-Bit Memory Error Information"),
+            InfoType::MemoryError32             => write!(f, "32-Bit Memory Error Information"),
             InfoType::MemoryArrayMappedAddress  => write!(f, "Memory Array Mapped Address"),
             InfoType::MemoryDeviceMappedAddress => write!(f, "Memory Device Mapped Address"),
             //InfoType::                          => write!(f, "Built-in Pointing Device"),
