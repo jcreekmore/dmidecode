@@ -67,3 +67,7 @@ pub use self::memory_device::MemoryDevice;
 #[path = "018_memory_error_32.rs"]
 pub mod memory_error_32;
 pub use self::memory_error_32::MemoryError32;
+
+#[path = "019_memory_array_mapped_address.rs"]
+pub mod memory_array_mapped_address;
+pub use self::memory_array_mapped_address::MemoryArrayMappedAddress;
