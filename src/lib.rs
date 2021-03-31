@@ -23,7 +23,7 @@
 //! - [Physical Memory Array](structures::physical_memory_array "structures::physical_memory_array") (Type 16)
 //! - [Memory Device](structures::memory_device "structures::memory_device") (Type 17)
 //! - [32-Bit Memory Error Information](structures::memory_error_32 "structures::memory_error_32") (Type 18)
-//! - Memory Array Mapped Address (Type 19)
+//! - [Memory Array Mapped Address](structures::memory_array_mapped_address "structures::memory_array_mapped_address") (Type 19)
 //! - Memory Device Mapped Address (Type 20)
 //! - Built-in Pointing Device (Type 21)
 //! - Portable Battery (Type 22)
@@ -380,6 +380,7 @@ pub enum Structure<'buffer> {
     SystemEventLog(SystemEventLog<'buffer>),
     MemoryDevice(MemoryDevice<'buffer>),
     MemoryError32(MemoryError32),
+    MemoryArrayMappedAddress(MemoryArrayMappedAddress),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
 }
@@ -497,6 +498,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
                 MemoryDevice::try_from(structure).map(Structure::MemoryDevice),
             InfoType::MemoryError32 =>
                 MemoryError32::try_from(structure).map(Structure::MemoryError32),
+            InfoType::MemoryArrayMappedAddress =>
+                MemoryArrayMappedAddress::try_from(structure).map(Structure::MemoryArrayMappedAddress),
             _ => Ok(Structure::Other(structure)),
         })
     }
