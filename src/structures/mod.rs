@@ -63,3 +63,7 @@ pub use self::physical_memory_array::PhysicalMemoryArray;
 #[path = "017_memory_device.rs"]
 pub mod memory_device;
 pub use self::memory_device::MemoryDevice;
+
+#[path = "018_memory_error_32.rs"]
+pub mod memory_error_32;
+pub use self::memory_error_32::MemoryError32;
