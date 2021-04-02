@@ -79,3 +79,7 @@ pub use self::memory_device_mapped_address::MemoryDeviceMappedAddress;
 #[path = "021_built_in_pointing_device.rs"]
 pub mod built_in_pointing_device;
 pub use self::built_in_pointing_device::BuiltInPointingDevice;
+
+#[path = "022_portable_battery.rs"]
+pub mod portable_battery;
+pub use self::portable_battery::PortableBattery;

@@ -26,8 +26,9 @@
 //! - [Memory Array Mapped Address](structures::memory_array_mapped_address "structures::memory_array_mapped_address") (Type 19)
 //! - [Memory Device Mapped Address](structures::memory_device_mapped_address
 //! "structures::memory_device_mapped_address") (Type 20)
-//! - Built-in Pointing Device (Type 21)
-//! - Portable Battery (Type 22)
+//! - [Built-in Pointing Device](structures::built_in_pointing_device
+//! "structures::built_in_pointing_device") (Type 21)
+//! - [Portable Battery](structures::portable_battery "structures::portable_battery") (Type 22)
 //! - System Reset (Type 23)
 //! - Hardware Security (Type 24)
 //! - System Power Controls (Type 25)
@@ -384,6 +385,7 @@ pub enum Structure<'buffer> {
     MemoryArrayMappedAddress(MemoryArrayMappedAddress),
     MemoryDeviceMappedAddress(MemoryDeviceMappedAddress),
     BuiltInPointingDevice(BuiltInPointingDevice),
+    PortableBattery(PortableBattery<'buffer>),
     PhysicalMemoryArray(PhysicalMemoryArray),
     Other(RawStructure<'buffer>),
 }
@@ -507,6 +509,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
                 MemoryDeviceMappedAddress::try_from(structure).map(Structure::MemoryDeviceMappedAddress),
             InfoType::BuiltInPointingDevice =>
                 BuiltInPointingDevice::try_from(structure).map(Structure::BuiltInPointingDevice),
+            InfoType::PortableBattery =>
+                PortableBattery::try_from(structure).map(Structure::PortableBattery),
             _ => Ok(Structure::Other(structure)),
         })
     }
@@ -667,6 +671,7 @@ pub enum InfoType {
     MemoryArrayMappedAddress,
     MemoryDeviceMappedAddress,
     BuiltInPointingDevice,
+    PortableBattery,
     SystemBoot,
     Oem(u8),
     End,
@@ -694,6 +699,7 @@ impl From<u8> for InfoType {
             19 => InfoType::MemoryArrayMappedAddress,
             20 => InfoType::MemoryDeviceMappedAddress,
             21 => InfoType::BuiltInPointingDevice,
+            22 => InfoType::PortableBattery,
             32 => InfoType::SystemBoot,
             127 => InfoType::End,
             t => InfoType::Oem(t),
@@ -725,7 +731,7 @@ impl fmt::Display for InfoType {
             InfoType::MemoryArrayMappedAddress  => write!(f, "Memory Array Mapped Address"),
             InfoType::MemoryDeviceMappedAddress => write!(f, "Memory Device Mapped Address"),
             InfoType::BuiltInPointingDevice      => write!(f, "Built-in Pointing Device"),
-            //InfoType::                          => write!(f, "Portable Battery"),
+            InfoType::PortableBattery            => write!(f, "Portable Battery"),
             //InfoType::                          => write!(f, "System Reset"),
             //InfoType::                          => write!(f, "Hardware Security"),
             //InfoType::                          => write!(f, "System Power Controls"),
