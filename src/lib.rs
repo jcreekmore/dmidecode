@@ -541,7 +541,7 @@ pub struct RawStructure<'buffer> {
 
 /// General trait for slice -> unsigned conversion
 pub trait TryFromBytes<'a, T>: Sized {
-    fn try_from_bytes(&'a [u8]) -> Result<Self, TryFromSliceError>;
+    fn try_from_bytes(_: &'a [u8]) -> Result<Self, TryFromSliceError>;
 }
 
 impl<'a> TryFromBytes<'a, u8> for u8 {
