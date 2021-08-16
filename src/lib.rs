@@ -418,6 +418,9 @@ pub enum MalformedStructureError {
         _0, _1, _2, _3
     )]
     InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
+    /// The SMBIOS structure contains an invalid processor family
+    #[fail(display = "Invalid processor family")]
+    InvalidProcessorFamily
 }
 
 #[doc(hidden)]

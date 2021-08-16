@@ -7,7 +7,7 @@
 //! describe the 80487 co1021 processor.
 
 
-use core::fmt;
+use core::{convert::{TryFrom, TryInto}, fmt};
 
 use crate::{
     MalformedStructureError,
@@ -620,7 +620,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.into(),
+                processor_family: packed.processor_family.try_into()?,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -648,7 +648,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.into(),
+                processor_family: packed.processor_family.try_into()?,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -676,7 +676,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.into(),
+                processor_family: packed.processor_family.try_into()?,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -704,7 +704,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.into(),
+                processor_family: packed.processor_family.try_into()?,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -732,7 +732,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family_2.into(),
+                processor_family: packed.processor_family_2.try_into()?,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -760,7 +760,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family_2.into(),
+                processor_family: packed.processor_family_2.try_into()?,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -785,15 +785,35 @@ impl<'buffer> Processor<'buffer> {
     }
 }
 
-impl From<u8> for ProcessorFamily  {
-    fn from(byte: u8) -> ProcessorFamily {
-        ProcessorFamily::from(byte as u16)
+impl TryFrom<u8> for ProcessorFamily  {
+    type Error = DecodingError;
+
+    fn try_from(byte: u8) -> Result<ProcessorFamily, DecodingError> {
+        ProcessorFamily::try_from(byte as u16)
     }
 }
-impl From<u16> for ProcessorFamily  {
-    fn from(word: u16) -> ProcessorFamily {
-        match word {
-            0x00                => unreachable!(),
+
+#[derive(Debug, Fail)]
+/// Failure type for trying to decode a word into a processor family
+pub enum DecodingError {
+    /// The word being parsed is invalid according to the spec
+    /// and thus could no be decoded
+    #[fail(display = "Word does not exist in the processor family spec")]
+    InvalidWord,
+}
+
+impl From<DecodingError> for MalformedStructureError {
+    fn from(_: DecodingError) -> Self {
+        MalformedStructureError::InvalidProcessorFamily
+    }
+}
+
+impl TryFrom<u16> for ProcessorFamily  {
+    type Error = DecodingError;
+
+    fn try_from(word: u16) -> Result<ProcessorFamily, DecodingError> {
+        let family = match word {
+            0x00                => return Err(DecodingError::InvalidWord),
             0x01                => ProcessorFamily::Other,
             0x02                => ProcessorFamily::Unknown,
             0x03                => ProcessorFamily::Intel8086,
@@ -1033,7 +1053,9 @@ impl From<u16> for ProcessorFamily  {
             n @ 0x203..=0xFFFD  => ProcessorFamily::Available(n),
             0xFFFE              => ProcessorFamily::ForFutureUse,
             n @ 0xFFFF          => ProcessorFamily::NotUsed(n),
-        }
+        };
+
+        Ok(family)
     }
 }
 impl fmt::Display for ProcessorFamily {
@@ -1255,8 +1277,8 @@ impl fmt::Display for ProcessorFamily {
             ProcessorFamily::RISCVRV32                                       => write!(f, "RISC-V RV32"),
             ProcessorFamily::RISCVRV64                                       => write!(f, "RISC-V RV64"),
             ProcessorFamily::RISCVRV128                                      => write!(f, "RISC-V RV128"),
-            ProcessorFamily::ForFutureUse                                    => write!(f, "For special use in the future"),   
-            ProcessorFamily::ProcessorFamily2                                => write!(f, "Processor Family 2 has the enumerated value"),   
+            ProcessorFamily::ForFutureUse                                    => write!(f, "For special use in the future"),
+            ProcessorFamily::ProcessorFamily2                                => write!(f, "Processor Family 2 has the enumerated value"),
             ProcessorFamily::Available(n)   => write!(f, "Available {:#X}", n),
             ProcessorFamily::NotUsed(n)    => write!(f, "Not used. {:X}h is the un-initialized value of Flash memory.", n),
         }
@@ -1437,6 +1459,8 @@ impl fmt::Display for ProcessorUpgrade {
 
 #[cfg(test)]
 mod tests {
+    use core::convert::TryInto;
+
     use super::*;
     #[test]
     fn processor_family() {
@@ -1477,7 +1501,7 @@ mod tests {
                 n @ 0xFFFF => (NotUsed(n), format!("Not used. {:X}h is the un-initialized value of Flash memory.", n)),
                 _ => continue,
             };
-            assert_eq!(e, i.into(), "{:#x}", i);
+            assert_eq!(e, i.try_into().unwrap(), "{:#x}", i);
             assert_eq!(s, format!("{}", e));
         }
     }
