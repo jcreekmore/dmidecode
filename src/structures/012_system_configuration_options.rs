@@ -30,7 +30,7 @@ impl<'a> SystemConfigurationOptions<'a> {
         let count: u8 = structure.get::<u8>(0x04)?;
         let strings = structure.strings();
         if count as usize != strings.count() {
-            Err(InvalidStringIndex(InfoType::OemStrings, structure.handle, count))
+            Err(InvalidStringIndex(InfoType::SystemConfigurationOptions, structure.handle, count))
         } else {
             Ok(SystemConfigurationOptions {
                 handle: structure.handle,
