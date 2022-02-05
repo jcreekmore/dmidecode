@@ -400,8 +400,8 @@ impl<'a> MemoryDevice<'a> {
             (v, l) if v == (2, 8) && l != 0x28 => {
                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
             },
-            (v, l) if v == (3, 2) && l != 0x54 => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x54))
+            (v, l) if v == (3, 2) && l < 0x28 => {
+               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
             },
             (v, l) if v >= (3, 3) && l != 0x5C => {
                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x5C))
@@ -458,5 +458,79 @@ impl<'a> MemoryDevice<'a> {
                 })
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn smbios_3_2_memory_device_with_40_bytes_parses() {
+        let structure = RawStructure {
+            version: (3, 2).into(),
+            info: InfoType::MemoryDevice,
+            length: 0x28,
+            handle: 0x3b,
+            // data amd strins are from memory handler, eg: dmidecode -H 0x3b -u
+            data: &[
+                // omit first 4 header bytes
+                // 0x11, 0x28, 0x3b, 0x00,
+                0x39, 0x00, 0xfe, 0xff,
+                0x48, 0x00, 0x40, 0x00, 0x00, 0x40, 0x09, 0x00,
+                0x01, 0x02, 0x1a, 0x80, 0x20, 0x6a, 0x0a, 0x03,
+                0x04, 0x05, 0x06, 0x02, 0x00, 0x00, 0x00, 0x00,
+                0x60, 0x09, 0xb0, 0x04, 0xb0, 0x04, 0xb0, 0x04,
+            ],
+            strings: &[
+                // DIMM_A0
+                0x44, 0x49, 0x4D, 0x4D, 0x5F, 0x41, 0x30, 0x00,
+                // _Node0_Channel0_Dimm0
+                0x5F, 0x4E, 0x6F, 0x64, 0x65, 0x30, 0x5F, 0x43,
+                0x68, 0x61, 0x6E, 0x6E, 0x65, 0x6C, 0x30, 0x5F,
+                0x44, 0x69, 0x6D, 0x6D, 0x30, 0x00,
+                // Hynix
+                0x48, 0x79, 0x6E, 0x69, 0x78, 0x00,
+                // FAKE_SERIAL_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x53, 0x45, 0x52,
+                0x49, 0x41, 0x4c, 0x5f, 0x4e, 0x55, 0x4d, 0x42,
+                0x45, 0x52, 0x00,
+                // FAKE_ASSET_TAG
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x41, 0x53, 0x53,
+                0x45, 0x54, 0x5f, 0x54, 0x41, 0x47, 0x00,
+                // FAKE_PART_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x50, 0x41, 0x52,
+                0x54, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52,
+                0x00
+            ],
+        };
+        assert_eq!(
+            MemoryDevice{
+                handle: 0x3b,
+                physical_memory_handle: 57,
+                total_width: Some(72),
+                data_width: Some(64),
+                size: Some(16384),
+                form_factor: FormFactor::Dimm,
+                device_set: Some(0),
+                device_locator: "DIMM_A0",
+                bank_locator: "_Node0_Channel0_Dimm0",
+                memory_type: Type::Ddr4,
+                type_detail: Detail::SYNCHRONOUS | Detail::REGISTERED,
+                speed: Some(2666),
+                manufacturer: "Hynix",
+                serial: "FAKE_SERIAL_NUMBER",
+                asset_tag: "FAKE_ASSET_TAG",
+                part_number: "FAKE_PART_NUMBER",
+                attributes: 2,
+                configured_memory_speed: Some(2400),
+                minimum_voltage: Some(1200),
+                maximum_voltage: Some(1200),
+                configured_voltage: Some(1200),
+
+                ..Default::default()
+            },
+            MemoryDevice::try_from(structure).unwrap()
+        );
     }
 }
