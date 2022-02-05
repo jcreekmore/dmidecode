@@ -1,7 +1,7 @@
 [package]
 authors = ["Jonathan Creekmore <jonathan@thecreekmores.org>"]
 name = "dmidecode"
-version = "0.7.2-alpha.0"
+version = "0.7.2"
 description = "Decode SMBIOS/DMI information into accessible data structures"
 documentation = "https://docs.rs/dmidecode/"
 homepage = "https://github.com/jcreekmore/dmidecode.git"
