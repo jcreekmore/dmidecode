@@ -212,6 +212,8 @@ pub enum Type {
     LpDdr,
     LpDdr2,
     LpDdr3,
+    LpDdr4,
+    LogicalNonVolatileDevice,
     Undefined(u8),
 }
 
@@ -253,6 +255,8 @@ impl From<u8> for Type {
             27 => Type::LpDdr,
             28 => Type::LpDdr2,
             29 => Type::LpDdr3,
+            30 => Type::LpDdr4,
+            31 => Type::LogicalNonVolatileDevice,
             t => Type::Undefined(t),
         }
     }
