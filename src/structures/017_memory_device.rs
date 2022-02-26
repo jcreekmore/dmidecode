@@ -401,8 +401,8 @@ impl<'a> MemoryDevice<'a> {
             (v, l) if v == (2, 7) && l != 0x22 => {
                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
             },
-            (v, l) if v == (2, 8) && l != 0x28 => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
+            (v, l) if v == (2, 8) && l < 0x22 => {
+               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
             },
             (v, l) if v == (3, 2) && l < 0x28 => {
                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
@@ -468,6 +468,71 @@ impl<'a> MemoryDevice<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn smbios_2_8_memory_device_with_34_bytes_parses() {
+        let structure = RawStructure {
+            version: (2, 8).into(),
+            info: InfoType::MemoryDevice,
+            length: 0x22,
+            handle: 0x4e,
+            // data amd strins are from memory handler, eg: dmidecode -H 0x4e -u
+            data: &[
+                // omit first 4 header bytes
+                // 0x11, 0x22, 0x4e, 0x00,
+                0x4C, 0x00, 0xFE, 0xFF, 0x40, 0x00, 0x40, 0x00,
+                0x00, 0x20, 0x09, 0x00, 0x01, 0x02, 0x18, 0x80, 0x40, 0x40, 0x06, 0x03, 0x04, 0x05, 0x06, 0x02,0x00, 0x00 ,0x00, 0x00, 0x40, 0x06
+            ],
+            strings: &[
+                // DIMM_A0
+                0x44, 0x49, 0x4D, 0x4D, 0x20, 0x41, 0x30, 0x00,
+                // A0_Node0_Channel0_Dimm0
+                0x41, 0x30, 0x5F, 0x4E, 0x6F, 0x64, 0x65, 0x30, 0x5F, 0x43, 0x68, 0x61, 0x6E, 0x6E, 0x65, 0x6C,
+                0x30, 0x5F, 0x44, 0x69, 0x6D, 0x6D, 0x30, 0x00,
+                // Hynix
+                0x48, 0x79, 0x6E, 0x69, 0x78, 0x00,
+                // FAKE_SERIAL_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x53, 0x45, 0x52,
+                0x49, 0x41, 0x4c, 0x5f, 0x4e, 0x55, 0x4d, 0x42,
+                0x45, 0x52, 0x00,
+                // FAKE_ASSET_TAG
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x41, 0x53, 0x53,
+                0x45, 0x54, 0x5f, 0x54, 0x41, 0x47, 0x00,
+                // FAKE_PART_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x50, 0x41, 0x52,
+                0x54, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52,
+                0x00
+            ],
+        };
+        assert_eq!(
+            MemoryDevice{
+                handle: 0x4e,
+                physical_memory_handle: 76,
+                total_width: Some(64),
+                data_width: Some(64),
+                size: Some(8192),
+                form_factor: FormFactor::Dimm,
+                device_set: Some(0),
+                device_locator: "DIMM A0",
+                bank_locator: "A0_Node0_Channel0_Dimm0",
+                memory_type: Type::Ddr3,
+                type_detail: Detail::SYNCHRONOUS | Detail::UNREGISTERED,
+                speed: Some(1600),
+                manufacturer: "Hynix",
+                serial: "FAKE_SERIAL_NUMBER",
+                asset_tag: "FAKE_ASSET_TAG",
+                part_number: "FAKE_PART_NUMBER",
+                attributes: 2,
+                configured_memory_speed: Some(1600),
+                minimum_voltage: None,
+                maximum_voltage: None,
+                configured_voltage: None,
+
+                ..Default::default()
+            },
+            MemoryDevice::try_from(structure).unwrap()
+        );
+    }
 
     #[test]
     fn smbios_3_2_memory_device_with_40_bytes_parses() {
