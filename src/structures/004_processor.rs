@@ -727,12 +727,17 @@ impl<'buffer> Processor<'buffer> {
             })
         } else if structure.version < (3, 0).into() {
             let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
-
+            // smbios spec specifies 0xFE as an indicator to obtain processor
+            // family from the Processor Family 2 field.
+            let processor_family = match packed.processor_family.try_into()? {
+                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.try_into()?,
+                family => family,
+            };
             Ok(Processor {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family_2.try_into()?,
+                processor_family,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -755,12 +760,17 @@ impl<'buffer> Processor<'buffer> {
             })
         } else {
             let_as_struct!(packed, ProcessorPacked_3_0, structure.data);
-
+            // smbios spec specifies 0xFE as an indicator to obtain processor
+            // family from the Processor Family 2 field.
+            let processor_family = match packed.processor_family.try_into()? {
+                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.try_into()?,
+                family => family,
+            };
             Ok(Processor {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family_2.try_into()?,
+                processor_family,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -1462,6 +1472,8 @@ mod tests {
     use core::convert::TryInto;
 
     use super::*;
+    use crate::InfoType;
+
     #[test]
     fn processor_family() {
         use super::ProcessorFamily::*;
@@ -1505,6 +1517,7 @@ mod tests {
             assert_eq!(s, format!("{}", e));
         }
     }
+
     #[test]
     fn processor_voltage() {
         let test_data = [
@@ -1530,6 +1543,7 @@ mod tests {
             assert_eq!(format!("{}", result), format!("{}", display), "Byte: {:#b}", byte);
         }
     }
+
     #[test]
     fn processor_upgrade() {
         use super::ProcessorUpgrade::*;
@@ -1546,5 +1560,176 @@ mod tests {
             assert_eq!(e, i.into(), "{:#x}", i);
             assert_eq!(s, format!("{}", e));
         }
+    }
+
+    #[test]
+    fn smbios_2_8_processor_intel_atom_parses() {
+        let structure = RawStructure {
+            version: (2, 8).into(),
+            info: InfoType::Processor,
+            length: 0x2a,
+            handle: 0x48,
+            // data and strings from processor handler, eg: dmidecode -H 0x48 -u
+            data: &[
+                // omit first 4 header bytes
+                // 04 // type
+                // 2a // length
+                // 48 00 // handle
+                0x01, // socket_designation
+                0x03, // processor_type
+                0x2b, // processor_family
+                0x02, // processor_manufacturer
+                0xd8, 0x06, 0x04, 0x00, 0xff, 0xfb, 0xeb, 0xbf, // processor_id
+                0x03, // processor_version
+                0x90, // voltage
+                0x64, 0x00, // external_clock
+                0x28, 0x0a, // max_speed
+                0x60, 0x09, // current_speed
+                0x41, // status
+                0x01, // processor_upgrade
+                0x46, 0x00, // l1_cache
+                0x47, 0x00, // l2_cache
+                0xff, 0xff, // l3_cache
+                0x00, // serial_number
+                0x04, // asset_tag
+                0x00, // part_number
+                0x08, // core_count
+                0x08, // core_enabled
+                0x08, // thread_count
+                0x04, 0x00, // processor_characteristics
+                0x00, 0x00, // processor_family2
+            ],
+            strings: &[
+                // CPU0
+                0x43, 0x50, 0x55, 0x30, 0x00,
+                // Intel(R) Corporation
+                0x49, 0x6E, 0x74, 0x65, 0x6C, 0x28, 0x52, 0x29,
+                0x20, 0x43, 0x6F, 0x72, 0x70, 0x6F, 0x72, 0x61,
+                0x74, 0x69, 0x6F, 0x6E, 0x00,
+                // Intel(R) Atom(TM) CPU  C2750  @ 2.40GHz
+                0x49, 0x6E, 0x74, 0x65, 0x6C, 0x28, 0x52, 0x29,
+                0x20, 0x41, 0x74, 0x6F, 0x6D, 0x28, 0x54, 0x4D,
+                0x29, 0x20, 0x43, 0x50, 0x55, 0x20, 0x20, 0x43,
+                0x32, 0x37, 0x35, 0x30, 0x20, 0x20, 0x40, 0x20,
+                0x32, 0x2E, 0x34, 0x30, 0x47, 0x48, 0x7A, 0x00,
+                // ProcessorInfo_ASSET_TAG
+                0x50, 0x72, 0x6F, 0x63, 0x65, 0x73, 0x73, 0x6F,
+                0x72, 0x49, 0x6E, 0x66, 0x6F, 0x5F, 0x41, 0x53,
+                0x53, 0x45, 0x54, 0x5F, 0x54, 0x41, 0x47, 0x00,
+            ]
+        };
+
+        assert_eq!(
+            Processor {
+                handle: 0x48,
+                socket_designation: "CPU0",
+                processor_type: ProcessorType::CentralProcessor,
+                processor_family: ProcessorFamily::IntelAtomProcessor,
+                processor_manufacturer: "Intel(R) Corporation",
+                processor_id: 13829424153406736088,
+                processor_version: "Intel(R) Atom(TM) CPU  C2750  @ 2.40GHz",
+                voltage: Voltage::Current(16),
+                external_clock: 100,
+                max_speed: 2600,
+                current_speed: 2400,
+                status: ProcessorStatus::from_bits_truncate(0b0100_0001),
+                processor_upgrade: ProcessorUpgrade::Other,
+                l1_cache_handle: Some(70),
+                l2_cache_handle: Some(71),
+                l3_cache_handle: Some(65535),
+                serial_number: Some(""),
+                asset_tag: Some("ProcessorInfo_ASSET_TAG"),
+                part_number: Some(""),
+                core_count: Some(8),
+                core_enabled: Some(8),
+                thread_count: Some(8),
+                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(0b0000_0100)),
+            },
+            Processor::try_from(structure).unwrap()
+        );
+    }
+
+    #[test]
+    // Processor info was manipulated to exercise processor_family_2 parsing
+    fn smbios_2_8_processor_parses_with_processor_family_2() {
+        let structure = RawStructure {
+            version: (2, 8).into(),
+            info: InfoType::Processor,
+            length: 0x2a,
+            handle: 0x48,
+            // data and strings from processor handler, eg: dmidecode -H 0x48 -u
+            // $ hexdump -s 0x4c6 -n 42 -C processor_bin
+            data: &[
+                // 04 // type
+                // 2a // length
+                // 48 00 // handle
+                0x01, // socket_designation
+                0x03, // processor_type
+                0xfe, // processor_family
+                0x02, // processor_manufacturer
+                0xd8, 0x06, 0x04, 0x00, 0xff, 0xfb, 0xeb, 0xbf, // processor_id
+                0x03, // processor_version
+                0x90, // voltage
+                0x64, 0x00, // external_clock
+                0x28, 0x0a, // max_speed
+                0x60, 0x09, // current_speed
+                0x41, // status
+                0x01, // processor_upgrade
+                0x46, 0x00, // l1_cache
+                0x47, 0x00, // l2_cache
+                0xff, 0xff, // l3_cache
+                0x00, // serial_number
+                0x04, // asset_tag
+                0x00, // part_number
+                0x08, // core_count
+                0x08, // core_enabled
+                0x08, // thread_count
+                0x04, 0x00, // processor_characteristics
+                0x18, 0x01, // processor_family2
+            ],
+            strings: &[
+                // CPU0
+                0x43, 0x50, 0x55, 0x30, 0x00,
+                // FAKE MANUFACTURER
+                0x46, 0x41, 0x4b, 0x45, 0x20, 0x4d, 0x41, 0x4e,
+                0x55, 0x46, 0x41, 0x43, 0x54, 0x55, 0x52, 0x45,
+                0x52, 0x00,
+                // FAKE VERSION
+                0x46, 0x41, 0x4b, 0x45, 0x20, 0x56, 0x45, 0x52,
+                0x53, 0x49, 0x4f, 0x4e, 0x00,
+                // FAKE ASSET
+                0x46, 0x41, 0x4b, 0x45, 0x20, 0x41, 0x53, 0x53, 0x45,
+                0x54, 0x20, 0x54, 0x41, 0x47, 0x00,
+            ]
+        };
+
+        assert_eq!(
+            Processor {
+                handle: 0x48,
+                socket_designation: "CPU0",
+                processor_type: ProcessorType::CentralProcessor,
+                processor_family: ProcessorFamily::ARM,
+                processor_manufacturer: "FAKE MANUFACTURER",
+                processor_id: 13829424153406736088,
+                processor_version: "FAKE VERSION",
+                voltage: Voltage::Current(16),
+                external_clock: 100,
+                max_speed: 2600,
+                current_speed: 2400,
+                status: ProcessorStatus::from_bits_truncate(0b0100_0001),
+                processor_upgrade: ProcessorUpgrade::Other,
+                l1_cache_handle: Some(70),
+                l2_cache_handle: Some(71),
+                l3_cache_handle: Some(65535),
+                serial_number: Some(""),
+                asset_tag: Some("FAKE ASSET TAG"),
+                part_number: Some(""),
+                core_count: Some(8),
+                core_enabled: Some(8),
+                thread_count: Some(8),
+                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(0b0000_0100)),
+            },
+            Processor::try_from(structure).unwrap()
+        );
     }
 }
