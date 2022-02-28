@@ -5,11 +5,7 @@
 
 
 use crate::{
-    InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidStringIndex,
-    },
+    MalformedStructureError,
     RawStructure,
     StructureStrings,
 };
@@ -26,16 +22,11 @@ pub struct OemStrings<'a> {
 
 impl<'a> OemStrings<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
-        let count: u8 = structure.get::<u8>(0x04)?;
         let strings = structure.strings();
-        if count as usize != strings.count() {
-            Err(InvalidStringIndex(InfoType::OemStrings, structure.handle, count))
-        } else {
-            Ok(OemStrings {
-                handle: structure.handle,
-                strings,
-            })
-        }
+        Ok(OemStrings {
+            handle: structure.handle,
+            strings,
+        })
     }
 }
 
