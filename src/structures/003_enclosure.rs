@@ -9,12 +9,9 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::slice::Chunks;
 
-use crate::{
-    MalformedStructureError,
-    RawStructure,
-};
+use crate::{MalformedStructureError, RawStructure};
 
-// Each SMBIOS structure begins with a four-byte header 
+// Each SMBIOS structure begins with a four-byte header
 const STRUCTURE_HEADER_LENGTH: u8 = 0x4;
 
 /// System Enclosure or Chassis structure
@@ -122,7 +119,7 @@ pub enum State {
     Warning,
     Critical,
     NonRecoverable,
-    Undefined(u8)
+    Undefined(u8),
 }
 
 /// System Enclosure or Chassis Security Status
@@ -133,7 +130,7 @@ pub enum SecurityStatus {
     None,
     ExternalInterfaceLockedOut,
     ExternalInterfaceEnabled,
-    Undefined(u8)
+    Undefined(u8),
 }
 
 /// Elements, possibly defined by other SMBIOS structures, present in this chassis
@@ -166,7 +163,6 @@ pub enum ContainedElementType {
     BoardType(crate::baseboard::BoardType),
     InfoType(crate::InfoType),
 }
-
 
 impl<'buffer> Enclosure<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Enclosure<'buffer>, MalformedStructureError> {
@@ -230,15 +226,18 @@ impl<'buffer> Enclosure<'buffer> {
             v if v >= (2, 7).into() => {
                 let_as_struct!(packed, EnclosurePacked_2_3, structure.data);
                 let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
-                let sku_number_string_field =
-                    0x15 +
-                    packed.contained_element_count * packed.contained_element_record_length
+                let sku_number_string_field = 0x15
+                    + packed.contained_element_count * packed.contained_element_record_length
                     - STRUCTURE_HEADER_LENGTH;
-                let sku_number =
-                    structure.data.get(sku_number_string_field as usize)
-                    .ok_or(crate::MalformedStructureError::BadSize(sku_number_string_field as u32, 1))
+                let sku_number = structure
+                    .data
+                    .get(sku_number_string_field as usize)
+                    .ok_or(crate::MalformedStructureError::BadSize(
+                        sku_number_string_field as u32,
+                        1,
+                    ))
                     .and_then(|string_field| structure.find_string(*string_field))?;
-                Ok(Enclosure{
+                Ok(Enclosure {
                     handle: structure.handle,
                     manufacturer: structure.find_string(packed.manufacturer)?,
                     chassis_lock: enclosure_type.get_lock(),
@@ -253,20 +252,18 @@ impl<'buffer> Enclosure<'buffer> {
                     oem_defined: Some(packed.oem_defined),
                     height: Some(packed.height),
                     power_cords_number: Some(packed.power_cords_number),
-                    contained_elements: Some(
-                        ContainedElements::new(
-                            structure.data,
-                            packed.contained_element_count,
-                            packed.contained_element_record_length
-                        )
-                    ),
+                    contained_elements: Some(ContainedElements::new(
+                        structure.data,
+                        packed.contained_element_count,
+                        packed.contained_element_record_length,
+                    )),
                     sku_number: Some(sku_number),
                 })
-            },
+            }
             v if v >= (2, 3).into() => {
                 let_as_struct!(packed, EnclosurePacked_2_3, structure.data);
                 let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
-                Ok(Enclosure{
+                Ok(Enclosure {
                     handle: structure.handle,
                     manufacturer: structure.find_string(packed.manufacturer)?,
                     chassis_lock: enclosure_type.get_lock(),
@@ -281,21 +278,19 @@ impl<'buffer> Enclosure<'buffer> {
                     oem_defined: Some(packed.oem_defined),
                     height: Some(packed.height),
                     power_cords_number: Some(packed.power_cords_number),
-                    contained_elements: Some(
-                        ContainedElements::new(
-                            structure.data,
-                            packed.contained_element_count,
-                            packed.contained_element_record_length
-                        )
-                    ),
+                    contained_elements: Some(ContainedElements::new(
+                        structure.data,
+                        packed.contained_element_count,
+                        packed.contained_element_record_length,
+                    )),
                     sku_number: None,
                 })
-            },
+            }
             v if v >= (2, 1).into() => {
                 let_as_struct!(packed, EnclosurePacked_2_1, structure.data);
                 let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
 
-                Ok(Enclosure{
+                Ok(Enclosure {
                     handle: structure.handle,
                     manufacturer: structure.find_string(packed.manufacturer)?,
                     chassis_lock: enclosure_type.get_lock(),
@@ -313,12 +308,12 @@ impl<'buffer> Enclosure<'buffer> {
                     contained_elements: None,
                     sku_number: None,
                 })
-            },
+            }
             _ => {
                 let_as_struct!(packed, EnclosurePacked_2_0, structure.data);
                 let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
 
-                Ok(Enclosure{
+                Ok(Enclosure {
                     handle: structure.handle,
                     manufacturer: structure.find_string(packed.manufacturer)?,
                     chassis_lock: enclosure_type.get_lock(),
@@ -336,8 +331,7 @@ impl<'buffer> Enclosure<'buffer> {
                     contained_elements: None,
                     sku_number: None,
                 })
-
-            },
+            }
         }
     }
 }
@@ -388,43 +382,43 @@ impl From<u8> for EnclosureType {
 impl fmt::Display for EnclosureType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other               => write!(f, "Other"),
-            Self::Unknown             => write!(f, "Unknown"),
-            Self::Desktop             => write!(f, "Desktop"),
-            Self::LowProfileDesktop   => write!(f, "Low Profile Desktop"),
-            Self::PizzaBox            => write!(f, "Pizza Box"),
-            Self::MiniTower           => write!(f, "Mini Tower"),
-            Self::Tower               => write!(f, "Tower"),
-            Self::Portable            => write!(f, "Portable"),
-            Self::Laptop              => write!(f, "Laptop"),
-            Self::Notebook            => write!(f, "Notebook"),
-            Self::HandHeld            => write!(f, "Hand Held"),
-            Self::DockingStation      => write!(f, "Docking Station"),
-            Self::AllInOne            => write!(f, "All in One"),
-            Self::SubNotebook         => write!(f, "Sub Notebook"),
-            Self::SpaceSaving         => write!(f, "Space-saving"),
-            Self::LunchBox            => write!(f, "Lunch Box"),
-            Self::MainServerChassis   => write!(f, "Main Server Chassis"),
-            Self::ExpansionChassis    => write!(f, "Expansion Chassis"),
-            Self::SubChassis          => write!(f, "SubChassis"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Desktop => write!(f, "Desktop"),
+            Self::LowProfileDesktop => write!(f, "Low Profile Desktop"),
+            Self::PizzaBox => write!(f, "Pizza Box"),
+            Self::MiniTower => write!(f, "Mini Tower"),
+            Self::Tower => write!(f, "Tower"),
+            Self::Portable => write!(f, "Portable"),
+            Self::Laptop => write!(f, "Laptop"),
+            Self::Notebook => write!(f, "Notebook"),
+            Self::HandHeld => write!(f, "Hand Held"),
+            Self::DockingStation => write!(f, "Docking Station"),
+            Self::AllInOne => write!(f, "All in One"),
+            Self::SubNotebook => write!(f, "Sub Notebook"),
+            Self::SpaceSaving => write!(f, "Space-saving"),
+            Self::LunchBox => write!(f, "Lunch Box"),
+            Self::MainServerChassis => write!(f, "Main Server Chassis"),
+            Self::ExpansionChassis => write!(f, "Expansion Chassis"),
+            Self::SubChassis => write!(f, "SubChassis"),
             Self::BusExpansionChassis => write!(f, "Bus Expansion Chassis"),
-            Self::PeripheralChassis   => write!(f, "Peripheral Chassis"),
-            Self::RaidChassis         => write!(f, "RAID Chassis"),
-            Self::RackMountChassis    => write!(f, "Rack Mount Chassis"),
-            Self::SealedCasePc        => write!(f, "Sealed-case PC"),
-            Self::MultiSystemChassis  => write!(f, "Multi-system chassis"),
-            Self::CompactPci          => write!(f, "Compact PCI"),
-            Self::AdvancedTca         => write!(f, "Advanced TCA"),
-            Self::Blade               => write!(f, "Blade"),
-            Self::BladeEnclosure      => write!(f, "Blade Enclosure"),
-            Self::Tablet              => write!(f, "Tablet"),
-            Self::Convertible         => write!(f, "Convertible"),
-            Self::Detachable          => write!(f, "Detachable"),
-            Self::IotGateway          => write!(f, "IoT Gateway"),
-            Self::EmbeddedPc          => write!(f, "Embedded PC"),
-            Self::MiniPc              => write!(f, "Mini PC"),
-            Self::StickPc             => write!(f, "Stick PC"),
-            Self::Undefined(v)        => write!(f, "Undefined: {}", v),
+            Self::PeripheralChassis => write!(f, "Peripheral Chassis"),
+            Self::RaidChassis => write!(f, "RAID Chassis"),
+            Self::RackMountChassis => write!(f, "Rack Mount Chassis"),
+            Self::SealedCasePc => write!(f, "Sealed-case PC"),
+            Self::MultiSystemChassis => write!(f, "Multi-system chassis"),
+            Self::CompactPci => write!(f, "Compact PCI"),
+            Self::AdvancedTca => write!(f, "Advanced TCA"),
+            Self::Blade => write!(f, "Blade"),
+            Self::BladeEnclosure => write!(f, "Blade Enclosure"),
+            Self::Tablet => write!(f, "Tablet"),
+            Self::Convertible => write!(f, "Convertible"),
+            Self::Detachable => write!(f, "Detachable"),
+            Self::IotGateway => write!(f, "IoT Gateway"),
+            Self::EmbeddedPc => write!(f, "Embedded PC"),
+            Self::MiniPc => write!(f, "Mini PC"),
+            Self::StickPc => write!(f, "Stick PC"),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
@@ -445,13 +439,13 @@ impl From<u8> for State {
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other          => write!(f, "Other"),
-            Self::Unknown        => write!(f, "Unknown"),
-            Self::Safe           => write!(f, "Safe"),
-            Self::Warning        => write!(f, "Warning"),
-            Self::Critical       => write!(f, "Critical"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Safe => write!(f, "Safe"),
+            Self::Warning => write!(f, "Warning"),
+            Self::Critical => write!(f, "Critical"),
             Self::NonRecoverable => write!(f, "Non-recoverable"),
-            Self::Undefined(v)   => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
@@ -459,31 +453,30 @@ impl fmt::Display for State {
 impl From<u8> for SecurityStatus {
     fn from(byte: u8) -> SecurityStatus {
         match byte {
-            0x01 => Self::Other,                     
-            0x02 => Self::Unknown,                   
-            0x03 => Self::None,                      
+            0x01 => Self::Other,
+            0x02 => Self::Unknown,
+            0x03 => Self::None,
             0x04 => Self::ExternalInterfaceLockedOut,
-            0x05 => Self::ExternalInterfaceEnabled,  
+            0x05 => Self::ExternalInterfaceEnabled,
             v => Self::Undefined(v),
         }
     }
 }
 impl fmt::Display for SecurityStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {                         
-            Self::Other                      => write!(f, "Other"),
-            Self::Unknown                    => write!(f, "Unknown"),
-            Self::None                       => write!(f, "None"),
+        match self {
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::None => write!(f, "None"),
             Self::ExternalInterfaceLockedOut => write!(f, "External interface locked out"),
-            Self::ExternalInterfaceEnabled   => write!(f, "External interface enabled"),
-            Self::Undefined(v)               => write!(f, "Undefined: {}", v),
+            Self::ExternalInterfaceEnabled => write!(f, "External interface enabled"),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
 
-
 impl<'buffer> ContainedElements<'buffer> {
-    fn new(data: &'buffer[u8], count: u8, record_length: u8) -> Self {
+    fn new(data: &'buffer [u8], count: u8, record_length: u8) -> Self {
         if count == 0 || record_length == 0 {
             Default::default()
         } else {
@@ -491,10 +484,14 @@ impl<'buffer> ContainedElements<'buffer> {
             // 15h offset from SMBIOS Specification
             let offset = 0x15 - STRUCTURE_HEADER_LENGTH as usize;
             let chunks = data
-                .get(offset..(offset+length))
+                .get(offset..(offset + length))
                 .unwrap_or_default()
                 .chunks(record_length as usize);
-            Self { chunks, count, record_length }
+            Self {
+                chunks,
+                count,
+                record_length,
+            }
         }
     }
     pub fn count(&self) -> u8 {
@@ -512,11 +509,10 @@ impl<'buffer> Default for ContainedElements<'buffer> {
 }
 impl<'buffer> PartialEq for ContainedElements<'buffer> {
     fn eq(&self, other: &Self) -> bool {
-        self.chunks.clone().eq(other.chunks.clone()) &&
-        self.count == other.count &&
-        self.record_length == other.record_length
+        self.chunks.clone().eq(other.chunks.clone())
+            && self.count == other.count
+            && self.record_length == other.record_length
     }
-
 }
 impl<'buffer> Eq for ContainedElements<'buffer> {}
 impl<'buffer> Hash for ContainedElements<'buffer> {
@@ -530,9 +526,7 @@ impl<'buffer> Iterator for ContainedElements<'buffer> {
     type Item = ContainedElement;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.chunks
-            .next()
-            .map(|a| a.into())
+        self.chunks.next().map(|a| a.into())
     }
 }
 
@@ -555,13 +549,7 @@ impl From<&[u8]> for ContainedElement {
 }
 impl fmt::Display for ContainedElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} ({}-{})",
-            self.type_,
-            self.minimum,
-            self.maximum
-        )
+        write!(f, "{} ({}-{})", self.type_, self.minimum, self.maximum)
     }
 }
 
@@ -584,7 +572,6 @@ impl fmt::Display for ContainedElementType {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::prelude::v1::*;
@@ -604,7 +591,7 @@ mod tests {
             assert_eq!(s, format!("{}", e));
         }
     }
-    
+
     #[test]
     fn state() {
         use super::State::*;
@@ -620,7 +607,7 @@ mod tests {
             assert_eq!(s, format!("{}", e));
         }
     }
-    
+
     #[test]
     fn security_status() {
         use super::SecurityStatus::*;
@@ -636,7 +623,7 @@ mod tests {
             assert_eq!(s, format!("{}", e));
         }
     }
-    
+
     #[test]
     fn contained_element() {
         use super::{ContainedElement, ContainedElementType};
@@ -647,9 +634,9 @@ mod tests {
                 ContainedElement {
                     type_: ContainedElementType::InfoType(crate::InfoType::SystemSlots),
                     minimum: 1,
-                    maximum: 2
+                    maximum: 2,
                 },
-                "Structure type: System Slots (1-2)"
+                "Structure type: System Slots (1-2)",
             ),
             // Type contains an SMBIOS Baseboard Type
             (
@@ -657,9 +644,9 @@ mod tests {
                 ContainedElement {
                     type_: ContainedElementType::BoardType(crate::baseboard::BoardType::ConnectivitySwitch),
                     minimum: 1,
-                    maximum: 2
+                    maximum: 2,
                 },
-                "Baseboard type: Connectivity Switch (1-2)"
+                "Baseboard type: Connectivity Switch (1-2)",
             ),
         ];
         for (array, contained_element, display) in data {
@@ -668,16 +655,15 @@ mod tests {
             assert_eq!(format!("{}", display), format!("{}", v));
         }
     }
-    
+
     #[test]
     fn contained_elements() {
-        use super::{ContainedElements, ContainedElement, ContainedElementType};
+        use super::{ContainedElement, ContainedElementType, ContainedElements};
         let structure_data = [
-            0x01, 0x97, 0x00, 0x02, 0x00, 0x03, 0x03, 0x03, 0x02, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x03,
-            // we are interested in six bytes below
-            0x91, 0x01, 0x02, 0x07, 0x03, 0x04,
-            //
-            0x03
+            0x01, 0x97, 0x00, 0x02, 0x00, 0x03, 0x03, 0x03, 0x02, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02,
+            0x03, // we are interested in six bytes below
+            0x91, 0x01, 0x02, 0x07, 0x03, 0x04, //
+            0x03,
         ];
         let mut contained_elements = ContainedElements::new(&structure_data, 2, 3);
         if let Some(el) = contained_elements.next() {
@@ -702,7 +688,7 @@ mod tests {
         }
         assert_eq!(contained_elements.next(), None);
     }
-    
+
     #[test]
     fn dmi_bin() {
         use super::*;
@@ -716,7 +702,8 @@ mod tests {
                 } else {
                     None
                 }
-            }).unwrap();
+            })
+            .unwrap();
         let sample = Enclosure {
             handle: 768,
             manufacturer: "Dell Inc.",
@@ -732,13 +719,11 @@ mod tests {
             oem_defined: Some(0x01010101),
             height: Some(2),
             power_cords_number: Some(2),
-            contained_elements: Some(
-                ContainedElements { 
-                    chunks: [145, 1, 2, 3, 255, 0].chunks(3),
-                    count: 2,
-                    record_length: 3
-                }
-            ),
+            contained_elements: Some(ContainedElements {
+                chunks: [145, 1, 2, 3, 255, 0].chunks(3),
+                count: 2,
+                record_length: 3,
+            }),
             sku_number: Some("SKU Number"),
         };
 
@@ -749,23 +734,51 @@ mod tests {
         assert_eq!(format!("{}", enc.version), "", "Version");
         assert_eq!(format!("{}", enc.serial_number), "XXXXXXX", "Serial Number");
         assert_eq!(format!("{}", enc.asset_tag_number), "", "Asset Tag");
-        assert_eq!(enc.boot_up_state.map(|v| format!("{}", v)), Some("Safe".into()), "Boot-up State");
-        assert_eq!(enc.power_supply_state.map(|v| format!("{}", v)), Some("Safe".into()), "Power Supply State");
-        assert_eq!(enc.thermal_state.map(|v| format!("{}", v)), Some("Safe".into()), "Thermal State");
-        assert_eq!(enc.security_status.map(|v| format!("{}", v)), Some("Unknown".into()), "Security Status");
-        assert_eq!(enc.oem_defined.map(|v| format!("{:#010X}", v)), Some("0x01010101".into()), "OEM Information");
+        assert_eq!(
+            enc.boot_up_state.map(|v| format!("{}", v)),
+            Some("Safe".into()),
+            "Boot-up State"
+        );
+        assert_eq!(
+            enc.power_supply_state.map(|v| format!("{}", v)),
+            Some("Safe".into()),
+            "Power Supply State"
+        );
+        assert_eq!(
+            enc.thermal_state.map(|v| format!("{}", v)),
+            Some("Safe".into()),
+            "Thermal State"
+        );
+        assert_eq!(
+            enc.security_status.map(|v| format!("{}", v)),
+            Some("Unknown".into()),
+            "Security Status"
+        );
+        assert_eq!(
+            enc.oem_defined.map(|v| format!("{:#010X}", v)),
+            Some("0x01010101".into()),
+            "OEM Information"
+        );
         assert_eq!(enc.height, Some(2), "Height");
         assert_eq!(enc.power_cords_number, Some(2), "Number Of Power Cords");
         assert_eq!(
-            enc.contained_elements.clone().and_then(|mut ce| ce.nth(0).map(|s| format!("{}", s))),
+            enc.contained_elements
+                .clone()
+                .and_then(|mut ce| ce.nth(0).map(|s| format!("{}", s))),
             Some("Structure type: Memory Device (1-2)".into()),
             "Number Of Power Cords"
         );
         assert_eq!(
-            enc.contained_elements.clone().and_then(|mut ce| ce.nth(1).map(|s| format!("{}", s))),
+            enc.contained_elements
+                .clone()
+                .and_then(|mut ce| ce.nth(1).map(|s| format!("{}", s))),
             Some("Baseboard type: Server Blade (255-0)".into()),
             "Number Of Power Cords"
         );
-        assert_eq!(enc.sku_number.map(|v| format!("{}", v)), Some("SKU Number".into()), "SKU Number");
+        assert_eq!(
+            enc.sku_number.map(|v| format!("{}", v)),
+            Some("SKU Number".into()),
+            "SKU Number"
+        );
     }
 }

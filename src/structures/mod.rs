@@ -3,7 +3,6 @@
 //! The System Information is presented to an application as a set of structures that are obtained
 //! by traversing the SMBIOS structure table referenced by the SMBIOS Entry Point Structure.
 
-
 #[path = "000_bios.rs"]
 pub mod bios;
 pub use self::bios::Bios;

@@ -3,16 +3,11 @@
 //! This structure provides the address mapping for a Physical Memory Array.
 //! One structure is present for each contiguous address range described.
 
-
 use crate::{
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
     RawStructure,
 };
-
 
 /// Main struct for *Memory Array Mapped Address (Type 19)*
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -54,47 +49,48 @@ pub struct MemoryArrayMappedAddress {
     pub extended_ending_address: Option<u64>,
 }
 
-
 impl<'a> MemoryArrayMappedAddress {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
         let handle = structure.handle;
         match (structure.version.major, structure.version.minor) {
-            v if ((2, 1)..(2, 7)).contains(&v) && structure.length != 0x0F =>
-                Err(InvalidFormattedSectionLength(InfoType::MemoryArrayMappedAddress, handle, "", 0x0F)),
-            v if v >= (2, 7) && structure.length != 0x1F =>
-                Err(InvalidFormattedSectionLength(InfoType::MemoryArrayMappedAddress, handle, "", 0x1F)),
-            _ => {
-                Ok(Self {
-                    handle,
-                    starting_address: structure.get::<u32>(0x04)?,
-                    ending_address: structure.get::<u32>(0x08)?,
-                    memory_array_handle: structure.get::<u16>(0x0C)?,
-                    partition_width: structure.get::<u8>(0x0E)?,
-                    extended_starting_address: structure.get::<u64>(0x0F).ok(),
-                    extended_ending_address: structure.get::<u64>(0x17).ok(),
-                })
-            }
+            v if ((2, 1)..(2, 7)).contains(&v) && structure.length != 0x0F => Err(InvalidFormattedSectionLength(
+                InfoType::MemoryArrayMappedAddress,
+                handle,
+                "",
+                0x0F,
+            )),
+            v if v >= (2, 7) && structure.length != 0x1F => Err(InvalidFormattedSectionLength(
+                InfoType::MemoryArrayMappedAddress,
+                handle,
+                "",
+                0x1F,
+            )),
+            _ => Ok(Self {
+                handle,
+                starting_address: structure.get::<u32>(0x04)?,
+                ending_address: structure.get::<u32>(0x08)?,
+                memory_array_handle: structure.get::<u16>(0x0C)?,
+                partition_width: structure.get::<u8>(0x0E)?,
+                extended_starting_address: structure.get::<u64>(0x0F).ok(),
+                extended_ending_address: structure.get::<u64>(0x17).ok(),
+            }),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
 
     #[test]
     fn memory_array_mapped_address() {
-        use crate::{
-            InfoType,
-            RawStructure,
-        };
         use super::*;
+        use crate::{InfoType, RawStructure};
 
         let length = 31;
-        let (data, strings) = include_bytes!("../../tests/data/02daadcd/entries/19-0/bin")[4..]
-            .split_at(length as usize - 4);
+        let (data, strings) =
+            include_bytes!("../../tests/data/02daadcd/entries/19-0/bin")[4..].split_at(length as usize - 4);
         let structure = RawStructure {
             version: (2, 7).into(),
             info: InfoType::MemoryArrayMappedAddress,
@@ -112,8 +108,7 @@ mod tests {
             extended_starting_address: Some(0),
             extended_ending_address: Some(0),
         };
-        let result = MemoryArrayMappedAddress::try_from(structure)
-            .unwrap();
+        let result = MemoryArrayMappedAddress::try_from(structure).unwrap();
         assert_eq!(sample, result, "MemoryArrayMappedAddress");
     }
 }

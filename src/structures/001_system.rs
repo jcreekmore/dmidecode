@@ -5,10 +5,7 @@
 //! associated with a single system instance and contains one and only one System Information
 //! (Type 1) structure.
 
-use crate::{
-    MalformedStructureError,
-    RawStructure,
-};
+use crate::{MalformedStructureError, RawStructure};
 
 /// The wakeup type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
@@ -101,7 +98,6 @@ impl<'buffer> System<'buffer> {
                 sku: None,
                 family: None,
             })
-
         } else if structure.version < (2, 4).into() {
             let_as_struct!(packed, SystemPacked_2_1, structure.data);
 
@@ -116,7 +112,6 @@ impl<'buffer> System<'buffer> {
                 sku: None,
                 family: None,
             })
-
         } else {
             let_as_struct!(packed, SystemPacked_2_4, structure.data);
 

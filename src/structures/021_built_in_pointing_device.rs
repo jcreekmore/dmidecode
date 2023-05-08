@@ -4,18 +4,13 @@
 //! The presence of this structure does not imply that the built-in pointing device is active for
 //! the system’s use.
 
-
 use core::fmt;
 
 use crate::{
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
     RawStructure,
 };
-
 
 /// Main struct for *Built-in Pointing Device (Type 21)*
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -71,16 +66,18 @@ impl<'a> BuiltInPointingDevice {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
         let handle = structure.handle;
         match (structure.version.major, structure.version.minor) {
-            v if v >= (2, 1) && structure.length != 0x07 =>
-                Err(InvalidFormattedSectionLength(InfoType::BuiltInPointingDevice, handle, "", 0x07)),
-            _ => {
-                Ok(Self {
-                    handle,
-                    type_: structure.get::<u8>(0x04)?.into(),
-                    interface: structure.get::<u8>(0x05)?.into(),
-                    number_of_buttons: structure.get::<u8>(0x06)?,
-                })
-            }
+            v if v >= (2, 1) && structure.length != 0x07 => Err(InvalidFormattedSectionLength(
+                InfoType::BuiltInPointingDevice,
+                handle,
+                "",
+                0x07,
+            )),
+            _ => Ok(Self {
+                handle,
+                type_: structure.get::<u8>(0x04)?.into(),
+                interface: structure.get::<u8>(0x05)?.into(),
+                number_of_buttons: structure.get::<u8>(0x06)?,
+            }),
         }
     }
 }
@@ -97,23 +94,23 @@ impl From<u8> for Type {
             0x07 => Self::TouchPad,
             0x08 => Self::TouchScreen,
             0x09 => Self::OpticalSensor,
-            v    => Self::Undefined(v),
+            v => Self::Undefined(v),
         }
     }
 }
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other         => write!(f, "Other"),
-            Self::Unknown       => write!(f, "Unknown"),
-            Self::Mouse         => write!(f, "Mouse"),
-            Self::TrackBall     => write!(f, "Track Ball"),
-            Self::TrackPoint    => write!(f, "Track Point"),
-            Self::GlidePoint    => write!(f, "Glide Point"),
-            Self::TouchPad      => write!(f, "Touch Pad"),
-            Self::TouchScreen   => write!(f, "Touch Screen"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Mouse => write!(f, "Mouse"),
+            Self::TrackBall => write!(f, "Track Ball"),
+            Self::TrackPoint => write!(f, "Track Point"),
+            Self::GlidePoint => write!(f, "Glide Point"),
+            Self::TouchPad => write!(f, "Touch Pad"),
+            Self::TouchScreen => write!(f, "Touch Screen"),
             Self::OpticalSensor => write!(f, "Optical Sensor"),
-            Self::Undefined(v)  => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
@@ -132,34 +129,33 @@ impl From<u8> for Interface {
             0xA0 => Self::BusMouseDb9,
             0xA1 => Self::BusMouseMicroDin,
             0xA2 => Self::Usb,
-            v    => Self::Undefined(v),
+            v => Self::Undefined(v),
         }
     }
 }
 impl fmt::Display for Interface {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other            => write!(f, "Other"),
-            Self::Unknown          => write!(f, "Unknown"),
-            Self::Serial           => write!(f, "Serial"),
-            Self::Ps2              => write!(f, "PS/2"),
-            Self::Infrared         => write!(f, "Infrared"),
-            Self::HpHil            => write!(f, "HP-HIL"),
-            Self::BusMouse         => write!(f, "Bus mouse"),
-            Self::Adb              => write!(f, "ADB (Apple Desktop Bus)"),
-            Self::BusMouseDb9      => write!(f, "Bus mouse DB-9"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Serial => write!(f, "Serial"),
+            Self::Ps2 => write!(f, "PS/2"),
+            Self::Infrared => write!(f, "Infrared"),
+            Self::HpHil => write!(f, "HP-HIL"),
+            Self::BusMouse => write!(f, "Bus mouse"),
+            Self::Adb => write!(f, "ADB (Apple Desktop Bus)"),
+            Self::BusMouseDb9 => write!(f, "Bus mouse DB-9"),
             Self::BusMouseMicroDin => write!(f, "Bus mouse micro-DIN"),
-            Self::Usb              => write!(f, "USB"),
-            Self::Undefined(v)     => write!(f, "Undefined: {}", v),
+            Self::Usb => write!(f, "USB"),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
 
     #[test]
     fn type_() {
@@ -200,11 +196,7 @@ mod tests {
         for n in 0..sample.len() {
             assert_eq!(sample[n], format!("{:#}", Interface::from(n as u8)));
         }
-        let sample = &[
-            "Bus mouse DB-9",
-            "Bus mouse micro-DIN",
-            "USB",
-        ];
+        let sample = &["Bus mouse DB-9", "Bus mouse micro-DIN", "USB"];
         for n in 0xA0..(0xA0 + sample.len()) {
             assert_eq!(sample[n - 0xA0], format!("{:#}", Interface::from(n as u8)));
         }
@@ -212,15 +204,12 @@ mod tests {
 
     #[test]
     fn built_in_pointing_device() {
-        use crate::{
-            InfoType,
-            RawStructure,
-        };
         use super::*;
+        use crate::{InfoType, RawStructure};
 
         let length = 7;
-        let (data, strings) = include_bytes!("../../tests/data/________/entries/21-0/bin")[4..]
-            .split_at(length as usize - 4);
+        let (data, strings) =
+            include_bytes!("../../tests/data/________/entries/21-0/bin")[4..].split_at(length as usize - 4);
         let structure = RawStructure {
             version: (2, 7).into(),
             info: InfoType::BuiltInPointingDevice,
@@ -235,8 +224,7 @@ mod tests {
             interface: Interface::Serial,
             number_of_buttons: 3,
         };
-        let result = BuiltInPointingDevice::try_from(structure)
-            .unwrap();
+        let result = BuiltInPointingDevice::try_from(structure).unwrap();
         assert_eq!(sample, result, "BuiltInPointingDevice");
     }
 }

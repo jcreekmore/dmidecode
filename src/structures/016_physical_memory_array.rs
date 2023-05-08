@@ -6,11 +6,7 @@
 use core::convert::TryInto;
 use core::fmt;
 
-use crate::{
-    MalformedStructureError,
-    RawStructure,
-};
-
+use crate::{MalformedStructureError, RawStructure};
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum MemoryArrayLocation {
@@ -64,22 +60,22 @@ impl From<u8> for MemoryArrayLocation {
 impl fmt::Display for MemoryArrayLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other                     => write!(f, "Other"),
-            Self::Unknown                   => write!(f, "Unknown"),
-            Self::SystemBoardOrMotherboard  => write!(f, "System board or motherboard"),
-            Self::IsaAddOnCard              => write!(f, "ISA add-on card"),
-            Self::EisaAddOnCard             => write!(f, "EISA add-on card"),
-            Self::PciAddOnCard              => write!(f, "PCI add-on card"),
-            Self::McaAddOnCard              => write!(f, "MCA add-on card"),
-            Self::PcmciaAddOnCard           => write!(f, "PCMCIA add-on card"),
-            Self::ProprietaryAddOnCard      => write!(f, "Proprietary add-on card"),
-            Self::NuBus                     => write!(f, "NuBus"),
-            Self::Pc98c20AddOnCard          => write!(f, "PC-98/C20 add-on card"),
-            Self::Pc98c24AddOnCard          => write!(f, "PC-98/C24 add-on card"),
-            Self::Pc98eAddOnCard            => write!(f, "PC-98/E add-on card"),
-            Self::Pc98LocalBusAddOnCard     => write!(f, "PC-98/Local bus add-on card"),
-            Self::CxlAddOnCard              => write!(f, "CXL add-on card"),
-            Self::Undefined(t)              => write!(f, "Undefined: {}", t),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::SystemBoardOrMotherboard => write!(f, "System board or motherboard"),
+            Self::IsaAddOnCard => write!(f, "ISA add-on card"),
+            Self::EisaAddOnCard => write!(f, "EISA add-on card"),
+            Self::PciAddOnCard => write!(f, "PCI add-on card"),
+            Self::McaAddOnCard => write!(f, "MCA add-on card"),
+            Self::PcmciaAddOnCard => write!(f, "PCMCIA add-on card"),
+            Self::ProprietaryAddOnCard => write!(f, "Proprietary add-on card"),
+            Self::NuBus => write!(f, "NuBus"),
+            Self::Pc98c20AddOnCard => write!(f, "PC-98/C20 add-on card"),
+            Self::Pc98c24AddOnCard => write!(f, "PC-98/C24 add-on card"),
+            Self::Pc98eAddOnCard => write!(f, "PC-98/E add-on card"),
+            Self::Pc98LocalBusAddOnCard => write!(f, "PC-98/Local bus add-on card"),
+            Self::CxlAddOnCard => write!(f, "CXL add-on card"),
+            Self::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
@@ -120,14 +116,14 @@ impl From<u8> for MemoryArrayUse {
 impl fmt::Display for MemoryArrayUse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other          => write!(f, "Other"),
-            Self::Unknown        => write!(f, "Unknown"),
-            Self::SystemMemory   => write!(f, "System memory"),
-            Self::VideoMemory    => write!(f, "Video memory"),
-            Self::FlashMemory    => write!(f, "Flash memory"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::SystemMemory => write!(f, "System memory"),
+            Self::VideoMemory => write!(f, "Video memory"),
+            Self::FlashMemory => write!(f, "Flash memory"),
             Self::NonVolatileRam => write!(f, "Non-volatile RAM"),
-            Self::CacheMemory    => write!(f, "Cache memory"),
-            Self::Undefined(t)   => write!(f, "Undefined: {}", t),
+            Self::CacheMemory => write!(f, "Cache memory"),
+            Self::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
@@ -168,14 +164,14 @@ impl From<u8> for MemoryArrayErrorCorrectionTypes {
 impl fmt::Display for MemoryArrayErrorCorrectionTypes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other         => write!(f, "Other"),
-            Self::Unknown       => write!(f, "Unknown"),
-            Self::None          => write!(f, "None"),
-            Self::Parity        => write!(f, "Parity"),
-            Self::SingleBitEcc  => write!(f, "Single-bit ECC"),
-            Self::MultiBitEcc   => write!(f, "Multi-bit ECC"),
-            Self::CRC           => write!(f, "CRC"),
-            Self::Undefined(t)  => write!(f, "Undefined: {}", t),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::None => write!(f, "None"),
+            Self::Parity => write!(f, "Parity"),
+            Self::SingleBitEcc => write!(f, "Single-bit ECC"),
+            Self::MultiBitEcc => write!(f, "Multi-bit ECC"),
+            Self::CRC => write!(f, "CRC"),
+            Self::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
@@ -214,9 +210,7 @@ pub struct PhysicalMemoryArray {
 }
 
 impl PhysicalMemoryArray {
-    pub(crate) fn try_from(
-        structure: RawStructure,
-    ) -> Result<Self, MalformedStructureError> {
+    pub(crate) fn try_from(structure: RawStructure) -> Result<Self, MalformedStructureError> {
         let mut pma = PhysicalMemoryArray::default();
         let mut mem_pointer = 0;
         if structure.version > (2, 1).into() {
@@ -232,22 +226,17 @@ impl PhysicalMemoryArray {
             pma.number_of_memory_devices = get_word(&mut mem_pointer, &structure.data)?;
         }
         if structure.version > (2, 7).into() {
-            pma.extended_maximum_capacity =
-                if pma.maximum_capacity.is_none() {
-                    get_optional_qword(&mut mem_pointer, &structure.data, 0)?
-                } else {
-                    None
-                };
+            pma.extended_maximum_capacity = if pma.maximum_capacity.is_none() {
+                get_optional_qword(&mut mem_pointer, &structure.data, 0)?
+            } else {
+                None
+            };
         }
         Ok(pma)
     }
 }
 
-fn get_optional_qword(
-    pointer: &mut usize,
-    data: &[u8],
-    none_val: u64,
-) -> Result<Option<u64>, MalformedStructureError> {
+fn get_optional_qword(pointer: &mut usize, data: &[u8], none_val: u64) -> Result<Option<u64>, MalformedStructureError> {
     let word = get_qword(pointer, data)?;
     if word == none_val {
         Ok(None)
@@ -256,11 +245,7 @@ fn get_optional_qword(
     }
 }
 
-fn get_optional_dword(
-    pointer: &mut usize,
-    data: &[u8],
-    none_val: u32,
-) -> Result<Option<u32>, MalformedStructureError> {
+fn get_optional_dword(pointer: &mut usize, data: &[u8], none_val: u32) -> Result<Option<u32>, MalformedStructureError> {
     let word = get_dword(pointer, data)?;
     if word == none_val {
         Ok(None)
@@ -269,11 +254,7 @@ fn get_optional_dword(
     }
 }
 
-fn get_optional_word(
-    pointer: &mut usize,
-    data: &[u8],
-    none_val: u16,
-) -> Result<Option<u16>, MalformedStructureError> {
+fn get_optional_word(pointer: &mut usize, data: &[u8], none_val: u16) -> Result<Option<u16>, MalformedStructureError> {
     let word = get_word(pointer, data)?;
     if word == none_val {
         Ok(None)

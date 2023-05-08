@@ -2,18 +2,13 @@
 //!
 //! This structure identifies the specifics of an error that might be detected within a Physical Memory Array.
 
-
 use core::fmt;
 
 use crate::{
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
     RawStructure,
 };
-
 
 /// Main struct for *32-Bit Memory Error Information (Type 18) structure*
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -121,28 +116,28 @@ impl From<u8> for ErrorType {
             0x0c => Self::CorrectedSingleBitError,
             0x0d => Self::CorrectedError,
             0x0e => Self::UncorrectableError,
-            v    => Self::Undefined(v),
+            v => Self::Undefined(v),
         }
     }
 }
 impl fmt::Display for ErrorType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other                   => write!(f, "Other"),
-            Self::Unknown                 => write!(f, "Unknown"),
-            Self::Ok                      => write!(f, "OK"),
-            Self::BadRead                 => write!(f, "Bad read"),
-            Self::ParityError             => write!(f, "Parity error"),
-            Self::SingleBitError          => write!(f, "Single-bit error"),
-            Self::DoubleBitError          => write!(f, "Double-bit error"),
-            Self::MultiBitError           => write!(f, "Multi-bit error"),
-            Self::NibbleError             => write!(f, "Nibble error"),
-            Self::ChecksumError           => write!(f, "Checksum error"),
-            Self::CrcError                => write!(f, "CRC error"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Ok => write!(f, "OK"),
+            Self::BadRead => write!(f, "Bad read"),
+            Self::ParityError => write!(f, "Parity error"),
+            Self::SingleBitError => write!(f, "Single-bit error"),
+            Self::DoubleBitError => write!(f, "Double-bit error"),
+            Self::MultiBitError => write!(f, "Multi-bit error"),
+            Self::NibbleError => write!(f, "Nibble error"),
+            Self::ChecksumError => write!(f, "Checksum error"),
+            Self::CrcError => write!(f, "CRC error"),
             Self::CorrectedSingleBitError => write!(f, "Corrected single-bit error"),
-            Self::CorrectedError          => write!(f, "Corrected error"),
-            Self::UncorrectableError      => write!(f, "Uncorrectable error"),
-            Self::Undefined(v)            => write!(f, "Undefined: {}", v),
+            Self::CorrectedError => write!(f, "Corrected error"),
+            Self::UncorrectableError => write!(f, "Uncorrectable error"),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
@@ -154,17 +149,17 @@ impl From<u8> for ErrorGranularity {
             0x02 => Self::Unknown,
             0x03 => Self::DeviceLevel,
             0x04 => Self::MemoryPartitionLevel,
-            v    => Self::Undefined(v),
+            v => Self::Undefined(v),
         }
     }
 }
 impl fmt::Display for ErrorGranularity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other        => write!(f, "Other"),
-            Self::Unknown      => write!(f, "Unknown"),
-            Self::DeviceLevel         => write!(f, "Device level"),
-            Self::MemoryPartitionLevel        => write!(f, "Memory partition level"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::DeviceLevel => write!(f, "Device level"),
+            Self::MemoryPartitionLevel => write!(f, "Memory partition level"),
             Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
@@ -178,47 +173,38 @@ impl From<u8> for ErrorOperation {
             0x03 => Self::Read,
             0x04 => Self::Write,
             0x05 => Self::PartialWrite,
-            v    => Self::Undefined(v),
+            v => Self::Undefined(v),
         }
     }
 }
 impl fmt::Display for ErrorOperation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other        => write!(f, "Other"),
-            Self::Unknown      => write!(f, "Unknown"),
-            Self::Read         => write!(f, "Read"),
-            Self::Write        => write!(f, "Write"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Read => write!(f, "Read"),
+            Self::Write => write!(f, "Write"),
             Self::PartialWrite => write!(f, "Partial write"),
             Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
 
     #[test]
     fn error_operation() {
         use super::ErrorOperation;
 
-        let sample = &[
-            "",
-            "Other",
-            "Unknown",
-            "Read",
-            "Write",
-            "Partial write",
-            "Undefined: 6",
-        ];
+        let sample = &["", "Other", "Unknown", "Read", "Write", "Partial write", "Undefined: 6"];
         for n in 1u8..7 {
             assert_eq!(sample[n as usize], format!("{:#}", ErrorOperation::from(n)));
         }
     }
-    
+
     #[test]
     fn error_granularity() {
         use super::ErrorGranularity;
@@ -264,15 +250,12 @@ mod tests {
 
     #[test]
     fn memory_error_32() {
-        use crate::{
-            InfoType,
-            RawStructure,
-        };
         use super::*;
+        use crate::{InfoType, RawStructure};
 
         let length = 23;
-        let (data, strings) = include_bytes!("../../tests/data/caf65269/entries/18-0/bin")[4..]
-            .split_at(length as usize - 4);
+        let (data, strings) =
+            include_bytes!("../../tests/data/caf65269/entries/18-0/bin")[4..].split_at(length as usize - 4);
         let structure = RawStructure {
             version: (2, 4).into(),
             info: InfoType::MemoryError32,
@@ -291,8 +274,7 @@ mod tests {
             device_error_address: 0x8000_0000,
             error_resolution: 0x8000_0000,
         };
-        let result = MemoryError32::try_from(structure)
-            .unwrap();
+        let result = MemoryError32::try_from(structure).unwrap();
         assert_eq!(sample, result);
     }
 }
