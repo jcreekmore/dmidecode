@@ -1,0 +1,19 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+jobs:
+  msrv:
+    name: msrv
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.69.0
+          components: rustfmt
+      - run: cargo fmt --check
+      - run: cargo check --all-features
+      - run: cargo test --all-features
