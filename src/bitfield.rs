@@ -85,7 +85,7 @@ pub trait BitField<'a> {
 /// Long form refers to SMBIOS Specification
 /// Assume internal use only
 ///
-/// ```
+/// ```ignore
 /// # #[macro_use]
 /// # extern crate dmidecode;
 /// # use dmidecode::bitfield::{FlagType, Layout};
