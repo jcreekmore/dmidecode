@@ -7,11 +7,7 @@
 
 use core::fmt;
 
-use crate::{
-    MalformedStructureError,
-    RawStructure,
-};
-
+use crate::{MalformedStructureError, RawStructure};
 
 /// The `Cache Information` table defined in the SMBIOS specification.
 ///
@@ -167,7 +163,6 @@ pub enum CacheSize2 {
     Granularity64K(u32),
 }
 
-
 impl<'buffer> Cache<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Cache<'buffer>, MalformedStructureError> {
         #[repr(C)]
@@ -231,7 +226,7 @@ impl<'buffer> Cache<'buffer> {
                     maximum_cache_size_2: Some(packed.maximum_cache_size_2.into()),
                     installed_size_2: Some(packed.installed_size_2.into()),
                 })
-            },
+            }
             v if v > (2, 1).into() => {
                 let_as_struct!(packed, CachePacked_2_1, structure.data);
                 Ok(Cache {
@@ -249,7 +244,7 @@ impl<'buffer> Cache<'buffer> {
                     maximum_cache_size_2: None,
                     installed_size_2: None,
                 })
-            },
+            }
             v if v > (2, 0).into() => {
                 let_as_struct!(packed, CachePacked_2_0, structure.data);
                 Ok(Cache {
@@ -267,7 +262,7 @@ impl<'buffer> Cache<'buffer> {
                     maximum_cache_size_2: None,
                     installed_size_2: None,
                 })
-            },
+            }
             _ => unreachable!(),
         }
     }
@@ -298,7 +293,7 @@ impl From<u16> for CacheSize {
 impl CacheSize {
     pub fn bytes(&self) -> u64 {
         match &self {
-            Self::Granularity1K(val) => (*val as u64)  * (1 << 10),
+            Self::Granularity1K(val) => (*val as u64) * (1 << 10),
             Self::Granularity64K(val) => (*val as u64) * (1 << 16),
         }
     }
@@ -348,15 +343,15 @@ impl From<u16> for CacheLocation {
 impl fmt::Display for CacheLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Internal  => write!(f, "Internal"),
-            Self::External  => write!(f, "External"),
-            Self::Reserved  => write!(f, "Reserved"),
-            Self::Unknown   => write!(f, "Unknown"),
+            Self::Internal => write!(f, "Internal"),
+            Self::External => write!(f, "External"),
+            Self::Reserved => write!(f, "Reserved"),
+            Self::Unknown => write!(f, "Unknown"),
         }
     }
 }
 
-impl From<u16> for CacheOperationalMode  {
+impl From<u16> for CacheOperationalMode {
     fn from(word: u16) -> CacheOperationalMode {
         match word {
             0 => CacheOperationalMode::WriteThrough,
@@ -370,17 +365,15 @@ impl From<u16> for CacheOperationalMode  {
 impl fmt::Display for CacheOperationalMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::WriteThrough              => write!(f, "Write Through"),
-            Self::WriteBack                 => write!(f, "Write Back"),
-            Self::ValuesWithMemoryAddress   => write!(f, "Values with Memory Address"),
-            Self::Unknown                   => write!(f, "Unknown"),
+            Self::WriteThrough => write!(f, "Write Through"),
+            Self::WriteBack => write!(f, "Write Back"),
+            Self::ValuesWithMemoryAddress => write!(f, "Values with Memory Address"),
+            Self::Unknown => write!(f, "Unknown"),
         }
     }
 }
 
-
-
-impl From<u8> for CacheErrorCorrectionType  {
+impl From<u8> for CacheErrorCorrectionType {
     fn from(byte: u8) -> CacheErrorCorrectionType {
         match byte {
             0x01 => CacheErrorCorrectionType::Other,
@@ -396,18 +389,18 @@ impl From<u8> for CacheErrorCorrectionType  {
 impl fmt::Display for CacheErrorCorrectionType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other         => write!(f, "Other"),
-            Self::Unknown       => write!(f, "Unknown"),
-            Self::None          => write!(f, "None"),
-            Self::Parity        => write!(f, "Parity"),
-            Self::SingleBitEcc  => write!(f, "Single-bit ECC"),
-            Self::MultiBitEcc   => write!(f, "Multi-bit ECC"),
-            Self::Undefined(t)  => write!(f, "Undefined: {}", t),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::None => write!(f, "None"),
+            Self::Parity => write!(f, "Parity"),
+            Self::SingleBitEcc => write!(f, "Single-bit ECC"),
+            Self::MultiBitEcc => write!(f, "Multi-bit ECC"),
+            Self::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
 
-impl From<u8> for SystemCacheType  {
+impl From<u8> for SystemCacheType {
     fn from(byte: u8) -> SystemCacheType {
         match byte {
             0x01 => SystemCacheType::Other,
@@ -422,17 +415,17 @@ impl From<u8> for SystemCacheType  {
 impl fmt::Display for SystemCacheType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other         => write!(f, "Other"),
-            Self::Unknown       => write!(f, "Unknown"),
-            Self::Instruction   => write!(f, "Instruction"),
-            Self::Data          => write!(f, "Data"),
-            Self::Unified       => write!(f, "Unified"),
-            Self::Undefined(t)  => write!(f, "Undefined: {}", t),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Instruction => write!(f, "Instruction"),
+            Self::Data => write!(f, "Data"),
+            Self::Unified => write!(f, "Unified"),
+            Self::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
 
-impl From<u8> for CacheAssociativity  {
+impl From<u8> for CacheAssociativity {
     fn from(byte: u8) -> CacheAssociativity {
         match byte {
             0x01 => CacheAssociativity::Other,
@@ -449,27 +442,28 @@ impl From<u8> for CacheAssociativity  {
             0x0C => CacheAssociativity::FourtyEightWaySetAssociative,
             0x0D => CacheAssociativity::SixtyFourWaySetAssociative,
             0x0E => CacheAssociativity::TwentyWaySetAssociative,
-            t  => CacheAssociativity::Undefined(t),
-        }}
+            t => CacheAssociativity::Undefined(t),
+        }
+    }
 }
 impl fmt::Display for CacheAssociativity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other         => write!(f, "Other"),
-            Self::Unknown                       => write!(f, "Unknown"),
-            Self::DirectMapped                  => write!(f, "Direct Mapped"),
-            Self::TwowaySetAssociative          => write!(f, "2-way Set-Associative"),
-            Self::FourWaySetAssociative         => write!(f, "4-way Set-Associative"),
-            Self::FullyAssociative              => write!(f, "Fully Associative"),
-            Self::EightWaySetAssociative        => write!(f, "8-way Set-Associative"),
-            Self::SixteenWaySetAssociative      => write!(f, "16-way Set-Associative"),
-            Self::TwelveWaySetAssociative       => write!(f, "12-way Set-Associative"),
-            Self::TwentyFourWaySetAssociative   => write!(f, "24-way Set-Associative"),
-            Self::ThirtyTwoWaySetAssociative    => write!(f, "32-way Set-Associative"),
-            Self::FourtyEightWaySetAssociative  => write!(f, "48-way Set-Associative"),
-            Self::SixtyFourWaySetAssociative    => write!(f, "64-way Set-Associative"),
-            Self::TwentyWaySetAssociative       => write!(f, "20-way Set-Associative"),
-            Self::Undefined(t)                  => write!(f, "Undefined: {}", t),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::DirectMapped => write!(f, "Direct Mapped"),
+            Self::TwowaySetAssociative => write!(f, "2-way Set-Associative"),
+            Self::FourWaySetAssociative => write!(f, "4-way Set-Associative"),
+            Self::FullyAssociative => write!(f, "Fully Associative"),
+            Self::EightWaySetAssociative => write!(f, "8-way Set-Associative"),
+            Self::SixteenWaySetAssociative => write!(f, "16-way Set-Associative"),
+            Self::TwelveWaySetAssociative => write!(f, "12-way Set-Associative"),
+            Self::TwentyFourWaySetAssociative => write!(f, "24-way Set-Associative"),
+            Self::ThirtyTwoWaySetAssociative => write!(f, "32-way Set-Associative"),
+            Self::FourtyEightWaySetAssociative => write!(f, "48-way Set-Associative"),
+            Self::SixtyFourWaySetAssociative => write!(f, "64-way Set-Associative"),
+            Self::TwentyWaySetAssociative => write!(f, "20-way Set-Associative"),
+            Self::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
@@ -487,7 +481,7 @@ impl From<u32> for CacheSize2 {
 impl CacheSize2 {
     pub fn bytes(&self) -> u64 {
         match &self {
-            Self::Granularity1K(val) => (*val as u64)  * (1 << 10),
+            Self::Granularity1K(val) => (*val as u64) * (1 << 10),
             Self::Granularity64K(val) => (*val as u64) * (1 << 16),
         }
     }
@@ -511,7 +505,7 @@ mod tests {
     }
     #[test]
     fn cache_size() {
-        let data = [ 0b0000_0010_1010_1010, 0b1000_0010_1010_1010 ];
+        let data = [0b0000_0010_1010_1010, 0b1000_0010_1010_1010];
         let cs_1k = CacheSize::from(data[0]);
         let cs_64k = CacheSize::from(data[1]);
         let cs2_1k = CacheSize2::from((data[0] as u32) << 16);
@@ -538,6 +532,9 @@ mod tests {
         assert_eq!(SystemCacheType::Undefined(85), (data as u8).into());
         assert_eq!(SystemCacheType::Unified, ((data & 0b111) as u8).into());
         assert_eq!(CacheAssociativity::Undefined(85), (data as u8).into());
-        assert_eq!(CacheAssociativity::FourWaySetAssociative, ((data & 0b1111) as u8).into());
+        assert_eq!(
+            CacheAssociativity::FourWaySetAssociative,
+            ((data & 0b1111) as u8).into()
+        );
     }
 }

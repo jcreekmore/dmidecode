@@ -10,33 +10,20 @@
 //! changed, the application can retrieve the entire event log and determine the changes since the
 //! last time it read the event log.
 
-
-
+use core::convert::TryInto;
 use core::fmt;
-use core::slice::Chunks;
 use core::hash::{Hash, Hasher};
-use core::convert::{TryInto};
+use core::slice::Chunks;
 
 use crate::{
+    bitfield::{BitField, FlagType, Layout},
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
     RawStructure,
-    bitfield::{
-        BitField,
-        FlagType,
-        Layout,
-    },
 };
 
 pub mod log_record_format;
-pub use self::log_record_format::{
-    EventLogType,
-    VariableDataFormatType,
-};
-
+pub use self::log_record_format::{EventLogType, VariableDataFormatType};
 
 /// Main struct for *System Event Log (Type 15) structure*
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -48,7 +35,7 @@ pub struct SystemEventLog<'a> {
     pub log_area_length: u16,
     /// Defines the starting offset (or index) within the nonvolatile storage of the event-log’s
     /// header, from the Access Method Address For single-byte indexed I/O accesses, the
-    /// most-significant byte of the start offset is set to 00h. 
+    /// most-significant byte of the start offset is set to 00h.
     pub log_header_start_offset: u16,
     /// Defines the starting offset (or index) within the nonvolatile storage of the event-log’s
     /// first data byte, from the Access Method Address For single-byte indexed I/O accesses, the
@@ -71,40 +58,21 @@ pub struct SystemEventLog<'a> {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum AccessMethod {
     /// Indexed I/O: 1 8-bit index port, 1 8-bit data port.
-    IndexedIoOne8bitIndexOne8bitData {
-        index: u8,
-        data: u8,
-    },
+    IndexedIoOne8bitIndexOne8bitData { index: u8, data: u8 },
     /// Indexed I/O: 2 8-bit index ports, 1 8-bit data port.
-    IndexedIoTwo8bitIndexOne8bitData {
-        index: [u8; 2],
-        data: u8,
-    },
+    IndexedIoTwo8bitIndexOne8bitData { index: [u8; 2], data: u8 },
     /// Indexed I/O: 1 16-bit index port, 1 8-bit data port.
-    IndexedIoOne16bitIndexOne8bitData {
-        index: u16,
-        data: u8,
-    },
+    IndexedIoOne16bitIndexOne8bitData { index: u16, data: u8 },
     /// Memory-mapped physical 32-bit address.
-    MemoryMappedPhysicaAddress {
-        physical_address: u32,
-    },
+    MemoryMappedPhysicaAddress { physical_address: u32 },
     /// Available through General-Purpose NonVolatile Data functions.
-    GeneralPurposeNonVolatileData {
-        gpnv_handle: u16,
-    },
+    GeneralPurposeNonVolatileData { gpnv_handle: u16 },
     /// Available for future assignment
-    Available {
-        method: u8,
-        address: u32,
-    },
+    Available { method: u8, address: u32 },
     /// BIOS Vendor/OEM-specific
-    OemSpecific {
-        method: u8,
-        address: u32,
-    },
+    OemSpecific { method: u8, address: u32 },
 }
-    
+
 /// Current status of the system event-log
 ///
 /// The Log Status fields might not be up-to-date (dynamic) when the structure is accessed using
@@ -142,7 +110,7 @@ pub enum LogHeaderFormat {
 //pub struct MultipleEvent {
 //    /// Number of minutes that must pass between duplicate log entries that utilize a
 //    /// multiple-event counter, specified in BCD The value ranges from 00h to 99h to represent 0 to
-//    /// 99 minutes. 
+//    /// 99 minutes.
 //    pub time_window: u8,
 //    /// Number of occurrences of a duplicate event that must pass before the multiple-event counter
 //    /// associated with the log entry is updated, specified as a numeric value in the range 1 to
@@ -169,7 +137,7 @@ pub enum LogHeaderFormat {
 //}
 
 /// An iterator through Event Log Type Descriptors
-#[derive(Clone, Debug,)]
+#[derive(Clone, Debug)]
 pub struct SupportedEventLogTypeDescriptors<'a>(Chunks<'a, u8>);
 
 /// Supported Event Log Type descriptor
@@ -183,7 +151,6 @@ pub struct EventLogTypeDescriptor {
     pub variable_data_format_type: VariableDataFormatType,
 }
 
-
 impl<'a> SystemEventLog<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
         let handle = structure.handle;
@@ -191,17 +158,33 @@ impl<'a> SystemEventLog<'a> {
         let length_of_each_log_type_descriptor = structure.get::<u8>(0x16).ok();
         let len_gt_2_1 = number_of_supported_log_type_descriptors
             .and_then(|x| length_of_each_log_type_descriptor.map(|y| 0x17 + x as usize * y as usize));
-        match ((structure.version.major, structure.version.minor), structure.data.len() + 4) {
-            (v, l) if v == (2, 0) && l != 0x14 => {
-               Err(InvalidFormattedSectionLength(InfoType::SystemEventLog, handle, "", 0x14))
-            },
+        match (
+            (structure.version.major, structure.version.minor),
+            structure.data.len() + 4,
+        ) {
+            (v, l) if v == (2, 0) && l != 0x14 => Err(InvalidFormattedSectionLength(
+                InfoType::SystemEventLog,
+                handle,
+                "",
+                0x14,
+            )),
             (v, l) if v >= (2, 1) && Some(l) != len_gt_2_1 => {
                 if let Some(len) = len_gt_2_1 {
-                    Err(InvalidFormattedSectionLength(InfoType::SystemEventLog, handle, "17h+(x*y) = ", len as u8))
+                    Err(InvalidFormattedSectionLength(
+                        InfoType::SystemEventLog,
+                        handle,
+                        "17h+(x*y) = ",
+                        len as u8,
+                    ))
                 } else {
-                    Err(InvalidFormattedSectionLength(InfoType::SystemEventLog, handle, "minimum of ", 0))
+                    Err(InvalidFormattedSectionLength(
+                        InfoType::SystemEventLog,
+                        handle,
+                        "minimum of ",
+                        0,
+                    ))
                 }
-            },
+            }
             _ => {
                 let access_method = {
                     let method = structure.get::<u8>(0x0A)?;
@@ -222,8 +205,7 @@ impl<'a> SystemEventLog<'a> {
                     access_method,
                     log_status: structure.get::<u8>(0x0B)?.into(),
                     log_change_token: structure.get::<u32>(0x0C)?,
-                    log_header_format: structure.get::<u8>(0x14)
-                        .ok().map(Into::into),
+                    log_header_format: structure.get::<u8>(0x14).ok().map(Into::into),
                     supported_event_log_type_descriptors,
                 })
             }
@@ -246,16 +228,15 @@ impl AccessMethod {
         match method {
             0x00 => Self::IndexedIoOne8bitIndexOne8bitData {
                 index: index_lsb,
-                data: data_lsb
+                data: data_lsb,
             },
             0x01 => Self::IndexedIoTwo8bitIndexOne8bitData {
                 index: [index_lsb, index_msb],
-                data: data_lsb
+                data: data_lsb,
             },
             0x02 => Self::IndexedIoOne16bitIndexOne8bitData {
                 index: u16::from_le_bytes([index_lsb, index_msb]),
-                data: data_lsb
-                
+                data: data_lsb,
             },
             0x03 => Self::MemoryMappedPhysicaAddress {
                 physical_address: address,
@@ -263,20 +244,20 @@ impl AccessMethod {
             0x04 => Self::GeneralPurposeNonVolatileData {
                 gpnv_handle: u16::from_le_bytes([index_lsb, index_msb]),
             },
-            method @ 0x80..=0xFF => Self::OemSpecific { method, address, },
-            method =>    Self::Available { method, address, },
+            method @ 0x80..=0xFF => Self::OemSpecific { method, address },
+            method => Self::Available { method, address },
         }
     }
     pub fn address(&self) -> u32 {
         match self {
-            Self::IndexedIoOne8bitIndexOne8bitData { index, data } =>
-                u32::from_le_bytes([*index, 0, *data, 0]),
-            Self::IndexedIoTwo8bitIndexOne8bitData { index, data } =>
-                u32::from_le_bytes([index[0], index[1], *data, 0]),
+            Self::IndexedIoOne8bitIndexOne8bitData { index, data } => u32::from_le_bytes([*index, 0, *data, 0]),
+            Self::IndexedIoTwo8bitIndexOne8bitData { index, data } => {
+                u32::from_le_bytes([index[0], index[1], *data, 0])
+            }
             Self::IndexedIoOne16bitIndexOne8bitData { index, data } => {
                 let index = u16::to_le_bytes(*index);
                 u32::from_le_bytes([index[0], index[1], *data, 0])
-            },
+            }
             Self::MemoryMappedPhysicaAddress { physical_address } => *physical_address,
             Self::GeneralPurposeNonVolatileData { gpnv_handle } => *gpnv_handle as u32,
             Self::OemSpecific { address, .. } => *address,
@@ -287,35 +268,53 @@ impl AccessMethod {
 impl fmt::Display for AccessMethod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (f.alternate(), self) {
-            (false, Self::IndexedIoOne8bitIndexOne8bitData { .. }) => 
-                write!(f, "Indexed I/O, one 8-bit index port, one 8-bit data port"),
-            (false, Self::IndexedIoTwo8bitIndexOne8bitData { .. }) =>
-                write!(f, "Indexed I/O, two 8-bit index ports, one 8-bit data port"),
-            (false, Self::IndexedIoOne16bitIndexOne8bitData { .. }) =>
-                write!(f, "Indexed I/O, one 16-bit index port, one 8-bit data port"),
-            (false, Self::MemoryMappedPhysicaAddress { .. }) =>
-                write!(f, "Memory-mapped physical 32-bit address"),
-            (false, Self::GeneralPurposeNonVolatileData { .. }) =>
-                write!(f, "General-purpose non-volatile data functions"),
-            (false, Self::OemSpecific { method, .. }) =>
-                write!(f, "OEM-specific: {}", method),
-            (false, Self::Available { method, .. }) =>
-                write!(f, "Available: {}", method),
+            (false, Self::IndexedIoOne8bitIndexOne8bitData { .. }) => {
+                write!(f, "Indexed I/O, one 8-bit index port, one 8-bit data port")
+            }
+            (false, Self::IndexedIoTwo8bitIndexOne8bitData { .. }) => {
+                write!(f, "Indexed I/O, two 8-bit index ports, one 8-bit data port")
+            }
+            (false, Self::IndexedIoOne16bitIndexOne8bitData { .. }) => {
+                write!(f, "Indexed I/O, one 16-bit index port, one 8-bit data port")
+            }
+            (false, Self::MemoryMappedPhysicaAddress { .. }) => write!(f, "Memory-mapped physical 32-bit address"),
+            (false, Self::GeneralPurposeNonVolatileData { .. }) => {
+                write!(f, "General-purpose non-volatile data functions")
+            }
+            (false, Self::OemSpecific { method, .. }) => write!(f, "OEM-specific: {}", method),
+            (false, Self::Available { method, .. }) => write!(f, "Available: {}", method),
             // With address
-            (true, Self::IndexedIoOne8bitIndexOne8bitData { index, data }) =>
-                write!(f, "Indexed I/O, one 8-bit index port, one 8-bit data port: Index 0x{:02X}, Data 0x{:02X}", index, data),
-            (true, Self::IndexedIoTwo8bitIndexOne8bitData { index, data }) =>
-                write!(f, "Indexed I/O, two 8-bit index ports, one 8-bit data port: Index {:X?}, Data 0x{:02X}", index, data),
-            (true, Self::IndexedIoOne16bitIndexOne8bitData { index, data }) =>
-                write!(f, "Indexed I/O, one 16-bit index port, one 8-bit data port: Index 0x{:04X}, Data 0x{:02X}", index, data),
-            (true, Self::MemoryMappedPhysicaAddress { physical_address }) =>
-                write!(f, "Memory-mapped physical 32-bit address: 0x{:08X}", physical_address),
-            (true, Self::GeneralPurposeNonVolatileData { gpnv_handle }) =>
-                write!(f, "General-Purpose NonVolatile Data functions, handle 0x{:04X}", gpnv_handle),
-            (true, Self::OemSpecific { method, address }) =>
-                write!(f, "BIOS Vendor/OEM-specific: Method {}, Address 0x{:08X}", method, address),
-            (true, Self::Available { method, address }) =>
-                write!(f, "Available: Method {}, Address 0x{:08X}", method, address),
+            (true, Self::IndexedIoOne8bitIndexOne8bitData { index, data }) => write!(
+                f,
+                "Indexed I/O, one 8-bit index port, one 8-bit data port: Index 0x{:02X}, Data 0x{:02X}",
+                index, data
+            ),
+            (true, Self::IndexedIoTwo8bitIndexOne8bitData { index, data }) => write!(
+                f,
+                "Indexed I/O, two 8-bit index ports, one 8-bit data port: Index {:X?}, Data 0x{:02X}",
+                index, data
+            ),
+            (true, Self::IndexedIoOne16bitIndexOne8bitData { index, data }) => write!(
+                f,
+                "Indexed I/O, one 16-bit index port, one 8-bit data port: Index 0x{:04X}, Data 0x{:02X}",
+                index, data
+            ),
+            (true, Self::MemoryMappedPhysicaAddress { physical_address }) => {
+                write!(f, "Memory-mapped physical 32-bit address: 0x{:08X}", physical_address)
+            }
+            (true, Self::GeneralPurposeNonVolatileData { gpnv_handle }) => write!(
+                f,
+                "General-Purpose NonVolatile Data functions, handle 0x{:04X}",
+                gpnv_handle
+            ),
+            (true, Self::OemSpecific { method, address }) => write!(
+                f,
+                "BIOS Vendor/OEM-specific: Method {}, Address 0x{:08X}",
+                method, address
+            ),
+            (true, Self::Available { method, address }) => {
+                write!(f, "Available: Method {}, Address 0x{:08X}", method, address)
+            }
         }
     }
 }
@@ -341,28 +340,22 @@ impl From<u8> for LogStatus {
 impl From<u8> for LogHeaderFormat {
     fn from(byte: u8) -> Self {
         match byte {
-            0x00            => Self::NoHeader,
-            0x01            => Self::LogHeaderType1,
+            0x00 => Self::NoHeader,
+            0x01 => Self::LogHeaderType1,
             v @ 0x80..=0xFF => Self::OemSpecific(v),
-            v               => Self::Available(v),
+            v => Self::Available(v),
         }
     }
 }
 impl fmt::Display for LogHeaderFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (f.alternate(), self) {
-            (_, Self::NoHeader) =>
-                write!(f, "No Header"),
-            (true, Self::LogHeaderType1) =>
-                write!(f, "Type 1 log header"),
-            (false, Self::LogHeaderType1) =>
-                write!(f, "Type 1"),
-            (true, Self::OemSpecific(v)) =>
-                write!(f, "BIOS vendor or OEM-specific format: {}", v),
-            (false, Self::OemSpecific(_)) =>
-                write!(f, "OEM-specific"),
-            (_, Self::Available(v)) =>
-                write!(f, "Available: {}", v),
+            (_, Self::NoHeader) => write!(f, "No Header"),
+            (true, Self::LogHeaderType1) => write!(f, "Type 1 log header"),
+            (false, Self::LogHeaderType1) => write!(f, "Type 1"),
+            (true, Self::OemSpecific(v)) => write!(f, "BIOS vendor or OEM-specific format: {}", v),
+            (false, Self::OemSpecific(_)) => write!(f, "OEM-specific"),
+            (_, Self::Available(v)) => write!(f, "Available: {}", v),
         }
     }
 }
@@ -376,7 +369,6 @@ impl<'a> PartialEq for SupportedEventLogTypeDescriptors<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.0.clone().eq(other.0.clone())
     }
-
 }
 impl<'a> Eq for SupportedEventLogTypeDescriptors<'a> {}
 impl<'a> Hash for SupportedEventLogTypeDescriptors<'a> {
@@ -389,13 +381,10 @@ impl<'a> Iterator for SupportedEventLogTypeDescriptors<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.0.next()?;
-        next.try_into().ok()
-            .map(|a: [u8; 2]| {
-                EventLogTypeDescriptor {
-                    log_type: a[0].into(),
-                    variable_data_format_type: a[1].into()
-                }
-            })
+        next.try_into().ok().map(|a: [u8; 2]| EventLogTypeDescriptor {
+            log_type: a[0].into(),
+            variable_data_format_type: a[1].into(),
+        })
     }
 }
 
@@ -403,20 +392,20 @@ impl From<[u8; 2]> for EventLogTypeDescriptor {
     fn from(a: [u8; 2]) -> Self {
         Self {
             log_type: a[0].into(),
-            variable_data_format_type: a[1].into()
+            variable_data_format_type: a[1].into(),
         }
     }
 }
 impl From<EventLogTypeDescriptor> for [u8; 2] {
     fn from(d: EventLogTypeDescriptor) -> Self {
-        [ d.log_type.into(), d.variable_data_format_type.into() ]
+        [d.log_type.into(), d.variable_data_format_type.into()]
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
 
     #[test]
     fn access_method() {
@@ -424,9 +413,18 @@ mod tests {
 
         let address = u32::from_le_bytes([0x78, 0x56, 0x34, 0x12]);
         let data = &[
-            (0, "Indexed I/O, one 8-bit index port, one 8-bit data port: Index 0x78, Data 0x34"),
-            (1, "Indexed I/O, two 8-bit index ports, one 8-bit data port: Index [78, 56], Data 0x34"),
-            (2, "Indexed I/O, one 16-bit index port, one 8-bit data port: Index 0x5678, Data 0x34"),
+            (
+                0,
+                "Indexed I/O, one 8-bit index port, one 8-bit data port: Index 0x78, Data 0x34",
+            ),
+            (
+                1,
+                "Indexed I/O, two 8-bit index ports, one 8-bit data port: Index [78, 56], Data 0x34",
+            ),
+            (
+                2,
+                "Indexed I/O, one 16-bit index port, one 8-bit data port: Index 0x5678, Data 0x34",
+            ),
             (3, "Memory-mapped physical 32-bit address: 0x12345678"),
             (4, "General-Purpose NonVolatile Data functions, handle 0x5678"),
             (5, "Available: Method 5, Address 0x12345678"),
@@ -444,11 +442,11 @@ mod tests {
 
         let byte: u8 = 0b111;
         let ls: LogStatus = byte.into();
-        let sample = vec![
-            "Log area valid",
-            "Log area full",
-        ];
-        assert_eq!(sample, ls.significants().map(|v| format!("{:#}", v)).collect::<Vec<_>>());
+        let sample = vec!["Log area valid", "Log area full"];
+        assert_eq!(
+            sample,
+            ls.significants().map(|v| format!("{:#}", v)).collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -469,25 +467,17 @@ mod tests {
     #[test]
     fn supported_event_log_type_descriptors() {
         use super::{
-            SupportedEventLogTypeDescriptors,
-            EventLogTypeDescriptor as Desc,
+            EventLogType as T, EventLogTypeDescriptor as Desc, SupportedEventLogTypeDescriptors,
             VariableDataFormatType as D,
-            EventLogType as T,
         };
 
         let data = &[
-            0x02, 0x00,
-            0x04, 0x01,
-            0x08, 0x02,
-            0x16, 0x03,
-            0x66, 0x00,
-            0xEE, 0x00,
-            0xFF, 0x00
+            0x02, 0x00, 0x04, 0x01, 0x08, 0x02, 0x16, 0x03, 0x66, 0x00, 0xEE, 0x00, 0xFF, 0x00,
         ];
         let sample = vec![
             Desc {
                 log_type: T::MultiBitEccMemoryError,
-                variable_data_format_type: D::None
+                variable_data_format_type: D::None,
             },
             Desc {
                 log_type: T::BusTimeOut,
@@ -498,20 +488,20 @@ mod tests {
                 variable_data_format_type: D::MultipleEvent { counter: 0 },
             },
             Desc {
-                log_type: T::LogAreaReset,           
+                log_type: T::LogAreaReset,
                 variable_data_format_type: D::MultipleEventHandle { handle: 0, counter: 0 },
             },
-            Desc { 
-                log_type: T::Unused(0x66),           
+            Desc {
+                log_type: T::Unused(0x66),
                 variable_data_format_type: D::None,
             },
             Desc {
-                log_type: T::Available(0xEE),        
-                variable_data_format_type: D::None 
+                log_type: T::Available(0xEE),
+                variable_data_format_type: D::None,
             },
-            Desc { 
-                log_type: T::EndOfLog,               
-                variable_data_format_type: D::None 
+            Desc {
+                log_type: T::EndOfLog,
+                variable_data_format_type: D::None,
             },
         ];
         let result = SupportedEventLogTypeDescriptors::new(data, 2);
@@ -520,18 +510,14 @@ mod tests {
 
     #[test]
     fn system_event_log() {
-        use crate::{
-            InfoType,
-            RawStructure,
-            bitfield::Position,
-        };
-        use super::*;
         use super::EventLogType as T;
         use super::VariableDataFormatType as D;
+        use super::*;
+        use crate::{bitfield::Position, InfoType, RawStructure};
 
         let length = 77 - 4;
-        let (data, strings) = include_bytes!("../../../tests/data/02daadcd/entries/15-0/bin")[4..]
-            .split_at(length as usize);
+        let (data, strings) =
+            include_bytes!("../../../tests/data/02daadcd/entries/15-0/bin")[4..].split_at(length as usize);
         let structure = RawStructure {
             version: (2, 7).into(),
             info: InfoType::SystemEventLog,
@@ -540,20 +526,17 @@ mod tests {
             data,
             strings,
         };
-        let result = SystemEventLog::try_from(structure)
-            .unwrap();
+        let result = SystemEventLog::try_from(structure).unwrap();
 
-        let access_method = AccessMethod::MemoryMappedPhysicaAddress { physical_address: 0xFFC40000 };
+        let access_method = AccessMethod::MemoryMappedPhysicaAddress {
+            physical_address: 0xFFC40000,
+        };
         assert_eq!(access_method, result.access_method, "AccessMethod");
 
-        let log_status = [
-            Position(0),
-        ].iter().collect::<u8>().into();
+        let log_status = [Position(0)].iter().collect::<u8>().into();
         assert_eq!(log_status, result.log_status, "LogStatus");
 
-        let seltd_length =
-            result.supported_event_log_type_descriptors.clone()
-                .unwrap().count();
+        let seltd_length = result.supported_event_log_type_descriptors.clone().unwrap().count();
         assert_eq!(27, seltd_length, "Supported Log Type Descriptors count");
 
         let seltd_sample = [
@@ -584,21 +567,25 @@ mod tests {
             (T::Available(0xB1), D::OemAssigned(0xB1)),
             (T::Available(0xE0), D::OemAssigned(0xE0)),
             (T::Available(0xE1), D::OemAssigned(0xE1)),
-        ].iter()
-            .map(|(t, d)| EventLogTypeDescriptor { log_type: *t, variable_data_format_type: *d })
-            .collect::<Vec<_>>();
-        let seltd_result = result.supported_event_log_type_descriptors
+        ]
+        .iter()
+        .map(|(t, d)| EventLogTypeDescriptor {
+            log_type: *t,
+            variable_data_format_type: *d,
+        })
+        .collect::<Vec<_>>();
+        let seltd_result = result
+            .supported_event_log_type_descriptors
             .clone()
             .unwrap()
             .collect::<Vec<_>>();
         assert_eq!(seltd_sample, seltd_result, "SupportedEventLogTypeDescriptors");
 
-        let sample_bytes = seltd_sample.iter()
-            .fold(Vec::new(), |mut vec: Vec<u8>, eltd| {
-                vec.push(eltd.log_type.into());
-                vec.push(eltd.variable_data_format_type.into());
-                vec
-            });
+        let sample_bytes = seltd_sample.iter().fold(Vec::new(), |mut vec: Vec<u8>, eltd| {
+            vec.push(eltd.log_type.into());
+            vec.push(eltd.variable_data_format_type.into());
+            vec
+        });
         let sample = SystemEventLog {
             handle: 0x0036,
             log_area_length: 16383,
@@ -608,8 +595,7 @@ mod tests {
             log_status,
             log_change_token: 0x00000001,
             log_header_format: Some(LogHeaderFormat::LogHeaderType1),
-            supported_event_log_type_descriptors:
-                Some(SupportedEventLogTypeDescriptors::new(&sample_bytes, 2))
+            supported_event_log_type_descriptors: Some(SupportedEventLogTypeDescriptors::new(&sample_bytes, 2)),
         };
         assert_eq!(sample, result, "SystemEventLog");
     }

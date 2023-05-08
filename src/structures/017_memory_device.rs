@@ -4,16 +4,11 @@
 //! Array](super::physical_memory_array "structures::physical_memory_array") (Type 16)
 //! structure.
 
-
 use crate::{
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
     RawStructure,
 };
-
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ErrorGranularity {
@@ -398,77 +393,64 @@ impl<'a> MemoryDevice<'a> {
         let handle = structure.handle;
         match ((structure.version.major, structure.version.minor), data_len) {
             (v, l) if v == (2, 1) && l != 0x15 => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x15))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x15))
+            }
             (v, l) if v == (2, 3) && l != 0x1B => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x1B))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x1B))
+            }
             (v, l) if v == (2, 6) && l != 0x1C => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x1C))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x1C))
+            }
             (v, l) if v == (2, 7) && l != 0x22 => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
+            }
             (v, l) if v == (2, 8) && l < 0x22 => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
+            }
             (v, l) if v == (3, 2) && l < 0x28 => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
+            }
             (v, l) if v >= (3, 3) && l != 0x5C => {
-               Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x5C))
-            },
-            _ => {
-                Ok(MemoryDevice {
-                    handle,
-                    physical_memory_handle: structure.get::<u16>(0x04)?,
-                    memory_error_handle: structure.get::<u16>(0x06)
-                        .ok().filter(|v| v != &0xFFFE),
-                    total_width: structure.get::<u16>(0x08)
-                        .ok().filter(|v| v != &0xFFFF),
-                    data_width: structure.get::<u16>(0x0A)
-                        .ok().filter(|v| v != &0xFFFF),
-                    size: structure.get::<u16>(0x0C)
-                        .ok().filter(|v| v != &0xFFFF),
-                    form_factor: structure.get::<u8>(0x0E)?.into(),
-                    device_set: structure.get::<u8>(0x0F)?.into(),
-                    device_locator: structure.get_string(0x10)?,
-                    bank_locator: structure.get_string(0x11)?,
-                    memory_type: structure.get::<u8>(0x12)?.into(),
-                    type_detail: Detail::from_bits_truncate(structure.get::<u16>(0x13)?),
-                    speed: structure.get::<u16>(0x15)
-                        .ok().filter(|v| v != &0x0000),
-                    manufacturer: structure.get_string(0x17)?,
-                    serial: structure.get_string(0x18)?,
-                    asset_tag: structure.get_string(0x19)?,
-                    part_number: structure.get_string(0x1A)?,
-                    attributes: structure.get::<u8>(0x1B)?,
-                    extended_size: structure.get::<u32>(0x1C)?,
-                    configured_memory_speed: structure.get::<u16>(0x20)
-                        .ok().filter(|v| v != &0x0000),
-                    minimum_voltage: structure.get::<u16>(0x22)
-                        .ok().filter(|v| v != &0x0000),
-                    maximum_voltage: structure.get::<u16>(0x24)
-                        .ok().filter(|v| v != &0x0000),
-                    configured_voltage: structure.get::<u16>(0x26)
-                        .ok().filter(|v| v != &0x0000),
-                    memory_technology: structure.get::<u8>(0x28)
-                        .ok().map(Into::into),
-                    operating_mode_capability: structure.get::<u16>(0x29)
-                        .ok().map(OperatingModes::from_bits_truncate),
-                    firmware_version: structure.get_string(0x2B).ok(),
-                    module_manufacturer: structure.get::<u16>(0x2C).ok(),
-                    module_product_id: structure.get::<u16>(0x2E).ok(),
-                    memory_subsystem_controller_manufacturer_id: structure.get::<u16>(0x30).ok(),
-                    memory_subsystem_controller_product_id: structure.get::<u16>(0x32).ok(),
-                    non_volatile_size: structure.get::<u64>(0x34).ok(),
-                    volatile_size: structure.get::<u64>(0x3C).ok(),
-                    cache_size: structure.get::<u64>(0x44).ok(),
-                    logical_size: structure.get::<u64>(0x4C).ok(),
-                    extended_speed: structure.get::<u32>(0x54).ok(),
-                    extended_configured_memory_speed: structure.get::<u32>(0x58).ok(),
-                })
-            },
+                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x5C))
+            }
+            _ => Ok(MemoryDevice {
+                handle,
+                physical_memory_handle: structure.get::<u16>(0x04)?,
+                memory_error_handle: structure.get::<u16>(0x06).ok().filter(|v| v != &0xFFFE),
+                total_width: structure.get::<u16>(0x08).ok().filter(|v| v != &0xFFFF),
+                data_width: structure.get::<u16>(0x0A).ok().filter(|v| v != &0xFFFF),
+                size: structure.get::<u16>(0x0C).ok().filter(|v| v != &0xFFFF),
+                form_factor: structure.get::<u8>(0x0E)?.into(),
+                device_set: structure.get::<u8>(0x0F)?.into(),
+                device_locator: structure.get_string(0x10)?,
+                bank_locator: structure.get_string(0x11)?,
+                memory_type: structure.get::<u8>(0x12)?.into(),
+                type_detail: Detail::from_bits_truncate(structure.get::<u16>(0x13)?),
+                speed: structure.get::<u16>(0x15).ok().filter(|v| v != &0x0000),
+                manufacturer: structure.get_string(0x17)?,
+                serial: structure.get_string(0x18)?,
+                asset_tag: structure.get_string(0x19)?,
+                part_number: structure.get_string(0x1A)?,
+                attributes: structure.get::<u8>(0x1B)?,
+                extended_size: structure.get::<u32>(0x1C)?,
+                configured_memory_speed: structure.get::<u16>(0x20).ok().filter(|v| v != &0x0000),
+                minimum_voltage: structure.get::<u16>(0x22).ok().filter(|v| v != &0x0000),
+                maximum_voltage: structure.get::<u16>(0x24).ok().filter(|v| v != &0x0000),
+                configured_voltage: structure.get::<u16>(0x26).ok().filter(|v| v != &0x0000),
+                memory_technology: structure.get::<u8>(0x28).ok().map(Into::into),
+                operating_mode_capability: structure.get::<u16>(0x29).ok().map(OperatingModes::from_bits_truncate),
+                firmware_version: structure.get_string(0x2B).ok(),
+                module_manufacturer: structure.get::<u16>(0x2C).ok(),
+                module_product_id: structure.get::<u16>(0x2E).ok(),
+                memory_subsystem_controller_manufacturer_id: structure.get::<u16>(0x30).ok(),
+                memory_subsystem_controller_product_id: structure.get::<u16>(0x32).ok(),
+                non_volatile_size: structure.get::<u64>(0x34).ok(),
+                volatile_size: structure.get::<u64>(0x3C).ok(),
+                cache_size: structure.get::<u64>(0x44).ok(),
+                logical_size: structure.get::<u64>(0x4C).ok(),
+                extended_speed: structure.get::<u32>(0x54).ok(),
+                extended_configured_memory_speed: structure.get::<u32>(0x58).ok(),
+            }),
         }
     }
 }
@@ -488,32 +470,24 @@ mod tests {
             data: &[
                 // omit first 4 header bytes
                 // 0x11, 0x22, 0x4e, 0x00,
-                0x4C, 0x00, 0xFE, 0xFF, 0x40, 0x00, 0x40, 0x00,
-                0x00, 0x20, 0x09, 0x00, 0x01, 0x02, 0x18, 0x80, 0x40, 0x40, 0x06, 0x03, 0x04, 0x05, 0x06, 0x02,0x00, 0x00 ,0x00, 0x00, 0x40, 0x06
+                0x4C, 0x00, 0xFE, 0xFF, 0x40, 0x00, 0x40, 0x00, 0x00, 0x20, 0x09, 0x00, 0x01, 0x02, 0x18, 0x80, 0x40,
+                0x40, 0x06, 0x03, 0x04, 0x05, 0x06, 0x02, 0x00, 0x00, 0x00, 0x00, 0x40, 0x06,
             ],
             strings: &[
                 // DIMM_A0
-                0x44, 0x49, 0x4D, 0x4D, 0x20, 0x41, 0x30, 0x00,
-                // A0_Node0_Channel0_Dimm0
-                0x41, 0x30, 0x5F, 0x4E, 0x6F, 0x64, 0x65, 0x30, 0x5F, 0x43, 0x68, 0x61, 0x6E, 0x6E, 0x65, 0x6C,
-                0x30, 0x5F, 0x44, 0x69, 0x6D, 0x6D, 0x30, 0x00,
-                // Hynix
-                0x48, 0x79, 0x6E, 0x69, 0x78, 0x00,
-                // FAKE_SERIAL_NUMBER
-                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x53, 0x45, 0x52,
-                0x49, 0x41, 0x4c, 0x5f, 0x4e, 0x55, 0x4d, 0x42,
-                0x45, 0x52, 0x00,
-                // FAKE_ASSET_TAG
-                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x41, 0x53, 0x53,
-                0x45, 0x54, 0x5f, 0x54, 0x41, 0x47, 0x00,
-                // FAKE_PART_NUMBER
-                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x50, 0x41, 0x52,
-                0x54, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52,
-                0x00
+                0x44, 0x49, 0x4D, 0x4D, 0x20, 0x41, 0x30, 0x00, // A0_Node0_Channel0_Dimm0
+                0x41, 0x30, 0x5F, 0x4E, 0x6F, 0x64, 0x65, 0x30, 0x5F, 0x43, 0x68, 0x61, 0x6E, 0x6E, 0x65, 0x6C, 0x30,
+                0x5F, 0x44, 0x69, 0x6D, 0x6D, 0x30, 0x00, // Hynix
+                0x48, 0x79, 0x6E, 0x69, 0x78, 0x00, // FAKE_SERIAL_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x53, 0x45, 0x52, 0x49, 0x41, 0x4c, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45,
+                0x52, 0x00, // FAKE_ASSET_TAG
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x41, 0x53, 0x53, 0x45, 0x54, 0x5f, 0x54, 0x41, 0x47,
+                0x00, // FAKE_PART_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52, 0x00,
             ],
         };
         assert_eq!(
-            MemoryDevice{
+            MemoryDevice {
                 handle: 0x4e,
                 physical_memory_handle: 76,
                 total_width: Some(64),
@@ -553,36 +527,25 @@ mod tests {
             data: &[
                 // omit first 4 header bytes
                 // 0x11, 0x28, 0x3b, 0x00,
-                0x39, 0x00, 0xfe, 0xff,
-                0x48, 0x00, 0x40, 0x00, 0x00, 0x40, 0x09, 0x00,
-                0x01, 0x02, 0x1a, 0x80, 0x20, 0x6a, 0x0a, 0x03,
-                0x04, 0x05, 0x06, 0x02, 0x00, 0x00, 0x00, 0x00,
-                0x60, 0x09, 0xb0, 0x04, 0xb0, 0x04, 0xb0, 0x04,
+                0x39, 0x00, 0xfe, 0xff, 0x48, 0x00, 0x40, 0x00, 0x00, 0x40, 0x09, 0x00, 0x01, 0x02, 0x1a, 0x80, 0x20,
+                0x6a, 0x0a, 0x03, 0x04, 0x05, 0x06, 0x02, 0x00, 0x00, 0x00, 0x00, 0x60, 0x09, 0xb0, 0x04, 0xb0, 0x04,
+                0xb0, 0x04,
             ],
             strings: &[
                 // DIMM_A0
-                0x44, 0x49, 0x4D, 0x4D, 0x5F, 0x41, 0x30, 0x00,
-                // _Node0_Channel0_Dimm0
-                0x5F, 0x4E, 0x6F, 0x64, 0x65, 0x30, 0x5F, 0x43,
-                0x68, 0x61, 0x6E, 0x6E, 0x65, 0x6C, 0x30, 0x5F,
-                0x44, 0x69, 0x6D, 0x6D, 0x30, 0x00,
-                // Hynix
-                0x48, 0x79, 0x6E, 0x69, 0x78, 0x00,
-                // FAKE_SERIAL_NUMBER
-                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x53, 0x45, 0x52,
-                0x49, 0x41, 0x4c, 0x5f, 0x4e, 0x55, 0x4d, 0x42,
-                0x45, 0x52, 0x00,
-                // FAKE_ASSET_TAG
-                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x41, 0x53, 0x53,
-                0x45, 0x54, 0x5f, 0x54, 0x41, 0x47, 0x00,
-                // FAKE_PART_NUMBER
-                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x50, 0x41, 0x52,
-                0x54, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52,
-                0x00
+                0x44, 0x49, 0x4D, 0x4D, 0x5F, 0x41, 0x30, 0x00, // _Node0_Channel0_Dimm0
+                0x5F, 0x4E, 0x6F, 0x64, 0x65, 0x30, 0x5F, 0x43, 0x68, 0x61, 0x6E, 0x6E, 0x65, 0x6C, 0x30, 0x5F, 0x44,
+                0x69, 0x6D, 0x6D, 0x30, 0x00, // Hynix
+                0x48, 0x79, 0x6E, 0x69, 0x78, 0x00, // FAKE_SERIAL_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x53, 0x45, 0x52, 0x49, 0x41, 0x4c, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45,
+                0x52, 0x00, // FAKE_ASSET_TAG
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x41, 0x53, 0x53, 0x45, 0x54, 0x5f, 0x54, 0x41, 0x47,
+                0x00, // FAKE_PART_NUMBER
+                0x46, 0x41, 0x4b, 0x45, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x4e, 0x55, 0x4d, 0x42, 0x45, 0x52, 0x00,
             ],
         };
         assert_eq!(
-            MemoryDevice{
+            MemoryDevice {
                 handle: 0x3b,
                 physical_memory_handle: 57,
                 total_width: Some(72),

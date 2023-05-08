@@ -4,28 +4,21 @@
 //! provided for each slot in the system.
 
 use core::fmt;
-use core::slice::Chunks;
 use core::hash::{Hash, Hasher};
+use core::slice::Chunks;
 
 use crate::{
-    RawStructure,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    bitfield::{BitField, FlagType, Layout},
     InfoType,
-    bitfield::{
-        BitField,
-        FlagType,
-        Layout,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
+    RawStructure,
 };
 
 /// The `System Slots` table defined in the SMBIOS specification.
 ///
 /// Optional fields will only be set if the version of the parsed SMBIOS table
 /// is high enough to have defined the field.
-#[derive(Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SystemSlots<'a> {
     /// Specifies the structure’s handle
     pub handle: u16,
@@ -76,7 +69,7 @@ pub struct SystemSlots<'a> {
     pub slot_pitch: Option<SlotPitch>,
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum SlotType {
     Other,
     Unknown,
@@ -241,7 +234,7 @@ pub enum SlotType {
     Undefined(u8),
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum SlotWidth {
     Other,
     Unknown,
@@ -272,7 +265,7 @@ pub enum SlotWidth {
     Undefined(u8),
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum CurrentUsage {
     Other,
     Unknown,
@@ -284,7 +277,7 @@ pub enum CurrentUsage {
     Undefined(u8),
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum SlotLength {
     Other,
     Unknown,
@@ -297,13 +290,13 @@ pub enum SlotLength {
     Undefined(u8),
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SlotCharacteristics1(u8);
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SlotCharacteristics2(u8);
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Device {
     /// Segment Group Number is defined in the PCI Firmware Specification. The value is 0 for a
     /// single-segment topology.
@@ -317,7 +310,7 @@ pub struct Device {
     pub data_bus_width: u8,
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct DeviceAndFunctionNumber(u8, u8);
 
 // Used in 2 Base Device and in Peer Devices
@@ -330,8 +323,8 @@ struct DevicePacked {
     data_bus_width: u8,
 }
 
-/// An iterator over Peer Segment/Bus/Device/Function/Width groups 
-#[derive(Clone, Debug,)]
+/// An iterator over Peer Segment/Bus/Device/Function/Width groups
+#[derive(Clone, Debug)]
 pub struct PeerDevices<'a>(Chunks<'a, u8>);
 
 /// The Slot Pitch field contains a numeric value that indicates the pitch of the slot in units of
@@ -343,9 +336,8 @@ pub struct PeerDevices<'a>(Chunks<'a, u8>);
 /// SFF-TA-1008 table 6-1 (SSD to SSD pitch).  For example, if the pitch for the slot is 12.5 mm,
 /// the value 1250 would be used.  A value of 0 implies that the slot pitch is not given or is
 /// unknown.
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq,)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SlotPitch(u16);
-
 
 impl<'a> SystemSlots<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<SystemSlots<'a>, MalformedStructureError> {
@@ -353,17 +345,20 @@ impl<'a> SystemSlots<'a> {
         let handle = structure.handle;
         match ((structure.version.major, structure.version.minor), data_len) {
             (v, l) if v >= (2, 0) && v < (2, 1) && l != 0x0C => {
-               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0C))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0C))
+            }
             (v, l) if v >= (2, 1) && v < (2, 6) && l != 0x0D => {
-               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0D))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0D))
+            }
             (v, l) if v >= (2, 6) && v < (3, 2) && l != 0x11 => {
-               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x11))
-            },
-            (v, l) if v >= (3, 2) && l < 0x11 => {
-               Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "minimum of ", 0x11))
-            },
+                Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x11))
+            }
+            (v, l) if v >= (3, 2) && l < 0x11 => Err(InvalidFormattedSectionLength(
+                InfoType::SystemSlots,
+                handle,
+                "minimum of ",
+                0x11,
+            )),
             _ => {
                 let peer_grouping_count: u8 = structure.get::<u8>(0x12).unwrap_or(0).into();
                 let n = peer_grouping_count as usize;
@@ -376,40 +371,37 @@ impl<'a> SystemSlots<'a> {
                     slot_length: structure.get::<u8>(0x08)?.into(),
                     slot_id: structure.get::<u16>(0x09)?.into(),
                     slot_characteristics_1: structure.get::<u8>(0x0B)?.into(),
-                    slot_characteristics_2: structure.get::<u8>(0x0C)
-                        .ok().map(Into::into),
-                    segment_group_number: structure.get::<u16>(0x0D)
+                    slot_characteristics_2: structure.get::<u8>(0x0C).ok().map(Into::into),
+                    segment_group_number: structure
+                        .get::<u16>(0x0D)
                         .ok()
-                        // For slots that do not have bus/device/function information FFh should be populated 
+                        // For slots that do not have bus/device/function information FFh should be populated
                         .filter(|v| v != &0xFFFF)
                         .into(),
-                    bus_number: structure.get::<u8>(0x0F)
+                    bus_number: structure
+                        .get::<u8>(0x0F)
                         .ok()
-                        // For slots that do not have bus/device/function information FFh should be populated 
+                        // For slots that do not have bus/device/function information FFh should be populated
                         .filter(|v| v != &0xFF)
                         .into(),
-                    device_and_function_number: structure.get::<u8>(0x10)
+                    device_and_function_number: structure
+                        .get::<u8>(0x10)
                         .ok()
-                        // For slots that do not have bus/device/function information FFh should be populated 
+                        // For slots that do not have bus/device/function information FFh should be populated
                         .filter(|v| v != &0xFF)
                         .map(Into::into),
-                    data_bus_width: structure.get::<u8>(0x11)
-                        .ok().into(),
-                    peer_devices: structure.get_slice(0x13, 5 * n)
-                        .map(Into::into),
+                    data_bus_width: structure.get::<u8>(0x11).ok().into(),
+                    peer_devices: structure.get_slice(0x13, 5 * n).map(Into::into),
                     /// According to (SMBIOS Reference Specification
                     /// 3.4)[https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.4.0.pdf]
                     /// fields below starts from offset 14h + 5*n, that looks like mistake.
                     /// It shoud start from 13h + 5*n, because *Peer (S/B/D/F/Width)
                     /// groups* field may has zero length
-                    slot_information: structure.get::<u8>(0x14 + 5 * n)
-                        .ok().into(),
-                    slot_physical_width: structure.get::<u8>(0x15 + 5 * n)
-                        .ok().map(Into::into),
-                    slot_pitch: structure.get::<u16>(0x16 + 5 * n)
-                        .ok().map(Into::into),
+                    slot_information: structure.get::<u8>(0x14 + 5 * n).ok().into(),
+                    slot_physical_width: structure.get::<u8>(0x15 + 5 * n).ok().map(Into::into),
+                    slot_pitch: structure.get::<u16>(0x16 + 5 * n).ok().map(Into::into),
                 })
-            },
+            }
         }
     }
 }
@@ -504,119 +496,139 @@ impl fmt::Display for SlotType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let is_alt = f.alternate();
         match self {
-            Self::Other                    => write!(f, "Other"),
-            Self::Unknown                  => write!(f, "Unknown"),
-            Self::Isa                      => write!(f, "ISA"),
-            Self::Mca                      => write!(f, "MCA"),
-            Self::Eisa                     => write!(f, "EISA"),
-            Self::Pci                      => write!(f, "PCI"),
-            Self::PcCard                   => write!(f, "PC Card (PCMCIA)"),
-            Self::VlVesa                   => write!(f, "VL-VESA"),
-            Self::Proprietary              => write!(f, "Proprietary"),
-            Self::ProcessorCardSlot        => write!(f, "Processor Card Slot"),
-            Self::ProprietaryMemoryCardSlot=> write!(f, "Proprietary Memory Card Slot"),
-            Self::IoRiserCardSlot          => write!(f, "I/O Riser Card Slot"),
-            Self::Nubus                    => write!(f, "NuBus"),
-            Self::Pci66Mhz                 => write!(f, "PCI – 66MHz Capable"),
-            Self::Agp                      => write!(f, "AGP"),
-            Self::Agp2x                    => write!(f, "AGP 2X"),
-            Self::Agp4x                    => write!(f, "AGP 4X"),
-            Self::PciX                     => write!(f, "PCI-X"),
-            Self::Agp8x                    => write!(f, "AGP 8X"),
-            Self::M2Socket1DP              => write!(f, "M.2 Socket 1-DP (Mechanical Key A)"),
-            Self::M2Socket1SD              => write!(f, "M.2 Socket 1-SD (Mechanical Key E)"),
-            Self::M2Socket2                => write!(f, "M.2 Socket 2 (Mechanical Key B)"),
-            Self::M2Socket3                => write!(f, "M.2 Socket 3 (Mechanical Key M)"),
-            Self::MxmType1                 => write!(f, "MXM Type I"),
-            Self::MxmType2                 => write!(f, "MXM Type II"),
-            Self::MxmType3                 => write!(f, "MXM Type III (standard connector)"),
-            Self::MxmType3He               => write!(f, "MXM Type III (HE connector)"),
-            Self::MxmType4                 => write!(f, "MXM Type IV"),
-            Self::Mxm3TypeA                => write!(f, "MXM 3.0 Type A"),
-            Self::Mxm3TypeB                => write!(f, "MXM 3.0 Type B"),
-            Self::U2PciExpressGen2           => write!(f, "PCI Express Gen 2 SFF-8639 (U.2)"),
-            Self::U2PciExpressGen3           => write!(f, "PCI Express Gen 3 SFF-8639 (U.2)"),
-            Self::PciExpressMini52pin1    =>
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Isa => write!(f, "ISA"),
+            Self::Mca => write!(f, "MCA"),
+            Self::Eisa => write!(f, "EISA"),
+            Self::Pci => write!(f, "PCI"),
+            Self::PcCard => write!(f, "PC Card (PCMCIA)"),
+            Self::VlVesa => write!(f, "VL-VESA"),
+            Self::Proprietary => write!(f, "Proprietary"),
+            Self::ProcessorCardSlot => write!(f, "Processor Card Slot"),
+            Self::ProprietaryMemoryCardSlot => write!(f, "Proprietary Memory Card Slot"),
+            Self::IoRiserCardSlot => write!(f, "I/O Riser Card Slot"),
+            Self::Nubus => write!(f, "NuBus"),
+            Self::Pci66Mhz => write!(f, "PCI – 66MHz Capable"),
+            Self::Agp => write!(f, "AGP"),
+            Self::Agp2x => write!(f, "AGP 2X"),
+            Self::Agp4x => write!(f, "AGP 4X"),
+            Self::PciX => write!(f, "PCI-X"),
+            Self::Agp8x => write!(f, "AGP 8X"),
+            Self::M2Socket1DP => write!(f, "M.2 Socket 1-DP (Mechanical Key A)"),
+            Self::M2Socket1SD => write!(f, "M.2 Socket 1-SD (Mechanical Key E)"),
+            Self::M2Socket2 => write!(f, "M.2 Socket 2 (Mechanical Key B)"),
+            Self::M2Socket3 => write!(f, "M.2 Socket 3 (Mechanical Key M)"),
+            Self::MxmType1 => write!(f, "MXM Type I"),
+            Self::MxmType2 => write!(f, "MXM Type II"),
+            Self::MxmType3 => write!(f, "MXM Type III (standard connector)"),
+            Self::MxmType3He => write!(f, "MXM Type III (HE connector)"),
+            Self::MxmType4 => write!(f, "MXM Type IV"),
+            Self::Mxm3TypeA => write!(f, "MXM 3.0 Type A"),
+            Self::Mxm3TypeB => write!(f, "MXM 3.0 Type B"),
+            Self::U2PciExpressGen2 => write!(f, "PCI Express Gen 2 SFF-8639 (U.2)"),
+            Self::U2PciExpressGen3 => write!(f, "PCI Express Gen 3 SFF-8639 (U.2)"),
+            Self::PciExpressMini52pin1 => {
                 if is_alt {
-                    write!(f, "PCI Express Mini 52-pin (CEM spec. 2.0) with bottom-side keep-outs. \
+                    write!(
+                        f,
+                        "PCI Express Mini 52-pin (CEM spec. 2.0) with bottom-side keep-outs. \
                         Use Slot Length field value 03h (short length) for \"half-Mini card\" -only \
-                        support, 04h (long length) for \"full-Mini card\" or dual support.")
+                        support, 04h (long length) for \"full-Mini card\" or dual support."
+                    )
                 } else {
                     write!(f, "PCI Express Mini 52-pin with bottom-side keep-outs")
-                },
-            Self::PciExpressMini52pin2    =>
+                }
+            }
+            Self::PciExpressMini52pin2 => {
                 if is_alt {
-                    write!(f, "PCI Express Mini 52-pin (CEM spec. 2.0) without bottom-side keep-outs. \
+                    write!(
+                        f,
+                        "PCI Express Mini 52-pin (CEM spec. 2.0) without bottom-side keep-outs. \
                         Use Slot Length field value 03h (short length) for \"half-Mini card\" -only \
-                        support, 04h (long length) for \"full-Mini card\" or dual support.")
+                        support, 04h (long length) for \"full-Mini card\" or dual support."
+                    )
                 } else {
                     write!(f, "PCI Express Mini 52-pin without bottom-side keep-outs")
-                },
-            Self::PciExpressMini76pin      =>
+                }
+            }
+            Self::PciExpressMini76pin => {
                 if is_alt {
-                    write!(f, "PCI Express Mini 76-pin (CEM spec. 2.0) Corresponds to Display-Mini card.")
+                    write!(
+                        f,
+                        "PCI Express Mini 76-pin (CEM spec. 2.0) Corresponds to Display-Mini card."
+                    )
                 } else {
                     write!(f, "PCI Express Mini 76-pin")
-                },
-            Self::U2PciExpressGen4           => write!(f, "PCI Express Gen 4 SFF-8639 (U.2)"),
-            Self::U2PciExpressGen5           => write!(f, "PCI Express Gen 5 SFF-8639 (U.2)"),
-            Self::OcpNic3Small             => write!(f, "OCP NIC 3.0 Small Form Factor (SFF)"),
-            Self::OcpNic3Large             => write!(f, "OCP NIC 3.0 Large Form Factor (LFF)"),
-            Self::OcpNicPriorTo3           => write!(f, "OCP NIC Prior to 3.0"),
-            Self::CxlFlexbus1              => write!(f, "CXL Flexbus 1.0 (deprecated)"),
-            Self::Pc98C20                  => write!(f, "PC-98/C20"),
-            Self::Pc98C24                  => write!(f, "PC-98/C24"),
-            Self::Pc98E                    => write!(f, "PC-98/E"),
-            Self::Pc98LocalBus             => write!(f, "PC-98/Local Bus"),
-            Self::Pc98Card                 => write!(f, "PC-98/Card"),
-            Self::PciExpress               => write!(f, "PCI Express"),
-            Self::PciExpressX1             => write!(f, "PCI Express x1"),
-            Self::PciExpressX2             => write!(f, "PCI Express x2"),
-            Self::PciExpressX4             => write!(f, "PCI Express x4"),
-            Self::PciExpressX8             => write!(f, "PCI Express x8"),
-            Self::PciExpressX16            => write!(f, "PCI Express x16"),
-            Self::PciExpressGen2           => write!(f, "PCI Express Gen 2"),
-            Self::PciExpressGen2x1         => write!(f, "PCI Express Gen 2 x1"),
-            Self::PciExpressGen2x2         => write!(f, "PCI Express Gen 2 x2"),
-            Self::PciExpressGen2x4         => write!(f, "PCI Express Gen 2 x4"),
-            Self::PciExpressGen2x8         => write!(f, "PCI Express Gen 2 x8"),
-            Self::PciExpressGen2x16        => write!(f, "PCI Express Gen 2 x16"),
-            Self::PciExpressGen3           => write!(f, "PCI Express Gen 3"),
-            Self::PciExpressGen3x1         => write!(f, "PCI Express Gen 3 x1"),
-            Self::PciExpressGen3x2         => write!(f, "PCI Express Gen 3 x2"),
-            Self::PciExpressGen3x4         => write!(f, "PCI Express Gen 3 x4"),
-            Self::PciExpressGen3x8         => write!(f, "PCI Express Gen 3 x8"),
-            Self::PciExpressGen3x16        => write!(f, "PCI Express Gen 3 x16"),
-            Self::PciExpressGen4           => write!(f, "PCI Express Gen 4"),
-            Self::PciExpressGen4x1         => write!(f, "PCI Express Gen 4 x1"),
-            Self::PciExpressGen4x2         => write!(f, "PCI Express Gen 4 x2"),
-            Self::PciExpressGen4x4         => write!(f, "PCI Express Gen 4 x4"),
-            Self::PciExpressGen4x8         => write!(f, "PCI Express Gen 4 x8"),
-            Self::PciExpressGen4x16        => write!(f, "PCI Express Gen 4 x16"),
-            Self::PciExpressGen5           => write!(f, "PCI Express Gen 5"),
-            Self::PciExpressGen5x1         => write!(f, "PCI Express Gen 5 x1"),
-            Self::PciExpressGen5x2         => write!(f, "PCI Express Gen 5 x2"),
-            Self::PciExpressGen5x4         => write!(f, "PCI Express Gen 5 x4"),
-            Self::PciExpressGen5x8         => write!(f, "PCI Express Gen 5 x8"),
-            Self::PciExpressGen5x16        => write!(f, "PCI Express Gen 5 x16"),
-            Self::PciExpressGen6           => write!(f, "PCI Express Gen 6 and Beyond"),
-            Self::E1FormFactorSlot         =>
+                }
+            }
+            Self::U2PciExpressGen4 => write!(f, "PCI Express Gen 4 SFF-8639 (U.2)"),
+            Self::U2PciExpressGen5 => write!(f, "PCI Express Gen 5 SFF-8639 (U.2)"),
+            Self::OcpNic3Small => write!(f, "OCP NIC 3.0 Small Form Factor (SFF)"),
+            Self::OcpNic3Large => write!(f, "OCP NIC 3.0 Large Form Factor (LFF)"),
+            Self::OcpNicPriorTo3 => write!(f, "OCP NIC Prior to 3.0"),
+            Self::CxlFlexbus1 => write!(f, "CXL Flexbus 1.0 (deprecated)"),
+            Self::Pc98C20 => write!(f, "PC-98/C20"),
+            Self::Pc98C24 => write!(f, "PC-98/C24"),
+            Self::Pc98E => write!(f, "PC-98/E"),
+            Self::Pc98LocalBus => write!(f, "PC-98/Local Bus"),
+            Self::Pc98Card => write!(f, "PC-98/Card"),
+            Self::PciExpress => write!(f, "PCI Express"),
+            Self::PciExpressX1 => write!(f, "PCI Express x1"),
+            Self::PciExpressX2 => write!(f, "PCI Express x2"),
+            Self::PciExpressX4 => write!(f, "PCI Express x4"),
+            Self::PciExpressX8 => write!(f, "PCI Express x8"),
+            Self::PciExpressX16 => write!(f, "PCI Express x16"),
+            Self::PciExpressGen2 => write!(f, "PCI Express Gen 2"),
+            Self::PciExpressGen2x1 => write!(f, "PCI Express Gen 2 x1"),
+            Self::PciExpressGen2x2 => write!(f, "PCI Express Gen 2 x2"),
+            Self::PciExpressGen2x4 => write!(f, "PCI Express Gen 2 x4"),
+            Self::PciExpressGen2x8 => write!(f, "PCI Express Gen 2 x8"),
+            Self::PciExpressGen2x16 => write!(f, "PCI Express Gen 2 x16"),
+            Self::PciExpressGen3 => write!(f, "PCI Express Gen 3"),
+            Self::PciExpressGen3x1 => write!(f, "PCI Express Gen 3 x1"),
+            Self::PciExpressGen3x2 => write!(f, "PCI Express Gen 3 x2"),
+            Self::PciExpressGen3x4 => write!(f, "PCI Express Gen 3 x4"),
+            Self::PciExpressGen3x8 => write!(f, "PCI Express Gen 3 x8"),
+            Self::PciExpressGen3x16 => write!(f, "PCI Express Gen 3 x16"),
+            Self::PciExpressGen4 => write!(f, "PCI Express Gen 4"),
+            Self::PciExpressGen4x1 => write!(f, "PCI Express Gen 4 x1"),
+            Self::PciExpressGen4x2 => write!(f, "PCI Express Gen 4 x2"),
+            Self::PciExpressGen4x4 => write!(f, "PCI Express Gen 4 x4"),
+            Self::PciExpressGen4x8 => write!(f, "PCI Express Gen 4 x8"),
+            Self::PciExpressGen4x16 => write!(f, "PCI Express Gen 4 x16"),
+            Self::PciExpressGen5 => write!(f, "PCI Express Gen 5"),
+            Self::PciExpressGen5x1 => write!(f, "PCI Express Gen 5 x1"),
+            Self::PciExpressGen5x2 => write!(f, "PCI Express Gen 5 x2"),
+            Self::PciExpressGen5x4 => write!(f, "PCI Express Gen 5 x4"),
+            Self::PciExpressGen5x8 => write!(f, "PCI Express Gen 5 x8"),
+            Self::PciExpressGen5x16 => write!(f, "PCI Express Gen 5 x16"),
+            Self::PciExpressGen6 => write!(f, "PCI Express Gen 6 and Beyond"),
+            Self::E1FormFactorSlot => {
                 if is_alt {
-                    write!(f, "Enterprise and Datacenter 1U E1 Form Factor Slot (EDSFF E1.S, E1.L). \
+                    write!(
+                        f,
+                        "Enterprise and Datacenter 1U E1 Form Factor Slot (EDSFF E1.S, E1.L). \
                         See specifications SFF-TA-1006 and SFF-TA-1007 for more details on values \
-                        for slot length and pitch.")
+                        for slot length and pitch."
+                    )
                 } else {
                     write!(f, "EDSFF E1")
-                },
-            Self::E3FormFactorSlot         =>
+                }
+            }
+            Self::E3FormFactorSlot => {
                 if is_alt {
-                    write!(f, "Enterprise and Datacenter 3\" E3 Form Factor Slot (EDSFF E3.S, \
+                    write!(
+                        f,
+                        "Enterprise and Datacenter 3\" E3 Form Factor Slot (EDSFF E3.S, \
                         E3.L). See specification SFF-TA-1008 for details on values for slot length \
-                        and pitch.")
+                        and pitch."
+                    )
                 } else {
                     write!(f, "EDSFF E3")
-                },
-            Self::Undefined(v)             => write!(f, "Undefined: {}", v),
+                }
+            }
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
@@ -645,25 +657,24 @@ impl From<u8> for SlotWidth {
 impl fmt::Display for SlotWidth {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other        => write!(f, "Other"),
-            Self::Unknown      => write!(f, "Unknown"),
-            Self::Byte         => write!(f, "8 bit"),
-            Self::Word         => write!(f, "16 bit"),
-            Self::Dword        => write!(f, "32 bit"),
-            Self::Qword        => write!(f, "64 bit"),
-            Self::Dqword        => write!(f, "128 bit"),
-            Self::X1           => write!(f, "1x or x1"),
-            Self::X2           => write!(f, "2x or x2"),
-            Self::X4           => write!(f, "4x or x4"),
-            Self::X8           => write!(f, "8x or x8"),
-            Self::X12          => write!(f, "12x or x12"),
-            Self::X16          => write!(f, "16x or x16"),
-            Self::X32          => write!(f, "32x or x32"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Byte => write!(f, "8 bit"),
+            Self::Word => write!(f, "16 bit"),
+            Self::Dword => write!(f, "32 bit"),
+            Self::Qword => write!(f, "64 bit"),
+            Self::Dqword => write!(f, "128 bit"),
+            Self::X1 => write!(f, "1x or x1"),
+            Self::X2 => write!(f, "2x or x2"),
+            Self::X4 => write!(f, "4x or x4"),
+            Self::X8 => write!(f, "8x or x8"),
+            Self::X12 => write!(f, "12x or x12"),
+            Self::X16 => write!(f, "16x or x16"),
+            Self::X32 => write!(f, "32x or x32"),
             Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
-
 
 impl From<u8> for CurrentUsage {
     fn from(byte: u8) -> CurrentUsage {
@@ -681,16 +692,17 @@ impl fmt::Display for CurrentUsage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let is_alt = f.alternate();
         match self {
-            Self::Other        => write!(f, "Other"),
-            Self::Unknown      => write!(f, "Unknown"),
-            Self::Available    => write!(f, "Available"),
-            Self::InUse        => write!(f, "In use"),
-            Self::Unavailable  => 
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Available => write!(f, "Available"),
+            Self::InUse => write!(f, "In use"),
+            Self::Unavailable => {
                 if is_alt {
                     write!(f, "Unavailable (e.g., connected to a processor that is not installed)")
                 } else {
                     write!(f, "Unavailable")
-                },
+                }
+            }
             Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
@@ -712,17 +724,16 @@ impl From<u8> for SlotLength {
 impl fmt::Display for SlotLength {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Other              => write!(f, "Other"),
-            Self::Unknown            => write!(f, "Unknown"),
-            Self::ShortLength        => write!(f, "Short Length"),
-            Self::LongLength         => write!(f, "Long Length"),
+            Self::Other => write!(f, "Other"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::ShortLength => write!(f, "Short Length"),
+            Self::LongLength => write!(f, "Long Length"),
             Self::DriveFormFactor2_5 => write!(f, "2.5\" drive form factor"),
             Self::DriveFormFactor3_5 => write!(f, "3.5\" drive form factor"),
-            Self::Undefined(v)       => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {}", v),
         }
     }
 }
-
 
 impl<'a> BitField<'a> for SlotCharacteristics1 {
     type Size = u8;
@@ -805,7 +816,7 @@ impl<'a> From<&'a Device> for [u8; 5] {
             segment[1],
             d.bus_number,
             d.device_and_function_number.into(),
-            d.data_bus_width
+            d.data_bus_width,
         ]
     }
 }
@@ -843,7 +854,6 @@ impl<'a> PartialEq for PeerDevices<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.0.clone().eq(other.0.clone())
     }
-
 }
 impl<'buffer> Eq for PeerDevices<'buffer> {}
 impl<'buffer> Hash for PeerDevices<'buffer> {
@@ -855,9 +865,7 @@ impl<'buffer> Iterator for PeerDevices<'buffer> {
     type Item = Device;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0
-            .next()
-            .map(Into::into)
+        self.0.next().map(Into::into)
     }
 }
 
@@ -876,18 +884,16 @@ impl fmt::Display for SlotPitch {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
     const PRIMES: &[usize] = &[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61];
 
     #[test]
     fn slot_type() {
         use super::SlotType;
-        let samples = &[ 
+        let samples = &[
             (0x03, SlotType::Isa, "ISA", "ISA"),
             (
                 0x21,
@@ -895,26 +901,34 @@ mod tests {
                 "PCI Express Mini 52-pin with bottom-side keep-outs",
                 "PCI Express Mini 52-pin (CEM spec. 2.0) with bottom-side keep-outs. Use Slot \
                 Length field value 03h (short length) for \"half-Mini card\" -only support, 04h \
-                (long length) for \"full-Mini card\" or dual support."
+                (long length) for \"full-Mini card\" or dual support.",
             ),
             (0xA0, SlotType::Pc98C20, "PC-98/C20", "PC-98/C20"),
-            (0xC4, SlotType::PciExpressGen6, "PCI Express Gen 6 and Beyond", "PCI Express Gen 6 and Beyond"),
+            (
+                0xC4,
+                SlotType::PciExpressGen6,
+                "PCI Express Gen 6 and Beyond",
+                "PCI Express Gen 6 and Beyond",
+            ),
             (0xFE, SlotType::Undefined(254), "Undefined: 254", "Undefined: 254"),
         ];
-        let result = samples.iter()
-            .map(|v| Into::into(v.0))
-            .collect::<Vec<_>>();
+        let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
         assert_eq!(
-            samples.iter().map(|(_, v, s, m)| (v, (*s).into(), (*m).into())).collect::<Vec<_>>(),
-            result.iter().map(|r| (r, format!("{}", r), format!("{:#}", r))).collect::<Vec<_>>(),
+            samples
+                .iter()
+                .map(|(_, v, s, m)| (v, (*s).into(), (*m).into()))
+                .collect::<Vec<_>>(),
+            result
+                .iter()
+                .map(|r| (r, format!("{}", r), format!("{:#}", r)))
+                .collect::<Vec<_>>(),
         );
-
     }
-    
+
     #[test]
     fn slot_width() {
         use super::SlotWidth;
-        let samples = &[ 
+        let samples = &[
             (0x01, SlotWidth::Other, "Other"),
             (0x03, SlotWidth::Byte, "8 bit"),
             (0x06, SlotWidth::Qword, "64 bit"),
@@ -927,17 +941,20 @@ mod tests {
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{}", r))).collect::<Vec<_>>(),
         );
-
     }
-    
+
     #[test]
     fn current_usage() {
         use super::CurrentUsage;
-        let samples = &[ 
+        let samples = &[
             (0x01, CurrentUsage::Other, "Other"),
             (0x02, CurrentUsage::Unknown, "Unknown"),
             (0x04, CurrentUsage::InUse, "In use"),
-            (0x05, CurrentUsage::Unavailable, "Unavailable (e.g., connected to a processor that is not installed)"),
+            (
+                0x05,
+                CurrentUsage::Unavailable,
+                "Unavailable (e.g., connected to a processor that is not installed)",
+            ),
             (0xFE, CurrentUsage::Undefined(254), "Undefined: 254"),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
@@ -945,13 +962,12 @@ mod tests {
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{:#}", r))).collect::<Vec<_>>(),
         );
-
     }
-    
+
     #[test]
     fn slot_length() {
         use super::SlotLength;
-        let samples = &[ 
+        let samples = &[
             (0x01, SlotLength::Other, "Other"),
             (0x02, SlotLength::Unknown, "Unknown"),
             (0x03, SlotLength::ShortLength, "Short Length"),
@@ -963,13 +979,12 @@ mod tests {
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{:}", r))).collect::<Vec<_>>(),
         );
-
     }
-    
+
     #[test]
     fn slot_caharacteristics_1() {
-        use crate::bitfield::{BitField, Position};
         use super::SlotCharacteristics1;
+        use crate::bitfield::{BitField, Position};
         let sample = PRIMES.iter().cloned().take_while(|&x| x < 8).collect::<Vec<_>>();
         let byte = sample.iter().map(|&p| Position(p)).collect();
         let result = SlotCharacteristics1(byte)
@@ -978,19 +993,22 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Positions");
 
-        let dflt_sample = vec!["5.0 V is provided","Modem ring resume is supported"];
-        let alt_sample = vec!["Provides 5.0 volts","PC Card slot supports Modem Ring Resume"];
+        let dflt_sample = vec!["5.0 V is provided", "Modem ring resume is supported"];
+        let alt_sample = vec!["Provides 5.0 volts", "PC Card slot supports Modem Ring Resume"];
         let byte = 0b1000_0010;
-        let iter =  SlotCharacteristics1(byte)
-            .significants();
-        let dflt_result = iter
-            .map(|f| format!("{}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(dflt_sample, dflt_result, "Significant values, default formatting ({:08b})", byte);
-        let alt_result = iter
-            .map(|f| format!("{:#}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(alt_sample, alt_result, "Significant values, alternative formatting ({:08b})", byte);
+        let iter = SlotCharacteristics1(byte).significants();
+        let dflt_result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            dflt_sample, dflt_result,
+            "Significant values, default formatting ({:08b})",
+            byte
+        );
+        let alt_result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            alt_sample, alt_result,
+            "Significant values, alternative formatting ({:08b})",
+            byte
+        );
 
         let result = SlotCharacteristics1(0).reserved().count();
         assert_eq!(0, result, "Reserved fields");
@@ -998,8 +1016,8 @@ mod tests {
 
     #[test]
     fn slot_caharacteristics_2() {
-        use crate::bitfield::{BitField, Position};
         use super::SlotCharacteristics2;
+        use crate::bitfield::{BitField, Position};
         let sample = PRIMES.iter().cloned().take_while(|&x| x < 8).collect::<Vec<_>>();
         let byte = sample.iter().map(|&p| Position(p)).collect();
         let result = SlotCharacteristics2(byte)
@@ -1008,19 +1026,22 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Positions");
 
-        let dflt_sample = vec!["PME signal is supported","Async/surprise removal is supported"];
+        let dflt_sample = vec!["PME signal is supported", "Async/surprise removal is supported"];
         let alt_sample = vec!["PCI slot supports Power Management Event (PME#) signal","Slot supports async/surprise removal (i.e., removal without prior notification to the operating system, device driver, or applications)"];
         let byte = 0b0001_0001;
-        let iter =  SlotCharacteristics2(byte)
-            .significants();
-        let dflt_result = iter
-            .map(|f| format!("{}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(dflt_sample, dflt_result, "Significant values, default formatting ({:08b})", byte);
-        let alt_result = iter
-            .map(|f| format!("{:#}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(alt_sample, alt_result, "Significant values, alternative formatting ({:08b})", byte);
+        let iter = SlotCharacteristics2(byte).significants();
+        let dflt_result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            dflt_sample, dflt_result,
+            "Significant values, default formatting ({:08b})",
+            byte
+        );
+        let alt_result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            alt_sample, alt_result,
+            "Significant values, alternative formatting ({:08b})",
+            byte
+        );
 
         let result = SlotCharacteristics2(0).reserved().count();
         assert_eq!(1, result, "Reserved fields");
@@ -1030,40 +1051,36 @@ mod tests {
     fn device() {
         use super::Device;
         let sample_data = &[
-            0x09, 0x11, 0x03, 0x09, 0x01, 0xB1, 0x0D, 0x04,
-            0x04, 0x04, 0x00, 0x04, 0x01, 0xE9, 0x05, 0xB5,
-            0xDF, 0x10,
+            0x09, 0x11, 0x03, 0x09, 0x01, 0xB1, 0x0D, 0x04, 0x04, 0x04, 0x00, 0x04, 0x01, 0xE9, 0x05, 0xB5, 0xDF, 0x10,
         ];
         let result: Device = sample_data[0x0D..=0x11].into();
         assert_eq!("05e9:b5:1b.7 (Width 16)", format!("{}", result), "Display trait");
         let as_array: [u8; 5] = (&result).into();
         assert_eq!([0xE9, 0x05, 0xB5, 0xDF, 0x10], as_array, "Display into [u8; 5]");
     }
-    
+
     #[test]
     fn peer_devices() {
         use super::PeerDevices;
         let sample_data = &[
-            0x00, 0x00, 0x00, 0x08, 0x00,
-            0x00, 0x00, 0x00, 0xE3, 0x01,
-            0x00, 0x00, 0x00, 0xE4, 0x04,
-
+            0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0xE3, 0x01, 0x00, 0x00, 0x00, 0xE4, 0x04,
         ];
         let result = PeerDevices(sample_data.chunks(5));
         let display_sample: Vec<String> = [
             "0000:00:01.0 (Width 0)",
             "0000:00:1c.3 (Width 1)",
             "0000:00:1c.4 (Width 4)",
-        ].iter()
-            .map(|v| format!("{}", v))
-            .collect();
+        ]
+        .iter()
+        .map(|v| format!("{}", v))
+        .collect();
         assert_eq!(display_sample, result.map(|v| format!("{}", v)).collect::<Vec<_>>());
     }
 
     #[test]
     fn system_slots() {
-        use crate::{RawStructure,InfoType,SmbiosVersion};
         use super::*;
+        use crate::{InfoType, RawStructure, SmbiosVersion};
         for major in u8::MIN..=u8::MAX {
             for minor in u8::MIN..=u8::MAX {
                 let structure = RawStructure {
@@ -1076,40 +1093,40 @@ mod tests {
                 };
                 let result = SystemSlots::try_from(structure);
                 match ((major, minor), result) {
-                    (v, Err(e)) if ((2,0)..(2,1)).contains(&v) => {
+                    (v, Err(e)) if ((2, 0)..(2, 1)).contains(&v) => {
                         assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be 12 bytes",
                             format!("{}", e)
                         );
-                    },
-                    (v, Err(e)) if ((2,1)..(2,6)).contains(&v) => {
+                    }
+                    (v, Err(e)) if ((2, 1)..(2, 6)).contains(&v) => {
                         assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be 13 bytes",
                             format!("{}", e)
                         );
-                    },
-                    (v, Err(e)) if ((2,6)..(3,2)).contains(&v) => {
+                    }
+                    (v, Err(e)) if ((2, 6)..(3, 2)).contains(&v) => {
                         assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be 17 bytes",
                             format!("{}", e)
-                            );
-                    },
-                    (v, Err(e)) if ((3,2)..).contains(&v) => {
+                        );
+                    }
+                    (v, Err(e)) if ((3, 2)..).contains(&v) => {
                         assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be minimum of 17 bytes",
                             format!("{}", e)
                         );
-                    },
+                    }
                     (_, Err(e)) => {
                         assert_eq!("could not convert slice to array", format!("{}", e));
-                    },
+                    }
                     (_, Ok(ss)) => {
                         assert_eq!(666, ss.handle);
-                    },
+                    }
                 }
             }
         }
@@ -1132,12 +1149,13 @@ mod tests {
                 device_and_function_number: DeviceAndFunctionNumber(3, 3),
                 data_bus_width: 3,
             },
-        ].iter()
-            .fold(Vec::new(),|mut acc, v| {
-                let arr: [u8; 5] = v.into();
-                acc.extend_from_slice(&arr);
-                acc
-            });
+        ]
+        .iter()
+        .fold(Vec::new(), |mut acc, v| {
+            let arr: [u8; 5] = v.into();
+            acc.extend_from_slice(&arr);
+            acc
+        });
         let sample = SystemSlots {
             handle: 0x0023,
             slot_designation: "SSD1",
@@ -1169,36 +1187,50 @@ mod tests {
                 0x0A, // Slot Data Bus Width: 4x or x4
                 0x04, // Current Usage: In Use
                 0x03, // Slot Length: Short
-                0x02, 0x00, // Slot ID: 2
+                0x02,
+                0x00, // Slot ID: 2
                 0x0C, // Slot Characteristics 1: 3.3 V is provided, Opening is shared
                 0x01, // Slot Characteristics 2: PME signal is supported
-                0x00, 0x00, // Segment Group Number: 0
+                0x00,
+                0x00, // Segment Group Number: 0
                 0x00, // Bus Number: 0
                 0xE4, // Device Number: 1c, Function number: 4
                 0x00, // Data Bus Width: 0
                 0x03, // Peer grouping count: 3
                 // Peer groups (Segment/Bus/Device/Function/Width)
-                0x01, 0x00, 0x01, 0x01<<3 | 0x01, 0x01, // Peer group 1: ( 1 / 1 / 1 / 1 / 1)
-                0x02, 0x00, 0x02, 0x02<<3 | 0x02, 0x02, // Peer group 2: ( 2 / 2 / 2 / 2 / 2)
-                0x03, 0x00, 0x03, 0x03<<3 | 0x03, 0x03, // Peer group 3: ( 3 / 3 / 3 / 3 / 3)
+                0x01,
+                0x00,
+                0x01,
+                0x01 << 3 | 0x01,
+                0x01, // Peer group 1: ( 1 / 1 / 1 / 1 / 1)
+                0x02,
+                0x00,
+                0x02,
+                0x02 << 3 | 0x02,
+                0x02, // Peer group 2: ( 2 / 2 / 2 / 2 / 2)
+                0x03,
+                0x00,
+                0x03,
+                0x03 << 3 | 0x03,
+                0x03, // Peer group 3: ( 3 / 3 / 3 / 3 / 3)
                 0x00, // Blank field, may be mistake in SMBIOS specification
                 0x06, // Slot information: Gen6
                 0x0D, // Slot physical width: x16
-                0xE2, 0x04, // Slot pitch: 12.5 mm
+                0xE2,
+                0x04, // Slot pitch: 12.5 mm
             ],
             strings: &[
                 // SSD1
-                0x53,0x53,0x44,0x31,0x00,
+                0x53, 0x53, 0x44, 0x31, 0x00,
             ],
         };
-        let result = SystemSlots::try_from(structure)
-            .unwrap();
+        let result = SystemSlots::try_from(structure).unwrap();
         assert_eq!(sample, result, "Sample:\n{:X?}\nResult:\n{:X?}", sample, result);
     }
     #[test]
     fn dmi_bin() {
-        use crate::{Structure, EntryPoint,};
         use super::*;
+        use crate::{EntryPoint, Structure};
         const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
         let slots = entry_point
@@ -1231,12 +1263,11 @@ mod tests {
             slot_physical_width: None,
             slot_pitch: None,
         };
-        let slot1_result = slots.iter()
-            .find_map(|s| {
-                match s {
-                    Structure::SystemSlots(ss) if ss.handle == 0x0900 => Some(ss),
-                    _ => None,
-                }
+        let slot1_result = slots
+            .iter()
+            .find_map(|s| match s {
+                Structure::SystemSlots(ss) if ss.handle == 0x0900 => Some(ss),
+                _ => None,
             })
             .unwrap();
         assert_eq!(&slot1_sample, slot1_result, "Entire SystemSlots struct: Slot 1");
@@ -1259,12 +1290,11 @@ mod tests {
             slot_physical_width: None,
             slot_pitch: None,
         };
-        let slot4_result = slots.iter()
-            .find_map(|s| {
-                match s {
-                    Structure::SystemSlots(ss) if ss.handle == 0x0903 => Some(ss),
-                    _ => None,
-                }
+        let slot4_result = slots
+            .iter()
+            .find_map(|s| match s {
+                Structure::SystemSlots(ss) if ss.handle == 0x0903 => Some(ss),
+                _ => None,
             })
             .unwrap();
         assert_eq!(&slot4_sample, slot4_result, "Entire SystemSlots struct: Slot 4");

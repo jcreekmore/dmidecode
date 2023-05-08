@@ -54,7 +54,6 @@
 //! - Inactive (Type 126)
 //! - End-of-Table (Type 127)
 
-
 #![no_std]
 
 extern crate failure;
@@ -68,11 +67,11 @@ extern crate lazy_static;
 #[cfg(test)]
 extern crate pretty_assertions;
 
+use core::array::TryFromSliceError;
+use core::convert::TryInto;
+use core::fmt;
 use core::mem;
 use core::str;
-use core::fmt;
-use core::convert::TryInto;
-use core::array::TryFromSliceError;
 
 #[macro_export]
 #[doc(hidden)]
@@ -252,7 +251,6 @@ impl EntryPoint {
     }
 }
 
-
 ///
 /// An SMBIOSv2 `EntryPoint` structure.
 ///
@@ -394,19 +392,13 @@ pub enum Structure<'buffer> {
 #[derive(Debug, Fail)]
 pub enum MalformedStructureError {
     /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
-    #[fail(
-        display = "Structure at offset {} with length {} extends beyond SMBIOS",
-        _0, _1
-    )]
+    #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
     BadSize(u32, u8),
     /// The SMBIOS structure contains an unterminated strings section.
     #[fail(display = "Structure at offset {} with unterminated strings", _0)]
     UnterminatedStrings(u32),
     /// The SMBIOS structure contains an invalid string index.
-    #[fail(
-        display = "Structure {:?} with handle {} has invalid string index {}",
-        _0, _1, _2
-    )]
+    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
     InvalidStringIndex(InfoType, u16, u8),
     /// This error returned when a conversion from a slice to an array fails.
     #[fail(display = "{}", _0)]
@@ -420,7 +412,7 @@ pub enum MalformedStructureError {
     InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
     /// The SMBIOS structure contains an invalid processor family
     #[fail(display = "Invalid processor family")]
-    InvalidProcessorFamily
+    InvalidProcessorFamily,
 }
 
 #[doc(hidden)]
@@ -468,8 +460,7 @@ impl<'buffer> Iterator for Structures<'buffer> {
             info: header.kind.into(),
             length: header.len,
             handle: header.handle,
-            data: &self.buffer
-                [(self.idx + mem::size_of::<HeaderPacked>() as u32) as usize..strings_idx as usize],
+            data: &self.buffer[(self.idx + mem::size_of::<HeaderPacked>() as u32) as usize..strings_idx as usize],
             strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
         };
 
@@ -493,27 +484,27 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::PortConnector => PortConnector::try_from(structure).map(Structure::PortConnector),
             InfoType::SystemSlots => SystemSlots::try_from(structure).map(Structure::SystemSlots),
             InfoType::OemStrings => OemStrings::try_from(structure).map(Structure::OemStrings),
-            InfoType::SystemConfigurationOptions =>
-                SystemConfigurationOptions::try_from(structure).map(Structure::SystemConfigurationOptions),
+            InfoType::SystemConfigurationOptions => {
+                SystemConfigurationOptions::try_from(structure).map(Structure::SystemConfigurationOptions)
+            }
             InfoType::BiosLanguage => BiosLanguage::try_from(structure).map(Structure::BiosLanguage),
-            InfoType::GroupAssociations =>
-                GroupAssociations::try_from(structure).map(Structure::GroupAssociations),
-            InfoType::SystemEventLog =>
-                SystemEventLog::try_from(structure).map(Structure::SystemEventLog),
-            InfoType::PhysicalMemoryArray =>
-                PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray),
-            InfoType::MemoryDevice =>
-                MemoryDevice::try_from(structure).map(Structure::MemoryDevice),
-            InfoType::MemoryError32 =>
-                MemoryError32::try_from(structure).map(Structure::MemoryError32),
-            InfoType::MemoryArrayMappedAddress =>
-                MemoryArrayMappedAddress::try_from(structure).map(Structure::MemoryArrayMappedAddress),
-            InfoType::MemoryDeviceMappedAddress =>
-                MemoryDeviceMappedAddress::try_from(structure).map(Structure::MemoryDeviceMappedAddress),
-            InfoType::BuiltInPointingDevice =>
-                BuiltInPointingDevice::try_from(structure).map(Structure::BuiltInPointingDevice),
-            InfoType::PortableBattery =>
-                PortableBattery::try_from(structure).map(Structure::PortableBattery),
+            InfoType::GroupAssociations => GroupAssociations::try_from(structure).map(Structure::GroupAssociations),
+            InfoType::SystemEventLog => SystemEventLog::try_from(structure).map(Structure::SystemEventLog),
+            InfoType::PhysicalMemoryArray => {
+                PhysicalMemoryArray::try_from(structure).map(Structure::PhysicalMemoryArray)
+            }
+            InfoType::MemoryDevice => MemoryDevice::try_from(structure).map(Structure::MemoryDevice),
+            InfoType::MemoryError32 => MemoryError32::try_from(structure).map(Structure::MemoryError32),
+            InfoType::MemoryArrayMappedAddress => {
+                MemoryArrayMappedAddress::try_from(structure).map(Structure::MemoryArrayMappedAddress)
+            }
+            InfoType::MemoryDeviceMappedAddress => {
+                MemoryDeviceMappedAddress::try_from(structure).map(Structure::MemoryDeviceMappedAddress)
+            }
+            InfoType::BuiltInPointingDevice => {
+                BuiltInPointingDevice::try_from(structure).map(Structure::BuiltInPointingDevice)
+            }
+            InfoType::PortableBattery => PortableBattery::try_from(structure).map(Structure::PortableBattery),
             _ => Ok(Structure::Other(structure)),
         })
     }
@@ -546,32 +537,27 @@ pub trait TryFromBytes<'a, T>: Sized {
 
 impl<'a> TryFromBytes<'a, u8> for u8 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into()
-            .map(|arr| u8::from_le_bytes(arr))
+        bytes.try_into().map(|arr| u8::from_le_bytes(arr))
     }
 }
 impl<'a> TryFromBytes<'a, u16> for u16 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into()
-            .map(|arr| u16::from_le_bytes(arr))
+        bytes.try_into().map(|arr| u16::from_le_bytes(arr))
     }
 }
 impl<'a> TryFromBytes<'a, u32> for u32 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into()
-            .map(|arr| u32::from_le_bytes(arr))
+        bytes.try_into().map(|arr| u32::from_le_bytes(arr))
     }
 }
 impl<'a> TryFromBytes<'a, u64> for u64 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into()
-            .map(|arr| u64::from_le_bytes(arr))
+        bytes.try_into().map(|arr| u64::from_le_bytes(arr))
     }
 }
 impl<'a> TryFromBytes<'a, u128> for u128 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into()
-            .map(|arr| u128::from_le_bytes(arr))
+        bytes.try_into().map(|arr| u128::from_le_bytes(arr))
     }
 }
 
@@ -591,9 +577,9 @@ impl<'buffer> RawStructure<'buffer> {
         if idx == 0 {
             Ok("")
         } else {
-            self.strings().nth((idx - 1) as usize).ok_or_else(|| {
-                MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx)
-            })
+            self.strings()
+                .nth((idx - 1) as usize)
+                .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
         }
     }
     /// Get value by offset declared in SMBIOS Reference Specification.\
@@ -611,19 +597,16 @@ impl<'buffer> RawStructure<'buffer> {
         // Ignore header
         let start = offset - 4;
         let size = core::mem::size_of::<T>();
-        let slice = self.data.get(start..(start + size))
-            .unwrap_or(&[]);
-        TryFromBytes::try_from_bytes(slice)
-            .map_err(|e| MalformedStructureError::InvalidSlice(e))
+        let slice = self.data.get(start..(start + size)).unwrap_or(&[]);
+        TryFromBytes::try_from_bytes(slice).map_err(|e| MalformedStructureError::InvalidSlice(e))
     }
     /// Wrapper to self.data.get(..) with header offset correction
     pub fn get_slice(&self, offset: usize, size: usize) -> Option<&'buffer [u8]> {
-        self.data.get(offset - 4 .. offset - 4 + size)
+        self.data.get(offset - 4..offset - 4 + size)
     }
     /// Get *STRING* by offset declared in SMBIOS Reference Specification
     pub fn get_string(&self, offset: usize) -> Result<&'buffer str, MalformedStructureError> {
-        self.get::<u8>(offset)
-            .and_then(|idx| self.find_string(idx))
+        self.get::<u8>(offset).and_then(|idx| self.find_string(idx))
     }
 }
 
@@ -643,7 +626,9 @@ impl<'a> Iterator for StructureStrings<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let slice = self.bytes.get(self.start..)?
+        let slice = self
+            .bytes
+            .get(self.start..)?
             .split(|elm| *elm == 0)
             .nth(0)
             .filter(|slice| !slice.is_empty())?;
@@ -712,29 +697,29 @@ impl From<u8> for InfoType {
 impl fmt::Display for InfoType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            InfoType::Bios                      => write!(f, "BIOS Information"),
-            InfoType::System                    => write!(f, "System Information"),
-            InfoType::BaseBoard                 => write!(f, "Baseboard (or Module) Information"),
-            InfoType::Enclosure                 => write!(f, "System Enclosure or Chassis"),
-            InfoType::Processor                 => write!(f, "Processor Information"),
+            InfoType::Bios => write!(f, "BIOS Information"),
+            InfoType::System => write!(f, "System Information"),
+            InfoType::BaseBoard => write!(f, "Baseboard (or Module) Information"),
+            InfoType::Enclosure => write!(f, "System Enclosure or Chassis"),
+            InfoType::Processor => write!(f, "Processor Information"),
             //InfoType::                          => write!(f, "Memory Controller Information"),
             //InfoType::                          => write!(f, "Memory Module Information"),
-            InfoType::Cache                     => write!(f, "Cache Information"),
-            InfoType::PortConnector             => write!(f, "Port Connector Information"),
-            InfoType::SystemSlots               => write!(f, "System Slots"),
+            InfoType::Cache => write!(f, "Cache Information"),
+            InfoType::PortConnector => write!(f, "Port Connector Information"),
+            InfoType::SystemSlots => write!(f, "System Slots"),
             //InfoType::                          => write!(f, "On Board Devices Information"),
-            InfoType::OemStrings                => write!(f, "OEM Strings"),
+            InfoType::OemStrings => write!(f, "OEM Strings"),
             InfoType::SystemConfigurationOptions => write!(f, "System Configuration Options"),
-            InfoType::BiosLanguage              => write!(f, "BIOS Language Information"),
-            InfoType::GroupAssociations         => write!(f, "Group Associations"),
-            InfoType::SystemEventLog            => write!(f, "System Event Log"),
-            InfoType::PhysicalMemoryArray       => write!(f, "Physical Memory Array"),
-            InfoType::MemoryDevice              => write!(f, "Memory Device"),
-            InfoType::MemoryError32             => write!(f, "32-Bit Memory Error Information"),
-            InfoType::MemoryArrayMappedAddress  => write!(f, "Memory Array Mapped Address"),
+            InfoType::BiosLanguage => write!(f, "BIOS Language Information"),
+            InfoType::GroupAssociations => write!(f, "Group Associations"),
+            InfoType::SystemEventLog => write!(f, "System Event Log"),
+            InfoType::PhysicalMemoryArray => write!(f, "Physical Memory Array"),
+            InfoType::MemoryDevice => write!(f, "Memory Device"),
+            InfoType::MemoryError32 => write!(f, "32-Bit Memory Error Information"),
+            InfoType::MemoryArrayMappedAddress => write!(f, "Memory Array Mapped Address"),
             InfoType::MemoryDeviceMappedAddress => write!(f, "Memory Device Mapped Address"),
-            InfoType::BuiltInPointingDevice      => write!(f, "Built-in Pointing Device"),
-            InfoType::PortableBattery            => write!(f, "Portable Battery"),
+            InfoType::BuiltInPointingDevice => write!(f, "Built-in Pointing Device"),
+            InfoType::PortableBattery => write!(f, "Portable Battery"),
             //InfoType::                          => write!(f, "System Reset"),
             //InfoType::                          => write!(f, "Hardware Security"),
             //InfoType::                          => write!(f, "System Power Controls"),
@@ -744,7 +729,7 @@ impl fmt::Display for InfoType {
             //InfoType::                          => write!(f, "Electrical Current Probe"),
             //InfoType::                          => write!(f, "Out-of-Band Remote Access"),
             //InfoType::                          => write!(f, "Boot Integrity Services (BIS) Entry Point"),
-            InfoType::SystemBoot                => write!(f, "System Boot Information"),
+            InfoType::SystemBoot => write!(f, "System Boot Information"),
             //InfoType::                          => write!(f, "64-Bit Memory Error Information"),
             //InfoType::                          => write!(f, "Management Device"),
             //InfoType::                          => write!(f, "Management Device Component"),
@@ -758,12 +743,11 @@ impl fmt::Display for InfoType {
             //InfoType::                          => write!(f, "TPM Device"),
             //InfoType::                          => write!(f, "Processor Additional Information"),
             //InfoType::                          => write!(f, "Inactive"),
-            InfoType::End                       => write!(f, "End-of-Table"),
-            InfoType::Oem(t)                    => write!(f, "OEM: {}", t),
+            InfoType::End => write!(f, "End-of-Table"),
+            InfoType::Oem(t) => write!(f, "OEM: {}", t),
         }
     }
 }
-
 
 #[cfg(test)]
 #[macro_use]
@@ -871,12 +855,12 @@ mod tests {
 
     #[test]
     fn structure_strings() {
+        use pretty_assertions::assert_eq;
         use std::prelude::v1::*;
-        use pretty_assertions::{assert_eq,};
 
         let regular_bytes = &[65, 66, 67, 0, 68, 69, 0, 70, 0, 71, 72, 73, 0, 0];
         let regular_ss = StructureStrings::new(regular_bytes).collect::<Vec<_>>();
-        assert_eq!(vec!["ABC","DE","F", "GHI"], regular_ss, "Regular bytes");
+        assert_eq!(vec!["ABC", "DE", "F", "GHI"], regular_ss, "Regular bytes");
 
         let zero_bytes = &[0, 0];
         let zero_ss = StructureStrings::new(zero_bytes).collect::<Vec<_>>();
@@ -884,7 +868,7 @@ mod tests {
 
         let no_tail_bytes = &[65, 66, 67, 0, 68, 69, 0, 70, 0, 71, 72, 73];
         let no_tail_ss = StructureStrings::new(no_tail_bytes).collect::<Vec<_>>();
-        assert_eq!(vec!["ABC","DE","F", "GHI"], no_tail_ss, "Regular bytes");
+        assert_eq!(vec!["ABC", "DE", "F", "GHI"], no_tail_ss, "Regular bytes");
 
         let invalid_order1_bytes = &[65, 66, 67, 0, 0, 68, 69, 0, 0, 0, 0, 0];
         let invalid_order1_ss = StructureStrings::new(invalid_order1_bytes).collect::<Vec<_>>();

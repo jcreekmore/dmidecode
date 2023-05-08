@@ -3,16 +3,11 @@
 //! This structure maps memory address space usually to a device-level granularity.\
 //! One structure is present for each contiguous address range described.
 
-
 use crate::{
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength,
-    },
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
     RawStructure,
 };
-
 
 /// Main struct for *Memory Device Mapped Address (Type 20)*
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -67,50 +62,51 @@ pub struct MemoryDeviceMappedAddress {
     pub extended_ending_address: Option<u64>,
 }
 
-
 impl<'a> MemoryDeviceMappedAddress {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
         let handle = structure.handle;
         match (structure.version.major, structure.version.minor) {
-            v if ((2, 1)..(2, 7)).contains(&v) && structure.length != 0x13 =>
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDeviceMappedAddress, handle, "", 0x13)),
-            v if v >= (2, 7) && structure.length != 0x23 =>
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDeviceMappedAddress, handle, "", 0x23)),
-            _ => {
-                Ok(Self {
-                    handle,
-                    starting_address: structure.get::<u32>(0x04)?,
-                    ending_address: structure.get::<u32>(0x08)?,
-                    memory_device_handle: structure.get::<u16>(0x0C)?,
-                    memory_array_mapped_address_handle: structure.get::<u16>(0x0E)?,
-                    partition_row_position: structure.get::<u8>(0x10)?,
-                    interleave_position: structure.get::<u8>(0x11)?,
-                    interleaved_data_depth: structure.get::<u8>(0x12)?,
-                    extended_starting_address: structure.get::<u64>(0x13).ok(),
-                    extended_ending_address: structure.get::<u64>(0x1B).ok(),
-                })
-            }
+            v if ((2, 1)..(2, 7)).contains(&v) && structure.length != 0x13 => Err(InvalidFormattedSectionLength(
+                InfoType::MemoryDeviceMappedAddress,
+                handle,
+                "",
+                0x13,
+            )),
+            v if v >= (2, 7) && structure.length != 0x23 => Err(InvalidFormattedSectionLength(
+                InfoType::MemoryDeviceMappedAddress,
+                handle,
+                "",
+                0x23,
+            )),
+            _ => Ok(Self {
+                handle,
+                starting_address: structure.get::<u32>(0x04)?,
+                ending_address: structure.get::<u32>(0x08)?,
+                memory_device_handle: structure.get::<u16>(0x0C)?,
+                memory_array_mapped_address_handle: structure.get::<u16>(0x0E)?,
+                partition_row_position: structure.get::<u8>(0x10)?,
+                interleave_position: structure.get::<u8>(0x11)?,
+                interleaved_data_depth: structure.get::<u8>(0x12)?,
+                extended_starting_address: structure.get::<u64>(0x13).ok(),
+                extended_ending_address: structure.get::<u64>(0x1B).ok(),
+            }),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
 
     #[test]
     fn memory_device_mapped_address() {
-        use crate::{
-            InfoType,
-            RawStructure,
-        };
         use super::*;
+        use crate::{InfoType, RawStructure};
 
         let length = 35;
-        let (data, strings) = include_bytes!("../../tests/data/02daadcd/entries/20-0/bin")[4..]
-            .split_at(length as usize - 4);
+        let (data, strings) =
+            include_bytes!("../../tests/data/02daadcd/entries/20-0/bin")[4..].split_at(length as usize - 4);
         let structure = RawStructure {
             version: (2, 7).into(),
             info: InfoType::MemoryDeviceMappedAddress,
@@ -131,8 +127,7 @@ mod tests {
             extended_starting_address: Some(0),
             extended_ending_address: Some(0),
         };
-        let result = MemoryDeviceMappedAddress::try_from(structure)
-            .unwrap();
+        let result = MemoryDeviceMappedAddress::try_from(structure).unwrap();
         assert_eq!(sample, result, "MemoryDeviceMappedAddress");
     }
 }

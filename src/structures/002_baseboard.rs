@@ -4,11 +4,7 @@
 //! motherboard, planar, server blade, or other standard system module).
 use core::fmt;
 
-use crate::{
-    MalformedStructureError,
-    RawStructure,
-};
-
+use crate::{MalformedStructureError, RawStructure};
 
 /// The baseboard type defined in the SMBIOS specification.
 #[allow(non_camel_case_types)]
@@ -53,20 +49,22 @@ impl From<u8> for BoardType {
 impl fmt::Display for BoardType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BoardType::Unknown                => write!(f, "Unknown"),
-            BoardType::Other                  => write!(f, "Other"),
-            BoardType::ServerBlade            => write!(f, "Server Blade"),
-            BoardType::ConnectivitySwitch     => write!(f, "Connectivity Switch"),
+            BoardType::Unknown => write!(f, "Unknown"),
+            BoardType::Other => write!(f, "Other"),
+            BoardType::ServerBlade => write!(f, "Server Blade"),
+            BoardType::ConnectivitySwitch => write!(f, "Connectivity Switch"),
             BoardType::SystemManagementModule => write!(f, "System Management Module"),
-            BoardType::ProcessorModule        => write!(f, "Processor Module"),
-            BoardType::IoModule               => write!(f, "I/O Module"),
-            BoardType::MemoryModule           => write!(f, "Memory Module"),
-            BoardType::DaughterBoard          => write!(f, "Daughter board"),
-            BoardType::MotherBoard            => write!(f, "Motherboard (includes processor, memory, and I/O)"),
-            BoardType::ProcessorMemoryModule  => write!(f, "Processor/Memory Module"),
-            BoardType::ProcessorIoModule      => write!(f, "Processor/IO Module"),
-            BoardType::InterconnectBoard      => write!(f, "Interconnect board"),
-            BoardType::Undefined(t)           => write!(f, "Undefined: {}", t),
+            BoardType::ProcessorModule => write!(f, "Processor Module"),
+            BoardType::IoModule => write!(f, "I/O Module"),
+            BoardType::MemoryModule => write!(f, "Memory Module"),
+            BoardType::DaughterBoard => write!(f, "Daughter board"),
+            BoardType::MotherBoard => {
+                write!(f, "Motherboard (includes processor, memory, and I/O)")
+            }
+            BoardType::ProcessorMemoryModule => write!(f, "Processor/Memory Module"),
+            BoardType::ProcessorIoModule => write!(f, "Processor/IO Module"),
+            BoardType::InterconnectBoard => write!(f, "Interconnect board"),
+            BoardType::Undefined(t) => write!(f, "Undefined: {}", t),
         }
     }
 }
@@ -101,9 +99,7 @@ pub struct BaseBoard<'buffer> {
 }
 
 impl<'buffer> BaseBoard<'buffer> {
-    pub(crate) fn try_from(structure: RawStructure<'buffer>) ->
-        Result<BaseBoard<'buffer>, MalformedStructureError>
-    {
+    pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<BaseBoard<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
         struct BaseBoardPacked {

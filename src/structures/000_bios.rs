@@ -2,12 +2,10 @@
 //!
 //! BIOS Information structure
 
-
 use core::fmt;
 
 use crate::bitfield::{BitField, FlagType, Layout};
-use crate::{MalformedStructureError, RawStructure,};
-
+use crate::{MalformedStructureError, RawStructure};
 
 /// BIOS Information
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
@@ -26,9 +24,9 @@ pub struct Bios<'buffer> {
     /// assumed to be 19yy
     /// NOTE: The mm/dd/yyyy format is required for SMBIOS version 2.3 and later
     pub bios_release_date: &'buffer str,
-    /// The size of the physical device containing the BIOS. 
+    /// The size of the physical device containing the BIOS.
     pub rom_size: RomSize,
-    /// Defines which functions the BIOS supports: PCI, PCMCIA, Flash, etc. 
+    /// Defines which functions the BIOS supports: PCI, PCMCIA, Flash, etc.
     pub bios_characteristics: Characteristics,
     /// For version 2.1 and later implementations one Extensions Byte defined
     pub bios_characteristics_exttension_1: Option<CharacteristicsExtension1>,
@@ -40,7 +38,7 @@ pub struct Bios<'buffer> {
     pub firmware_revision: Option<FirmwareRevision>,
 }
 
-/// BIOS Characteristics 
+/// BIOS Characteristics
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub struct Characteristics(u64);
 
@@ -58,7 +56,7 @@ pub struct CharacteristicsExtension2(u8);
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub struct BiosRevision {
     pub major: u8,
-    pub minor: u8
+    pub minor: u8,
 }
 
 /// Firmware Revision assembled from *Embedded Controller Firmware Major Release* and
@@ -66,7 +64,7 @@ pub struct BiosRevision {
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub struct FirmwareRevision {
     pub major: u8,
-    pub minor: u8
+    pub minor: u8,
 }
 
 /// The size of the physical device containing the BIOS.
@@ -78,7 +76,6 @@ pub struct RomSize {
     /// Extended size of the physical device(s) containing the BIOS, rounded up if needed.
     pub extended: Option<u16>,
 }
-
 
 impl<'buffer> Bios<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Bios<'buffer>, MalformedStructureError> {
@@ -97,7 +94,7 @@ impl<'buffer> Bios<'buffer> {
             system_bios_minor_release: u8,
             embedded_controller_firmware_major_release: u8,
             embedded_controller_firmware_minor_release: u8,
-            extended_bios_rom_size: u16
+            extended_bios_rom_size: u16,
         }
 
         #[repr(C)]
@@ -131,76 +128,81 @@ impl<'buffer> Bios<'buffer> {
         match structure.version {
             v if v >= (3, 1).into() => {
                 let_as_struct!(packed, BiosPacked_3_1, structure.data);
-                Ok(Bios{
+                Ok(Bios {
                     handle: structure.handle,
                     vendor: structure.find_string(packed.vendor)?,
                     bios_version: structure.find_string(packed.bios_version)?,
                     bios_starting_address_segment: packed.bios_starting_address_segment,
                     bios_release_date: structure.find_string(packed.bios_release_date)?,
-                    rom_size: RomSize { basic: packed.bios_rom_size, extended: Some(packed.extended_bios_rom_size) },
+                    rom_size: RomSize {
+                        basic: packed.bios_rom_size,
+                        extended: Some(packed.extended_bios_rom_size),
+                    },
                     bios_characteristics: Characteristics(packed.bios_characteristics),
-                    bios_characteristics_exttension_1: Some(CharacteristicsExtension1(packed.bios_characteristics_exttension_1)),
-                    bios_characteristics_exttension_2: Some(CharacteristicsExtension2(packed.bios_characteristics_exttension_2)),
-                    bios_revision:
-                        Some(
-                            BiosRevision {
-                                major: packed.system_bios_major_release,
-                                minor: packed.system_bios_minor_release,
-                            }
-                        ),
-                    firmware_revision:
-                        Some(
-                            FirmwareRevision {
-                                major: packed.embedded_controller_firmware_major_release,
-                                minor: packed.embedded_controller_firmware_minor_release,
-                            }
-                        ),
+                    bios_characteristics_exttension_1: Some(CharacteristicsExtension1(
+                        packed.bios_characteristics_exttension_1,
+                    )),
+                    bios_characteristics_exttension_2: Some(CharacteristicsExtension2(
+                        packed.bios_characteristics_exttension_2,
+                    )),
+                    bios_revision: Some(BiosRevision {
+                        major: packed.system_bios_major_release,
+                        minor: packed.system_bios_minor_release,
+                    }),
+                    firmware_revision: Some(FirmwareRevision {
+                        major: packed.embedded_controller_firmware_major_release,
+                        minor: packed.embedded_controller_firmware_minor_release,
+                    }),
                 })
-            },
+            }
             v if v >= (2, 4).into() => {
                 let_as_struct!(packed, BiosPacked_2_4, structure.data);
-                Ok(Bios{
+                Ok(Bios {
                     handle: structure.handle,
                     vendor: structure.find_string(packed.vendor)?,
                     bios_version: structure.find_string(packed.bios_version)?,
                     bios_starting_address_segment: packed.bios_starting_address_segment,
                     bios_release_date: structure.find_string(packed.bios_release_date)?,
-                    rom_size: RomSize { basic: packed.bios_rom_size, extended: None },
+                    rom_size: RomSize {
+                        basic: packed.bios_rom_size,
+                        extended: None,
+                    },
                     bios_characteristics: Characteristics(packed.bios_characteristics),
-                    bios_characteristics_exttension_1: Some(CharacteristicsExtension1(packed.bios_characteristics_exttension_1)),
-                    bios_characteristics_exttension_2: Some(CharacteristicsExtension2(packed.bios_characteristics_exttension_2)),
-                    bios_revision:
-                        Some(
-                            BiosRevision {
-                                major: packed.system_bios_major_release,
-                                minor: packed.system_bios_minor_release,
-                            }
-                        ),
-                    firmware_revision:
-                        Some(
-                            FirmwareRevision {
-                                major: packed.embedded_controller_firmware_major_release,
-                                minor: packed.embedded_controller_firmware_minor_release,
-                            }
-                        ),
+                    bios_characteristics_exttension_1: Some(CharacteristicsExtension1(
+                        packed.bios_characteristics_exttension_1,
+                    )),
+                    bios_characteristics_exttension_2: Some(CharacteristicsExtension2(
+                        packed.bios_characteristics_exttension_2,
+                    )),
+                    bios_revision: Some(BiosRevision {
+                        major: packed.system_bios_major_release,
+                        minor: packed.system_bios_minor_release,
+                    }),
+                    firmware_revision: Some(FirmwareRevision {
+                        major: packed.embedded_controller_firmware_major_release,
+                        minor: packed.embedded_controller_firmware_minor_release,
+                    }),
                 })
-            },
+            }
             _ => {
                 let_as_struct!(packed, BiosPacked_2_0, structure.data);
-                Ok(Bios{
+                Ok(Bios {
                     handle: structure.handle,
                     vendor: structure.find_string(packed.vendor)?,
                     bios_version: structure.find_string(packed.bios_version)?,
                     bios_starting_address_segment: packed.bios_starting_address_segment,
                     bios_release_date: structure.find_string(packed.bios_release_date)?,
-                    rom_size: RomSize { basic: packed.bios_rom_size, extended: None },
+                    rom_size: RomSize {
+                        basic: packed.bios_rom_size,
+                        extended: None,
+                    },
                     bios_characteristics: Characteristics(packed.bios_characteristics),
                     bios_characteristics_exttension_1: None,
                     bios_characteristics_exttension_2: None,
                     bios_revision: None,
                     firmware_revision: None,
                 })
-            },
+            }
         }
     }
 }
@@ -317,8 +319,7 @@ impl From<RomSize> for u64 {
     fn from(rom_size: RomSize) -> Self {
         if rom_size.basic != 0xFF {
             (rom_size.basic + 1) as u64 * (64 << 10)
-        }
-        else if let Some(extended) = rom_size.extended {
+        } else if let Some(extended) = rom_size.extended {
             let unit = (extended >> 14) & 0b11;
             let size = (extended & 0x3fff) as u64;
             match unit {
@@ -326,8 +327,7 @@ impl From<RomSize> for u64 {
                 0b01 => size << 30,
                 _ => unimplemented!(),
             }
-        }
-        else {
+        } else {
             unreachable!();
         }
     }
@@ -353,16 +353,15 @@ impl fmt::Display for FirmwareRevision {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::prelude::v1::*;
 
     use lazy_static::lazy_static;
-    use pretty_assertions::{assert_eq,};
-    
-    use crate::bitfield::Position;
+    use pretty_assertions::assert_eq;
+
     use super::*;
+    use crate::bitfield::Position;
 
     const PRIMES: &[usize] = &[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61];
     const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
@@ -380,24 +379,28 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Positions");
 
-        let sample = vec!["ISA is supported","EISA is supported"];
+        let sample = vec!["ISA is supported", "EISA is supported"];
         let qword = 0b0101_0000;
-        let iter =  Characteristics(qword)
-            .significants();
-        let result = iter
-            .map(|f| format!("{}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Significant values, default formatting ({:064b})", qword);
-        let result = iter
-            .map(|f| format!("{:#}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Significant values, alternative formatting ({:064b})", qword);
+        let iter = Characteristics(qword).significants();
+        let result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            sample, result,
+            "Significant values, default formatting ({:064b})",
+            qword
+        );
+        let result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            sample, result,
+            "Significant values, alternative formatting ({:064b})",
+            qword
+        );
 
         let sample = vec![
             ("Reserved for BIOS vendor", 32..=47),
             ("Reserved for system vendor", 48..=63),
         ];
-        let result = Characteristics(0).reserved()
+        let result = Characteristics(0)
+            .reserved()
             .map(|v| (v.description, v.range))
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Reserved fields");
@@ -412,19 +415,22 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Positions");
 
-        let dflt_sample = vec!["ACPI is supported","IEEE 1394 boot is supported"];
-        let alt_sample = vec!["ACPI is supported","1394 boot is supported"];
+        let dflt_sample = vec!["ACPI is supported", "IEEE 1394 boot is supported"];
+        let alt_sample = vec!["ACPI is supported", "1394 boot is supported"];
         let byte = 0b0100_0001;
-        let iter =  CharacteristicsExtension1(byte)
-            .significants();
-        let dflt_result = iter
-            .map(|f| format!("{}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(dflt_sample, dflt_result, "Significant values, default formatting ({:08b})", byte);
-        let alt_result = iter
-            .map(|f| format!("{:#}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(alt_sample, alt_result, "Significant values, alternative formatting ({:08b})", byte);
+        let iter = CharacteristicsExtension1(byte).significants();
+        let dflt_result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            dflt_sample, dflt_result,
+            "Significant values, default formatting ({:08b})",
+            byte
+        );
+        let alt_result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            alt_sample, alt_result,
+            "Significant values, alternative formatting ({:08b})",
+            byte
+        );
 
         let result = CharacteristicsExtension1(0).reserved().count();
         assert_eq!(0, result, "Reserved fields");
@@ -439,22 +445,26 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Positions");
 
-        let short_sample = vec!["UEFI is supported","System is a virtual machine"];
+        let short_sample = vec!["UEFI is supported", "System is a virtual machine"];
         let long_sample = vec!["UEFI is supported","SMBIOS table describes a virtual machine. (If this bit is not set, no inference can be made about the virtuality of the system.)"];
         let byte = 0b0001_1000;
-        let iter =  CharacteristicsExtension2(byte)
-            .significants();
-        let result = iter
-            .map(|f| format!("{}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(short_sample, result, "Significant values, default formatting ({:08b})", byte);
-        let result = iter
-            .map(|f| format!("{:#}", f))
-            .collect::<Vec<_>>();
-        assert_eq!(long_sample, result, "Significant values, alternative formatting ({:08b})", byte);
+        let iter = CharacteristicsExtension2(byte).significants();
+        let result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            short_sample, result,
+            "Significant values, default formatting ({:08b})",
+            byte
+        );
+        let result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        assert_eq!(
+            long_sample, result,
+            "Significant values, alternative formatting ({:08b})",
+            byte
+        );
 
         let sample = vec![("Reserved for future assignment", 5..=7)];
-        let result = CharacteristicsExtension2(0).reserved()
+        let result = CharacteristicsExtension2(0)
+            .reserved()
             .map(|v| (v.description, v.range))
             .collect::<Vec<_>>();
         assert_eq!(sample, result, "Reserved fields");
@@ -462,77 +472,75 @@ mod tests {
     #[test]
     fn rom_size() {
         let data = &[
-            (8<<20,            0x7F, None        ),// 8 MB
-            ((16<<20) - 65536, 0xFE, None        ),// ~16 MB, Last of basic
-            (16<<20,           0xFF, Some(0x0010)),// 16 MB
-            (64<<20,           0xFF, Some(64)    ),// 64 MB
-            (48<<30,           0xFF, Some(0x4030)),// 48 GB
+            (8 << 20, 0x7F, None),            // 8 MB
+            ((16 << 20) - 65536, 0xFE, None), // ~16 MB, Last of basic
+            (16 << 20, 0xFF, Some(0x0010)),   // 16 MB
+            (64 << 20, 0xFF, Some(64)),       // 64 MB
+            (48 << 30, 0xFF, Some(0x4030)),   // 48 GB
         ];
-        let sample: Vec<u64> = data.iter()
-            .map(|(size, ..)| *size)
-            .collect();
-        let result: Vec<u64> = data.iter()
-            .map(|(_, basic, extended)| RomSize { basic: *basic, extended: *extended }.into())
+        let sample: Vec<u64> = data.iter().map(|(size, ..)| *size).collect();
+        let result: Vec<u64> = data
+            .iter()
+            .map(|(_, basic, extended)| {
+                RomSize {
+                    basic: *basic,
+                    extended: *extended,
+                }
+                .into()
+            })
             .collect();
         assert_eq!(sample, result, "ROM Size");
     }
     #[test]
     fn dmi_bin_full_bios_structure() {
         let bios_sample = Bios {
-                    handle: 0,
-                    vendor: "Dell Inc.",
-                    bios_version: "2.8.2",
-                    bios_starting_address_segment: 0xF000,
-                    bios_release_date: "08/27/2020",
-                    rom_size: RomSize { basic: 0xFF, extended: Some(32) },
-                    bios_characteristics:
-                        Characteristics([
-                            Position(4),
-                            Position(7),
-                            Position(9),
-                            Position(11),
-                            Position(12),
-                            Position(15),
-                            Position(16),
-                            Position(19),
-                            Position(21),
-                            Position(22),
-                            Position(23),
-                            Position(24),
-                            Position(27),
-                            Position(28),
-                            Position(30),
-                            // Flags below are for reserved fields
-                            Position(48),
-                            Position(49),
-                            Position(50),
-                            Position(51),
-                            Position(52),
-                        ].iter().collect()),
-                    bios_characteristics_exttension_1:
-                        Some(
-                            CharacteristicsExtension1([
-                                Position(0),
-                                Position(1),
-                            ].iter().collect())
-                        ),
-                    bios_characteristics_exttension_2:
-                        Some(
-                            CharacteristicsExtension2([
-                                Position(0),
-                                Position(1),
-                                Position(2),
-                                Position(3),
-                            ].iter().collect())
-                        ),
-                    bios_revision:
-                        Some(
-                            BiosRevision { major: 2, minor: 8 }
-                        ),
-                    firmware_revision:
-                        Some(
-                            FirmwareRevision { major: 0xFF, minor: 0xFF }
-                        ),
+            handle: 0,
+            vendor: "Dell Inc.",
+            bios_version: "2.8.2",
+            bios_starting_address_segment: 0xF000,
+            bios_release_date: "08/27/2020",
+            rom_size: RomSize {
+                basic: 0xFF,
+                extended: Some(32),
+            },
+            bios_characteristics: Characteristics(
+                [
+                    Position(4),
+                    Position(7),
+                    Position(9),
+                    Position(11),
+                    Position(12),
+                    Position(15),
+                    Position(16),
+                    Position(19),
+                    Position(21),
+                    Position(22),
+                    Position(23),
+                    Position(24),
+                    Position(27),
+                    Position(28),
+                    Position(30),
+                    // Flags below are for reserved fields
+                    Position(48),
+                    Position(49),
+                    Position(50),
+                    Position(51),
+                    Position(52),
+                ]
+                .iter()
+                .collect(),
+            ),
+            bios_characteristics_exttension_1: Some(CharacteristicsExtension1(
+                [Position(0), Position(1)].iter().collect(),
+            )),
+            bios_characteristics_exttension_2: Some(CharacteristicsExtension2(
+                [Position(0), Position(1), Position(2), Position(3)].iter().collect(),
+            )),
+            bios_revision: Some(BiosRevision { major: 2, minor: 8 }),
+            firmware_revision: Some(FirmwareRevision {
+                major: 0xFF,
+                minor: 0xFF,
+            }),
         };
         let bios_result = ENTRY_POINT
             .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
@@ -542,34 +550,35 @@ mod tests {
                 } else {
                     None
                 }
-            }).unwrap();
+            })
+            .unwrap();
         assert_eq!(bios_sample, bios_result, "Full BIOS Struct");
     }
 
     #[test]
     fn dmi_bin_all_characteristics() {
         let all_characteristics_sample = vec![
-                "ISA is supported",
-                "PCI is supported",
-                "PNP is supported",
-                "BIOS is upgradeable",
-                "BIOS shadowing is allowed",
-                "Boot from CD is supported",
-                "Selectable boot is supported",
-                "EDD is supported",
-                "Japanese floppy for Toshiba 1.2 MB is supported (int 13h)",
-                "5.25\"/360 kB floppy services are supported (int 13h)",
-                "5.25\"/1.2 MB floppy services are supported (int 13h)",
-                "3.5\"/720 kB floppy services are supported (int 13h)",
-                "8042 keyboard services are supported (int 9h)",
-                "Serial services are supported (int 14h)",
-                "CGA/mono video services are supported (int 10h)",
-                "ACPI is supported",
-                "USB legacy is supported",
-                "BIOS boot specification is supported",
-                "Function key-initiated network boot is supported",
-                "Targeted content distribution is supported",
-                "UEFI is supported",
+            "ISA is supported",
+            "PCI is supported",
+            "PNP is supported",
+            "BIOS is upgradeable",
+            "BIOS shadowing is allowed",
+            "Boot from CD is supported",
+            "Selectable boot is supported",
+            "EDD is supported",
+            "Japanese floppy for Toshiba 1.2 MB is supported (int 13h)",
+            "5.25\"/360 kB floppy services are supported (int 13h)",
+            "5.25\"/1.2 MB floppy services are supported (int 13h)",
+            "3.5\"/720 kB floppy services are supported (int 13h)",
+            "8042 keyboard services are supported (int 9h)",
+            "Serial services are supported (int 14h)",
+            "CGA/mono video services are supported (int 10h)",
+            "ACPI is supported",
+            "USB legacy is supported",
+            "BIOS boot specification is supported",
+            "Function key-initiated network boot is supported",
+            "Targeted content distribution is supported",
+            "UEFI is supported",
         ];
         let bios_result = ENTRY_POINT
             .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
@@ -579,14 +588,19 @@ mod tests {
                 } else {
                     None
                 }
-            }).unwrap();
-        let all_char_result = bios_result.bios_characteristics
+            })
+            .unwrap();
+        let all_char_result = bios_result
+            .bios_characteristics
             .significants()
             .chain(bios_result.bios_characteristics_exttension_1.unwrap().significants())
             .chain(bios_result.bios_characteristics_exttension_2.unwrap().significants())
             .map(|v| format!("{}", v))
             .collect::<Vec<_>>();
-        assert_eq!(all_characteristics_sample, all_char_result, "Characteristics as in dmidecode tool");
+        assert_eq!(
+            all_characteristics_sample, all_char_result,
+            "Characteristics as in dmidecode tool"
+        );
     }
 
     #[test]
@@ -601,9 +615,18 @@ mod tests {
                 } else {
                     None
                 }
-            }).unwrap();
-        assert_eq!(bios_revision, format!("{}", bios_result.bios_revision.unwrap()), "BIOS Revision");
-        assert_eq!(firmware_revision, format!("{}", bios_result.firmware_revision.unwrap()), "Firmware Revision");
+            })
+            .unwrap();
+        assert_eq!(
+            bios_revision,
+            format!("{}", bios_result.bios_revision.unwrap()),
+            "BIOS Revision"
+        );
+        assert_eq!(
+            firmware_revision,
+            format!("{}", bios_result.firmware_revision.unwrap()),
+            "Firmware Revision"
+        );
     }
 
     #[test]
@@ -617,7 +640,8 @@ mod tests {
                 } else {
                     None
                 }
-            }).unwrap();
+            })
+            .unwrap();
         assert_eq!(size, bios_result.rom_size.into(), "ROM BIOS size");
     }
 }

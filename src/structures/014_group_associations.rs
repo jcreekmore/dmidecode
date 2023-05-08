@@ -7,12 +7,8 @@
 
 use crate::{
     InfoType,
-    MalformedStructureError::{
-        self,
-        InvalidFormattedSectionLength
-    },
-    RawStructure,
-    TryFromBytes,
+    MalformedStructureError::{self, InvalidFormattedSectionLength},
+    RawStructure, TryFromBytes,
 };
 
 /// Named group with member items
@@ -42,24 +38,29 @@ pub struct GroupItem {
     pub handle: u16,
 }
 
-
 impl<'a> GroupAssociations<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<Self, MalformedStructureError> {
         let handle = structure.handle;
-        let slice = structure.get_slice(0x05, structure.length as usize - 0x05)
-            .ok_or(InvalidFormattedSectionLength(InfoType::GroupAssociations, handle, "", structure.length))?;
+        let slice =
+            structure
+                .get_slice(0x05, structure.length as usize - 0x05)
+                .ok_or(InvalidFormattedSectionLength(
+                    InfoType::GroupAssociations,
+                    handle,
+                    "",
+                    structure.length,
+                ))?;
         Ok(GroupAssociations {
             handle,
             group_name: structure.get_string(0x04)?,
             items: GroupItems::new(slice),
         })
-
     }
 }
 
 impl<'a> GroupItems<'a> {
     fn new(data: &'a [u8]) -> Self {
-        Self { data,  index: 0 }
+        Self { data, index: 0 }
     }
 }
 impl<'a> Iterator for GroupItems<'a> {
@@ -68,33 +69,42 @@ impl<'a> Iterator for GroupItems<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let start = self.index;
         let end = start + 3;
-        let slice = self.data
-            .get(start..end)?;
+        let slice = self.data.get(start..end)?;
         self.index = end;
         let type_ = *slice.get(0)?;
-        let handle = slice.get(1..)
-            .and_then(|s| u16::try_from_bytes(s).ok())?;
+        let handle = slice.get(1..).and_then(|s| u16::try_from_bytes(s).ok())?;
         Some(GroupItem { type_, handle })
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use std::prelude::v1::*;
-    use pretty_assertions::{assert_eq,};
 
     #[test]
     fn group_items() {
         use super::{GroupItem, GroupItems};
 
-        let data = &[4,0x00,0x04, 7,0x00,0x07, 7,0x01,0x07, 7,0x02,0x07];
+        let data = &[4, 0x00, 0x04, 7, 0x00, 0x07, 7, 0x01, 0x07, 7, 0x02, 0x07];
         let result = GroupItems::new(data);
         let sample = vec![
-            GroupItem { type_: 4, handle: 0x0400 },
-            GroupItem { type_: 7, handle: 0x0700 },
-            GroupItem { type_: 7, handle: 0x0701 },
-            GroupItem { type_: 7, handle: 0x0702 },
+            GroupItem {
+                type_: 4,
+                handle: 0x0400,
+            },
+            GroupItem {
+                type_: 7,
+                handle: 0x0700,
+            },
+            GroupItem {
+                type_: 7,
+                handle: 0x0701,
+            },
+            GroupItem {
+                type_: 7,
+                handle: 0x0702,
+            },
         ];
 
         assert_eq!(sample, result.collect::<Vec<_>>());
@@ -102,8 +112,8 @@ mod tests {
 
     #[test]
     fn group_associations() {
-        use crate::{InfoType, RawStructure};
         use super::*;
+        use crate::{InfoType, RawStructure};
 
         let sample = vec![
             GroupItem { type_: 4, handle: 0x08 },
@@ -116,7 +126,7 @@ mod tests {
             length: 14,
             handle: 0x0028,
             // Remove 4 bytes from `dmidecode -H 8 -u` 'Header and Data'
-            data: &[ 
+            data: &[
                 0x01, // String number
                 0x04, // First CPU
                 0x08, 0x00, // CPU Structure’s Handle
@@ -127,13 +137,11 @@ mod tests {
             ],
             strings: &[
                 // Dual-Processor CPU Complex
-                0x44, 0x75, 0x61, 0x6c, 0x2d, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72,
-                0x20, 0x43, 0x50, 0x55, 0x20, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x78,
-                0x00, 0x00,
+                0x44, 0x75, 0x61, 0x6c, 0x2d, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x6f, 0x72, 0x20, 0x43, 0x50,
+                0x55, 0x20, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x78, 0x00, 0x00,
             ],
         };
-        let result = GroupAssociations::try_from(structure)
-            .unwrap();
+        let result = GroupAssociations::try_from(structure).unwrap();
 
         assert_eq!("Dual-Processor CPU Complex", result.group_name, "Group name");
         assert_eq!(sample, result.items.collect::<Vec<_>>(), "Items");
