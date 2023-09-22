@@ -291,9 +291,9 @@ mod tests {
             "Zinc air",
             "Lithium Polymer",
         ];
-        for n in 0..sample.len() {
+        for (n, &s) in sample.iter().enumerate() {
             let sbds = None;
-            assert_eq!(sample[n], format!("{}", DeviceChemistry::new(n as u8, sbds)));
+            assert_eq!(s, format!("{}", DeviceChemistry::new(n as u8, sbds)));
             if n == 0x02 {
                 let sbds = Some("PbAc");
                 assert_eq!("PbAc", format!("{:#}", DeviceChemistry::new(n as u8, sbds)));

@@ -1,3 +1,5 @@
+#![allow(clippy::bad_bit_mask)]
+
 //! Memory Device (Type 17)
 //!
 //! This structure describes a single memory device that is part of a larger [Physical Memory
@@ -95,9 +97,10 @@ impl From<u8> for ErrorType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum FormFactor {
     Other,
+    #[default]
     Unknown,
     Simm,
     Sip,
@@ -113,12 +116,6 @@ pub enum FormFactor {
     Srimm,
     FbDimm,
     Undefined(u8),
-}
-
-impl Default for FormFactor {
-    fn default() -> Self {
-        FormFactor::Unknown
-    }
 }
 
 impl From<u8> for FormFactor {
@@ -145,9 +142,10 @@ impl From<u8> for FormFactor {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum MemoryTechnology {
     Other,
+    #[default]
     Unknown,
     Dram,
     NvDimmN,
@@ -155,12 +153,6 @@ pub enum MemoryTechnology {
     NvDimmP,
     IntelOptane,
     Undefined(u8),
-}
-
-impl Default for MemoryTechnology {
-    fn default() -> Self {
-        MemoryTechnology::Unknown
-    }
 }
 
 impl From<u8> for MemoryTechnology {
@@ -178,9 +170,10 @@ impl From<u8> for MemoryTechnology {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum Type {
     Other,
+    #[default]
     Unknown,
     Dram,
     Edram,
@@ -214,12 +207,6 @@ pub enum Type {
     Hbm,
     Hbm2,
     Undefined(u8),
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::Unknown
-    }
 }
 
 impl From<u8> for Type {

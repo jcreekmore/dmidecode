@@ -108,6 +108,7 @@ pub enum EntryPoint {
 }
 
 impl EntryPoint {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u8 {
         match self {
             EntryPoint::V2(point) => point.len,
@@ -176,7 +177,7 @@ impl EntryPoint {
             smbios_version: self.to_version(),
             smbios_len: self.smbios_len(),
             idx: 0u32,
-            buffer: buffer,
+            buffer,
         }
     }
 
@@ -199,7 +200,7 @@ impl EntryPoint {
     /// an `InvalidEntryPointError` variant.
     pub fn search(buffer: &[u8]) -> Result<EntryPoint, InvalidEntryPointError> {
         find_signature(buffer)
-            .ok_or_else(|| InvalidEntryPointError::NotFound)
+            .ok_or(InvalidEntryPointError::NotFound)
             .and_then(|(kind, start)| {
                 let sub_buffer = &buffer[start..];
 
@@ -537,27 +538,27 @@ pub trait TryFromBytes<'a, T>: Sized {
 
 impl<'a> TryFromBytes<'a, u8> for u8 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into().map(|arr| u8::from_le_bytes(arr))
+        bytes.try_into().map(u8::from_le_bytes)
     }
 }
 impl<'a> TryFromBytes<'a, u16> for u16 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into().map(|arr| u16::from_le_bytes(arr))
+        bytes.try_into().map(u16::from_le_bytes)
     }
 }
 impl<'a> TryFromBytes<'a, u32> for u32 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into().map(|arr| u32::from_le_bytes(arr))
+        bytes.try_into().map(u32::from_le_bytes)
     }
 }
 impl<'a> TryFromBytes<'a, u64> for u64 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into().map(|arr| u64::from_le_bytes(arr))
+        bytes.try_into().map(u64::from_le_bytes)
     }
 }
 impl<'a> TryFromBytes<'a, u128> for u128 {
     fn try_from_bytes(bytes: &'a [u8]) -> Result<Self, TryFromSliceError> {
-        bytes.try_into().map(|arr| u128::from_le_bytes(arr))
+        bytes.try_into().map(u128::from_le_bytes)
     }
 }
 
@@ -579,7 +580,7 @@ impl<'buffer> RawStructure<'buffer> {
         } else {
             self.strings()
                 .nth((idx - 1) as usize)
-                .ok_or_else(|| MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
+                .ok_or(MalformedStructureError::InvalidStringIndex(self.info, self.handle, idx))
         }
     }
     /// Get value by offset declared in SMBIOS Reference Specification.\
@@ -598,7 +599,7 @@ impl<'buffer> RawStructure<'buffer> {
         let start = offset - 4;
         let size = core::mem::size_of::<T>();
         let slice = self.data.get(start..(start + size)).unwrap_or(&[]);
-        TryFromBytes::try_from_bytes(slice).map_err(|e| MalformedStructureError::InvalidSlice(e))
+        TryFromBytes::try_from_bytes(slice).map_err(MalformedStructureError::InvalidSlice)
     }
     /// Wrapper to self.data.get(..) with header offset correction
     pub fn get_slice(&self, offset: usize, size: usize) -> Option<&'buffer [u8]> {
@@ -757,13 +758,13 @@ extern crate std;
 mod tests {
     use super::*;
 
-    const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmidecode.bin");
-    const ENTRY_V2_BIN: &'static [u8] = include_bytes!("../tests/data/entry.bin");
-    const DMI_V2_BIN: &'static [u8] = include_bytes!("../tests/data/dmi.bin");
-    const ENTRY_V3_BIN: &'static [u8] = include_bytes!("../tests/data/entry_v3.bin");
-    const DMI_V3_BIN: &'static [u8] = include_bytes!("../tests/data/dmi_v3.bin");
-    const DMI_V3_SHORT: &'static [u8] = include_bytes!("../tests/data/dmi_v3_short.bin");
-    const ENTRY_V3_SHORT: &'static [u8] = include_bytes!("../tests/data/entry_v3_short.bin");
+    const DMIDECODE_BIN: &[u8] = include_bytes!("../tests/data/dmidecode.bin");
+    const ENTRY_V2_BIN: &[u8] = include_bytes!("../tests/data/entry.bin");
+    const DMI_V2_BIN: &[u8] = include_bytes!("../tests/data/dmi.bin");
+    const ENTRY_V3_BIN: &[u8] = include_bytes!("../tests/data/entry_v3.bin");
+    const DMI_V3_BIN: &[u8] = include_bytes!("../tests/data/dmi_v3.bin");
+    const DMI_V3_SHORT: &[u8] = include_bytes!("../tests/data/dmi_v3_short.bin");
+    const ENTRY_V3_SHORT: &[u8] = include_bytes!("../tests/data/entry_v3_short.bin");
 
     #[test]
     fn found_smbios_entry() {

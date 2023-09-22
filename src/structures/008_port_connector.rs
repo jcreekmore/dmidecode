@@ -413,7 +413,7 @@ mod test {
     fn dmi_bin() {
         use super::*;
         use crate::{EntryPoint, Structure};
-        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
+        const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
         let connectors = entry_point
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])

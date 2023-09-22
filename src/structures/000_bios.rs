@@ -364,14 +364,14 @@ mod tests {
     use crate::bitfield::Position;
 
     const PRIMES: &[usize] = &[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61];
-    const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
+    const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
     lazy_static! {
         static ref ENTRY_POINT: crate::EntryPoint = crate::EntryPoint::search(DMIDECODE_BIN).unwrap();
     }
 
     #[test]
     fn characteristics() {
-        let sample = PRIMES.iter().cloned().collect::<Vec<_>>();
+        let sample = PRIMES.to_vec();
         let qword = sample.iter().map(|&p| Position(p)).collect();
         let result = Characteristics(qword)
             .iter()

@@ -111,7 +111,7 @@ mod tests {
 
     use super::*;
 
-    const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
+    const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
     lazy_static! {
         static ref ENTRY_POINT: crate::EntryPoint = crate::EntryPoint::search(DMIDECODE_BIN).unwrap();
     }

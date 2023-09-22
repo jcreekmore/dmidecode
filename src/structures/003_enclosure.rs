@@ -692,7 +692,7 @@ mod tests {
     #[test]
     fn dmi_bin() {
         use super::*;
-        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
+        const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = crate::EntryPoint::search(DMIDECODE_BIN).unwrap();
         let enc = entry_point
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])
@@ -764,7 +764,7 @@ mod tests {
         assert_eq!(
             enc.contained_elements
                 .clone()
-                .and_then(|mut ce| ce.nth(0).map(|s| format!("{}", s))),
+                .and_then(|mut ce| ce.next().map(|s| format!("{}", s))),
             Some("Structure type: Memory Device (1-2)".into()),
             "Number Of Power Cords"
         );
@@ -776,7 +776,7 @@ mod tests {
             "Number Of Power Cords"
         );
         assert_eq!(
-            enc.sku_number.map(|v| format!("{}", v)),
+            enc.sku_number.map(|v| v.to_string()),
             Some("SKU Number".into()),
             "SKU Number"
         );
