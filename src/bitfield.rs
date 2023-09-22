@@ -275,7 +275,7 @@ impl<'a, T> Significants<'a, T> {
 impl<'a, T: Into<u128> + Copy> Iterator for Significants<'a, T> {
     type Item = Flag<'a>;
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(f) = self.0.next() {
+        for f in self.0.by_ref() {
             if matches!(f.type_, FlagType::Reserved(_)) || !f.is_set {
                 continue;
             }
@@ -298,11 +298,11 @@ impl<'a, T: Into<u128> + Copy + fmt::Debug> Iterator for Reserved<'a, T> {
     type Item = ReservedRange<'a>;
     fn next(&mut self) -> Option<Self::Item> {
         let mut end = 0;
-        while let Some(Flag {
+        for Flag {
             position: Position(p),
             type_,
             ..
-        }) = self.iter.next()
+        } in self.iter.by_ref()
         {
             match (type_, self.desc) {
                 (FlagType::Reserved(s), Some(desc)) => {

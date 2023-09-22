@@ -221,13 +221,13 @@ impl PhysicalMemoryArray {
             mem_pointer += 1;
             pma.memory_error_correction = MemoryArrayErrorCorrectionTypes::from(structure.data[mem_pointer]);
             mem_pointer += 1;
-            pma.maximum_capacity = get_optional_dword(&mut mem_pointer, &structure.data, 0x80000000)?;
-            pma.memory_error_information_handle = get_optional_word(&mut mem_pointer, &structure.data, 0xFFFE)?;
-            pma.number_of_memory_devices = get_word(&mut mem_pointer, &structure.data)?;
+            pma.maximum_capacity = get_optional_dword(&mut mem_pointer, structure.data, 0x80000000)?;
+            pma.memory_error_information_handle = get_optional_word(&mut mem_pointer, structure.data, 0xFFFE)?;
+            pma.number_of_memory_devices = get_word(&mut mem_pointer, structure.data)?;
         }
         if structure.version > (2, 7).into() {
             pma.extended_maximum_capacity = if pma.maximum_capacity.is_none() {
-                get_optional_qword(&mut mem_pointer, &structure.data, 0)?
+                get_optional_qword(&mut mem_pointer, structure.data, 0)?
             } else {
                 None
             };
@@ -267,7 +267,7 @@ fn get_word(pointer: &mut usize, data: &[u8]) -> Result<u16, MalformedStructureE
     let word = u16::from_le_bytes(
         data[*pointer..(*pointer + 2)]
             .try_into()
-            .map_err(|e| MalformedStructureError::InvalidSlice(e))?,
+            .map_err(MalformedStructureError::InvalidSlice)?,
     );
     *pointer += 2;
     Ok(word)
@@ -277,7 +277,7 @@ fn get_dword(pointer: &mut usize, data: &[u8]) -> Result<u32, MalformedStructure
     let dword = u32::from_le_bytes(
         data[*pointer..(*pointer + 4)]
             .try_into()
-            .map_err(|e| MalformedStructureError::InvalidSlice(e))?,
+            .map_err(MalformedStructureError::InvalidSlice)?,
     );
     *pointer += 4;
     Ok(dword)
@@ -287,7 +287,7 @@ fn get_qword(pointer: &mut usize, data: &[u8]) -> Result<u64, MalformedStructure
     let qword = u64::from_le_bytes(
         data[*pointer..(*pointer + 8)]
             .try_into()
-            .map_err(|e| MalformedStructureError::InvalidSlice(e))?,
+            .map_err(MalformedStructureError::InvalidSlice)?,
     );
     *pointer += 8;
     Ok(qword)

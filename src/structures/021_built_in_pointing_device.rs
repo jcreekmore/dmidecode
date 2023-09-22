@@ -173,8 +173,8 @@ mod tests {
             "Touch Screen",
             "Optical Sensor",
         ];
-        for n in 0..sample.len() {
-            assert_eq!(sample[n], format!("{:#}", Type::from(n as u8)));
+        for (n, &s) in sample.iter().enumerate() {
+            assert_eq!(s, format!("{:#}", Type::from(n as u8)));
         }
     }
 
@@ -193,8 +193,8 @@ mod tests {
             "Bus mouse",
             "ADB (Apple Desktop Bus)",
         ];
-        for n in 0..sample.len() {
-            assert_eq!(sample[n], format!("{:#}", Interface::from(n as u8)));
+        for (n, &s) in sample.iter().enumerate() {
+            assert_eq!(s, format!("{:#}", Interface::from(n as u8)));
         }
         let sample = &["Bus mouse DB-9", "Bus mouse micro-DIN", "USB"];
         for n in 0xA0..(0xA0 + sample.len()) {

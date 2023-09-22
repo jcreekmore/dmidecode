@@ -71,7 +71,7 @@ impl<'a> Iterator for GroupItems<'a> {
         let end = start + 3;
         let slice = self.data.get(start..end)?;
         self.index = end;
-        let type_ = *slice.get(0)?;
+        let type_ = *slice.first()?;
         let handle = slice.get(1..).and_then(|s| u16::try_from_bytes(s).ok())?;
         Some(GroupItem { type_, handle })
     }

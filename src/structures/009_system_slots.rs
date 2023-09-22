@@ -344,13 +344,13 @@ impl<'a> SystemSlots<'a> {
         let data_len = structure.data.len() + 4;
         let handle = structure.handle;
         match ((structure.version.major, structure.version.minor), data_len) {
-            (v, l) if v >= (2, 0) && v < (2, 1) && l != 0x0C => {
+            (v, l) if ((2, 0)..(2, 1)).contains(&v) && l != 0x0C => {
                 Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0C))
             }
-            (v, l) if v >= (2, 1) && v < (2, 6) && l != 0x0D => {
+            (v, l) if ((2, 1)..(2, 6)).contains(&v) && l != 0x0D => {
                 Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x0D))
             }
-            (v, l) if v >= (2, 6) && v < (3, 2) && l != 0x11 => {
+            (v, l) if ((2, 6)..(3, 2)).contains(&v) && l != 0x11 => {
                 Err(InvalidFormattedSectionLength(InfoType::SystemSlots, handle, "", 0x11))
             }
             (v, l) if v >= (3, 2) && l < 0x11 => Err(InvalidFormattedSectionLength(
@@ -360,7 +360,7 @@ impl<'a> SystemSlots<'a> {
                 0x11,
             )),
             _ => {
-                let peer_grouping_count: u8 = structure.get::<u8>(0x12).unwrap_or(0).into();
+                let peer_grouping_count: u8 = structure.get::<u8>(0x12).unwrap_or(0);
                 let n = peer_grouping_count as usize;
                 Ok(SystemSlots {
                     handle,
@@ -369,35 +369,33 @@ impl<'a> SystemSlots<'a> {
                     slot_data_bus_width: structure.get::<u8>(0x06)?.into(),
                     current_usage: structure.get::<u8>(0x07)?.into(),
                     slot_length: structure.get::<u8>(0x08)?.into(),
-                    slot_id: structure.get::<u16>(0x09)?.into(),
+                    slot_id: structure.get::<u16>(0x09)?,
                     slot_characteristics_1: structure.get::<u8>(0x0B)?.into(),
                     slot_characteristics_2: structure.get::<u8>(0x0C).ok().map(Into::into),
                     segment_group_number: structure
                         .get::<u16>(0x0D)
                         .ok()
                         // For slots that do not have bus/device/function information FFh should be populated
-                        .filter(|v| v != &0xFFFF)
-                        .into(),
+                        .filter(|v| v != &0xFFFF),
                     bus_number: structure
                         .get::<u8>(0x0F)
                         .ok()
                         // For slots that do not have bus/device/function information FFh should be populated
-                        .filter(|v| v != &0xFF)
-                        .into(),
+                        .filter(|v| v != &0xFF),
                     device_and_function_number: structure
                         .get::<u8>(0x10)
                         .ok()
                         // For slots that do not have bus/device/function information FFh should be populated
                         .filter(|v| v != &0xFF)
                         .map(Into::into),
-                    data_bus_width: structure.get::<u8>(0x11).ok().into(),
+                    data_bus_width: structure.get::<u8>(0x11).ok(),
                     peer_devices: structure.get_slice(0x13, 5 * n).map(Into::into),
                     /// According to (SMBIOS Reference Specification
                     /// 3.4)[https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.4.0.pdf]
                     /// fields below starts from offset 14h + 5*n, that looks like mistake.
                     /// It shoud start from 13h + 5*n, because *Peer (S/B/D/F/Width)
                     /// groups* field may has zero length
-                    slot_information: structure.get::<u8>(0x14 + 5 * n).ok().into(),
+                    slot_information: structure.get::<u8>(0x14 + 5 * n).ok(),
                     slot_physical_width: structure.get::<u8>(0x15 + 5 * n).ok().map(Into::into),
                     slot_pitch: structure.get::<u16>(0x16 + 5 * n).ok().map(Into::into),
                 })
@@ -1072,7 +1070,7 @@ mod tests {
             "0000:00:1c.4 (Width 4)",
         ]
         .iter()
-        .map(|v| format!("{}", v))
+        .map(|v| v.to_string())
         .collect();
         assert_eq!(display_sample, result.map(|v| format!("{}", v)).collect::<Vec<_>>());
     }
@@ -1231,7 +1229,7 @@ mod tests {
     fn dmi_bin() {
         use super::*;
         use crate::{EntryPoint, Structure};
-        const DMIDECODE_BIN: &'static [u8] = include_bytes!("../../tests/data/dmi.0.bin");
+        const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
         let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
         let slots = entry_point
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])
