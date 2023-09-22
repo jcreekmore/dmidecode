@@ -6,6 +6,7 @@ description = "Decode SMBIOS/DMI information into accessible data structures"
 documentation = "https://docs.rs/dmidecode/"
 homepage = "https://github.com/jcreekmore/dmidecode.git"
 license = "MIT"
+rust-version = "1.62"
 
 [dependencies]
 aho-corasick = "0.6.4"
