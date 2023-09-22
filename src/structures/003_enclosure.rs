@@ -9,10 +9,7 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::slice::Chunks;
 
-use crate::{MalformedStructureError, RawStructure};
-
-// Each SMBIOS structure begins with a four-byte header
-const STRUCTURE_HEADER_LENGTH: u8 = 0x4;
+use crate::{HeaderPacked, MalformedStructureError, RawStructure};
 
 /// System Enclosure or Chassis structure
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -168,39 +165,6 @@ impl<'buffer> Enclosure<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Enclosure<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
-        struct EnclosurePacked_2_3 {
-            manufacturer: u8,
-            enclosure_type: u8,
-            version: u8,
-            serial_number: u8,
-            asset_tag_number: u8,
-            boot_up_state: u8,
-            power_supply_state: u8,
-            thermal_state: u8,
-            security_status: u8,
-            oem_defined: u32,
-            height: u8,
-            power_cords_number: u8,
-            contained_element_count: u8,
-            contained_element_record_length: u8,
-        }
-
-        #[repr(C)]
-        #[repr(packed)]
-        struct EnclosurePacked_2_1 {
-            manufacturer: u8,
-            enclosure_type: u8,
-            version: u8,
-            serial_number: u8,
-            asset_tag_number: u8,
-            boot_up_state: u8,
-            power_supply_state: u8,
-            thermal_state: u8,
-            security_status: u8,
-        }
-
-        #[repr(C)]
-        #[repr(packed)]
         struct EnclosurePacked_2_0 {
             manufacturer: u8,
             enclosure_type: u8,
@@ -208,6 +172,12 @@ impl<'buffer> Enclosure<'buffer> {
             serial_number: u8,
             asset_tag_number: u8,
         }
+
+        // compile time assertion that our minimum enclosure structure
+        // fits the minimum required by the BIOS spec
+        const _: () = {
+            assert!(core::mem::size_of::<EnclosurePacked_2_0>() + core::mem::size_of::<HeaderPacked>() == 0x09);
+        };
 
         struct RawEnclosureType(u8);
         impl RawEnclosureType {
@@ -222,117 +192,80 @@ impl<'buffer> Enclosure<'buffer> {
             }
         }
 
-        match structure.version {
-            v if v >= (2, 7).into() => {
-                let_as_struct!(packed, EnclosurePacked_2_3, structure.data);
-                let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
-                let sku_number_string_field = 0x15
-                    + packed.contained_element_count * packed.contained_element_record_length
-                    - STRUCTURE_HEADER_LENGTH;
-                let sku_number = structure
-                    .data
-                    .get(sku_number_string_field as usize)
-                    .ok_or(crate::MalformedStructureError::BadSize(
-                        sku_number_string_field as u32,
-                        1,
-                    ))
-                    .and_then(|string_field| structure.find_string(*string_field))?;
-                Ok(Enclosure {
-                    handle: structure.handle,
-                    manufacturer: structure.find_string(packed.manufacturer)?,
-                    chassis_lock: enclosure_type.get_lock(),
-                    enclosure_type: enclosure_type.get_type(),
-                    version: structure.find_string(packed.version)?,
-                    serial_number: structure.find_string(packed.serial_number)?,
-                    asset_tag_number: structure.find_string(packed.asset_tag_number)?,
-                    boot_up_state: Some(packed.boot_up_state.into()),
-                    power_supply_state: Some(packed.power_supply_state.into()),
-                    thermal_state: Some(packed.thermal_state.into()),
-                    security_status: Some(packed.security_status.into()),
-                    oem_defined: Some(packed.oem_defined),
-                    height: Some(packed.height),
-                    power_cords_number: Some(packed.power_cords_number),
-                    contained_elements: Some(ContainedElements::new(
-                        structure.data,
-                        packed.contained_element_count,
-                        packed.contained_element_record_length,
-                    )),
-                    sku_number: Some(sku_number),
-                })
-            }
-            v if v >= (2, 3).into() => {
-                let_as_struct!(packed, EnclosurePacked_2_3, structure.data);
-                let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
-                Ok(Enclosure {
-                    handle: structure.handle,
-                    manufacturer: structure.find_string(packed.manufacturer)?,
-                    chassis_lock: enclosure_type.get_lock(),
-                    enclosure_type: enclosure_type.get_type(),
-                    version: structure.find_string(packed.version)?,
-                    serial_number: structure.find_string(packed.serial_number)?,
-                    asset_tag_number: structure.find_string(packed.asset_tag_number)?,
-                    boot_up_state: Some(packed.boot_up_state.into()),
-                    power_supply_state: Some(packed.power_supply_state.into()),
-                    thermal_state: Some(packed.thermal_state.into()),
-                    security_status: Some(packed.security_status.into()),
-                    oem_defined: Some(packed.oem_defined),
-                    height: Some(packed.height),
-                    power_cords_number: Some(packed.power_cords_number),
-                    contained_elements: Some(ContainedElements::new(
-                        structure.data,
-                        packed.contained_element_count,
-                        packed.contained_element_record_length,
-                    )),
-                    sku_number: None,
-                })
-            }
-            v if v >= (2, 1).into() => {
-                let_as_struct!(packed, EnclosurePacked_2_1, structure.data);
-                let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
-
-                Ok(Enclosure {
-                    handle: structure.handle,
-                    manufacturer: structure.find_string(packed.manufacturer)?,
-                    chassis_lock: enclosure_type.get_lock(),
-                    enclosure_type: enclosure_type.get_type(),
-                    version: structure.find_string(packed.version)?,
-                    serial_number: structure.find_string(packed.serial_number)?,
-                    asset_tag_number: structure.find_string(packed.asset_tag_number)?,
-                    boot_up_state: Some(packed.boot_up_state.into()),
-                    power_supply_state: Some(packed.power_supply_state.into()),
-                    thermal_state: Some(packed.thermal_state.into()),
-                    security_status: Some(packed.security_status.into()),
-                    oem_defined: None,
-                    height: None,
-                    power_cords_number: None,
-                    contained_elements: None,
-                    sku_number: None,
-                })
-            }
-            _ => {
-                let_as_struct!(packed, EnclosurePacked_2_0, structure.data);
-                let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
-
-                Ok(Enclosure {
-                    handle: structure.handle,
-                    manufacturer: structure.find_string(packed.manufacturer)?,
-                    chassis_lock: enclosure_type.get_lock(),
-                    enclosure_type: enclosure_type.get_type(),
-                    version: structure.find_string(packed.version)?,
-                    serial_number: structure.find_string(packed.serial_number)?,
-                    asset_tag_number: structure.find_string(packed.asset_tag_number)?,
-                    boot_up_state: None,
-                    power_supply_state: None,
-                    thermal_state: None,
-                    security_status: None,
-                    oem_defined: None,
-                    height: None,
-                    power_cords_number: None,
-                    contained_elements: None,
-                    sku_number: None,
-                })
-            }
+        if structure.data.len() < core::mem::size_of::<EnclosurePacked_2_0>() {
+            return Err(crate::MalformedStructureError::InvalidFormattedSectionLength(
+                structure.info,
+                structure.handle,
+                "minimum of ",
+                core::mem::size_of::<EnclosurePacked_2_0>() as u8,
+            ));
         }
+
+        let (minimum, mut extra) = structure.data.split_at(core::mem::size_of::<EnclosurePacked_2_0>());
+        let_as_struct!(packed, EnclosurePacked_2_0, minimum);
+        let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
+        let mut enclosure = Enclosure {
+            handle: structure.handle,
+            manufacturer: structure.find_string(packed.manufacturer)?,
+            chassis_lock: enclosure_type.get_lock(),
+            enclosure_type: enclosure_type.get_type(),
+            version: structure.find_string(packed.version)?,
+            serial_number: structure.find_string(packed.serial_number)?,
+            asset_tag_number: structure.find_string(packed.asset_tag_number)?,
+            boot_up_state: None,
+            power_supply_state: None,
+            thermal_state: None,
+            security_status: None,
+            oem_defined: None,
+            height: None,
+            power_cords_number: None,
+            contained_elements: None,
+            sku_number: None,
+        };
+        let data = &mut extra;
+
+        // Optional 2.1+ fields
+        let sku_number = read_bytes(data)
+            .and_then(|boot_up_state: u8| {
+                enclosure.boot_up_state = Some(boot_up_state.into());
+                read_bytes(data)
+            })
+            .and_then(|power_supply_state: u8| {
+                enclosure.power_supply_state = Some(power_supply_state.into());
+                read_bytes(data)
+            })
+            .and_then(|thermal_state: u8| {
+                enclosure.thermal_state = Some(thermal_state.into());
+                read_bytes(data)
+            })
+            .and_then(|security_status: u8| {
+                enclosure.security_status = Some(security_status.into());
+                read_bytes(data)
+            })
+            // Optional 2.3+ fields
+            .and_then(|oem_defined: u32| {
+                enclosure.oem_defined = Some(oem_defined);
+                read_bytes(data)
+            })
+            .and_then(|height: u8| {
+                enclosure.height = Some(height);
+                read_bytes(data)
+            })
+            .and_then(|power_cords_number: u8| {
+                enclosure.power_cords_number = Some(power_cords_number);
+                ContainedElements::new(data)
+            })
+            .and_then(|contained_elements| {
+                enclosure.contained_elements = Some(contained_elements);
+                read_bytes(data)
+            });
+
+        // Optional 2.7+ fields
+        if let Some(sku_number) = sku_number {
+            enclosure.sku_number = Some(structure.find_string(sku_number)?);
+        }
+
+        Ok(enclosure)
     }
 }
 
@@ -476,37 +409,33 @@ impl fmt::Display for SecurityStatus {
 }
 
 impl<'buffer> ContainedElements<'buffer> {
-    fn new(data: &'buffer [u8], count: u8, record_length: u8) -> Self {
+    fn new(data: &mut &'buffer [u8]) -> Option<Self> {
+        let count: u8 = read_bytes(data)?;
+        let record_length: u8 = read_bytes(data)?;
+
         if count == 0 || record_length == 0 {
-            Default::default()
-        } else {
-            let length = (count * record_length) as usize;
-            // 15h offset from SMBIOS Specification
-            let offset = 0x15 - STRUCTURE_HEADER_LENGTH as usize;
-            let chunks = data
-                .get(offset..(offset + length))
-                .unwrap_or_default()
-                .chunks(record_length as usize);
-            Self {
-                chunks,
+            return Some(Self {
+                chunks: [].chunks(usize::MAX),
                 count,
                 record_length,
-            }
+            });
         }
+
+        let length = (count * record_length) as usize;
+        let chunks = data.get(0..length)?.chunks(record_length as usize);
+        *data = &data[length..];
+        Some(Self {
+            chunks,
+            count,
+            record_length,
+        })
     }
+
     pub fn count(&self) -> u8 {
         self.count
     }
 }
-impl<'buffer> Default for ContainedElements<'buffer> {
-    fn default() -> Self {
-        Self {
-            chunks: [].chunks(usize::MAX),
-            count: 0,
-            record_length: 0,
-        }
-    }
-}
+
 impl<'buffer> PartialEq for ContainedElements<'buffer> {
     fn eq(&self, other: &Self) -> bool {
         self.chunks.clone().eq(other.chunks.clone())
@@ -570,6 +499,16 @@ impl fmt::Display for ContainedElementType {
             Self::InfoType(info) => write!(f, "Structure type: {}", info),
         }
     }
+}
+
+fn read_bytes<T: Copy>(data: &mut &[u8]) -> Option<T> {
+    if data.len() < core::mem::size_of::<T>() {
+        return None;
+    }
+
+    let value = unsafe { core::ptr::read((*data).as_ptr() as *const T) };
+    *data = &data[core::mem::size_of::<T>()..];
+    Some(value)
 }
 
 #[cfg(test)]
@@ -660,12 +599,13 @@ mod tests {
     fn contained_elements() {
         use super::{ContainedElement, ContainedElementType, ContainedElements};
         let structure_data = [
-            0x01, 0x97, 0x00, 0x02, 0x00, 0x03, 0x03, 0x03, 0x02, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02,
-            0x03, // we are interested in six bytes below
-            0x91, 0x01, 0x02, 0x07, 0x03, 0x04, //
-            0x03,
+            0x02, // count = 2
+            0x03, // length = 3
+            0x91, 0x01, 0x02, 0x07, 0x03, 0x04, // 6 bytes of elements
+            0x03, // remaining
         ];
-        let mut contained_elements = ContainedElements::new(&structure_data, 2, 3);
+        let mut data: &[u8] = &structure_data;
+        let mut contained_elements = ContainedElements::new(&mut data).expect("should not be empty");
         if let Some(el) = contained_elements.next() {
             assert_eq!(
                 ContainedElement {
@@ -687,6 +627,8 @@ mod tests {
             );
         }
         assert_eq!(contained_elements.next(), None);
+        // the data cursor was updated to the remaining bytes
+        assert_eq!(data, &structure_data[8..]);
     }
 
     #[test]
@@ -780,5 +722,42 @@ mod tests {
             Some("SKU Number".into()),
             "SKU Number"
         );
+    }
+
+    #[test]
+    fn no_sku_on_3_14() {
+        use super::*;
+
+        let enclosure = Enclosure::try_from(RawStructure {
+            version: crate::SmbiosVersion { major: 3, minor: 14 },
+            info: crate::InfoType::Enclosure,
+            length: 20,
+            handle: 153,
+            data: &[1, 1, 0, 0, 0, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0],
+            strings: &[71, 111, 111, 103, 108, 101, 0, 0],
+        })
+            .expect("failed to create enclosure");
+
+        assert_eq!(
+            enclosure,
+            Enclosure {
+                handle: 153,
+                manufacturer: "Google",
+                chassis_lock: false,
+                enclosure_type: EnclosureType::Other,
+                version: "",
+                serial_number: "",
+                asset_tag_number: "",
+                boot_up_state: Some(State::Safe),
+                power_supply_state: Some(State::Safe),
+                thermal_state: Some(State::Safe),
+                security_status: Some(SecurityStatus::Unknown),
+                oem_defined: Some(0),
+                height: Some(0),
+                power_cords_number: Some(0),
+                contained_elements: None,
+                sku_number: None
+            }
+        )
     }
 }

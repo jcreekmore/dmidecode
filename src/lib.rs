@@ -443,8 +443,8 @@ impl<'buffer> Iterator for Structures<'buffer> {
                 // future iterations. This will avoid any nfinite
                 // iterations when skipping errors
                 self.smbios_len = self.idx;
-                return Some(Err(e))
-            },
+                return Some(Err(e));
+            }
         };
 
         /*
