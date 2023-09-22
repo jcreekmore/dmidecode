@@ -436,36 +436,16 @@ impl<'buffer> Iterator for Structures<'buffer> {
     type Item = Result<Structure<'buffer>, MalformedStructureError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if (self.idx + mem::size_of::<HeaderPacked>() as u32) > self.smbios_len {
-            return None;
-        }
-
-        let working = &self.buffer[(self.idx as usize)..];
-        let_as_struct!(header, HeaderPacked, working);
-
-        let strings_idx: u32 = self.idx + header.len as u32;
-        if strings_idx >= self.smbios_len {
-            return Some(Err(MalformedStructureError::BadSize(self.idx, header.len)));
-        }
-
-        let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
-        let strings_len = match term {
-            Some(terminator) => (terminator + 1) as u32,
-            None => {
-                return Some(Err(MalformedStructureError::UnterminatedStrings(self.idx)));
-            }
+        let structure = match self.next_raw()? {
+            Ok(s) => s,
+            Err(e) => {
+                // make any errors to get the raw structure stop
+                // future iterations. This will avoid any nfinite
+                // iterations when skipping errors
+                self.smbios_len = self.idx;
+                return Some(Err(e))
+            },
         };
-
-        let structure = RawStructure {
-            version: self.smbios_version,
-            info: header.kind.into(),
-            length: header.len,
-            handle: header.handle,
-            data: &self.buffer[(self.idx + mem::size_of::<HeaderPacked>() as u32) as usize..strings_idx as usize],
-            strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
-        };
-
-        self.idx = strings_idx + strings_len;
 
         /*
          * For SMBIOS v3 we have no exact table length and no item count,
@@ -508,6 +488,43 @@ impl<'buffer> Iterator for Structures<'buffer> {
             InfoType::PortableBattery => PortableBattery::try_from(structure).map(Structure::PortableBattery),
             _ => Ok(Structure::Other(structure)),
         })
+    }
+}
+
+impl<'buffer> Structures<'buffer> {
+    fn next_raw(&mut self) -> Option<Result<RawStructure<'buffer>, MalformedStructureError>> {
+        if (self.idx + mem::size_of::<HeaderPacked>() as u32) > self.smbios_len {
+            return None;
+        }
+
+        let working = &self.buffer[(self.idx as usize)..];
+        let_as_struct!(header, HeaderPacked, working);
+
+        let strings_idx: u32 = self.idx + header.len as u32;
+        if strings_idx >= self.smbios_len {
+            return Some(Err(MalformedStructureError::BadSize(self.idx, header.len)));
+        }
+
+        let term = find_nulnul(&self.buffer[(strings_idx as usize)..]);
+        let strings_len = match term {
+            Some(terminator) => (terminator + 1) as u32,
+            None => {
+                return Some(Err(MalformedStructureError::UnterminatedStrings(self.idx)));
+            }
+        };
+
+        let structure = RawStructure {
+            version: self.smbios_version,
+            info: header.kind.into(),
+            length: header.len,
+            handle: header.handle,
+            data: &self.buffer[(self.idx + mem::size_of::<HeaderPacked>() as u32) as usize..strings_idx as usize],
+            strings: &self.buffer[strings_idx as usize..(strings_idx + strings_len) as usize],
+        };
+
+        self.idx = strings_idx + strings_len;
+
+        Some(Ok(structure))
     }
 }
 
