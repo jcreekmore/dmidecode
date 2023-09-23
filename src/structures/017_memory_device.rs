@@ -376,69 +376,55 @@ pub struct MemoryDevice<'buffer> {
 
 impl<'a> MemoryDevice<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<MemoryDevice<'a>, MalformedStructureError> {
-        let data_len = structure.data.len() + 4;
         let handle = structure.handle;
-        match ((structure.version.major, structure.version.minor), data_len) {
-            (v, l) if v == (2, 1) && l != 0x15 => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x15))
-            }
-            (v, l) if v == (2, 3) && l != 0x1B => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x1B))
-            }
-            (v, l) if v == (2, 6) && l != 0x1C => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x1C))
-            }
-            (v, l) if v == (2, 7) && l != 0x22 => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
-            }
-            (v, l) if v == (2, 8) && l < 0x22 => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x22))
-            }
-            (v, l) if v == (3, 2) && l < 0x28 => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x28))
-            }
-            (v, l) if v >= (3, 3) && l != 0x5C => {
-                Err(InvalidFormattedSectionLength(InfoType::MemoryDevice, handle, "", 0x5C))
-            }
-            _ => Ok(MemoryDevice {
+        // minimum size of memory device for 2.1 BIOS spec. Anything else we'll consider optional
+        if (structure.data.len() + 4) < 0x15 {
+            return Err(InvalidFormattedSectionLength(
+                InfoType::MemoryDevice,
                 handle,
-                physical_memory_handle: structure.get::<u16>(0x04)?,
-                memory_error_handle: structure.get::<u16>(0x06).ok().filter(|v| v != &0xFFFE),
-                total_width: structure.get::<u16>(0x08).ok().filter(|v| v != &0xFFFF),
-                data_width: structure.get::<u16>(0x0A).ok().filter(|v| v != &0xFFFF),
-                size: structure.get::<u16>(0x0C).ok().filter(|v| v != &0xFFFF),
-                form_factor: structure.get::<u8>(0x0E)?.into(),
-                device_set: structure.get::<u8>(0x0F)?.into(),
-                device_locator: structure.get_string(0x10)?,
-                bank_locator: structure.get_string(0x11)?,
-                memory_type: structure.get::<u8>(0x12)?.into(),
-                type_detail: Detail::from_bits_truncate(structure.get::<u16>(0x13)?),
-                speed: structure.get::<u16>(0x15).ok().filter(|v| v != &0x0000),
-                manufacturer: structure.get_string(0x17)?,
-                serial: structure.get_string(0x18)?,
-                asset_tag: structure.get_string(0x19)?,
-                part_number: structure.get_string(0x1A)?,
-                attributes: structure.get::<u8>(0x1B)?,
-                extended_size: structure.get::<u32>(0x1C)?,
-                configured_memory_speed: structure.get::<u16>(0x20).ok().filter(|v| v != &0x0000),
-                minimum_voltage: structure.get::<u16>(0x22).ok().filter(|v| v != &0x0000),
-                maximum_voltage: structure.get::<u16>(0x24).ok().filter(|v| v != &0x0000),
-                configured_voltage: structure.get::<u16>(0x26).ok().filter(|v| v != &0x0000),
-                memory_technology: structure.get::<u8>(0x28).ok().map(Into::into),
-                operating_mode_capability: structure.get::<u16>(0x29).ok().map(OperatingModes::from_bits_truncate),
-                firmware_version: structure.get_string(0x2B).ok(),
-                module_manufacturer: structure.get::<u16>(0x2C).ok(),
-                module_product_id: structure.get::<u16>(0x2E).ok(),
-                memory_subsystem_controller_manufacturer_id: structure.get::<u16>(0x30).ok(),
-                memory_subsystem_controller_product_id: structure.get::<u16>(0x32).ok(),
-                non_volatile_size: structure.get::<u64>(0x34).ok(),
-                volatile_size: structure.get::<u64>(0x3C).ok(),
-                cache_size: structure.get::<u64>(0x44).ok(),
-                logical_size: structure.get::<u64>(0x4C).ok(),
-                extended_speed: structure.get::<u32>(0x54).ok(),
-                extended_configured_memory_speed: structure.get::<u32>(0x58).ok(),
-            }),
+                "at least",
+                0x15,
+            ));
         }
+
+        Ok(MemoryDevice {
+            handle,
+            physical_memory_handle: structure.get::<u16>(0x04)?,
+            memory_error_handle: structure.get::<u16>(0x06).ok().filter(|v| v != &0xFFFE),
+            total_width: structure.get::<u16>(0x08).ok().filter(|v| v != &0xFFFF),
+            data_width: structure.get::<u16>(0x0A).ok().filter(|v| v != &0xFFFF),
+            size: structure.get::<u16>(0x0C).ok().filter(|v| v != &0xFFFF),
+            form_factor: structure.get::<u8>(0x0E)?.into(),
+            device_set: structure.get::<u8>(0x0F)?.into(),
+            device_locator: structure.get_string(0x10)?,
+            bank_locator: structure.get_string(0x11)?,
+            memory_type: structure.get::<u8>(0x12)?.into(),
+            type_detail: Detail::from_bits_truncate(structure.get::<u16>(0x13)?),
+            speed: structure.get::<u16>(0x15).ok().filter(|v| v != &0x0000),
+            manufacturer: structure.get_string(0x17)?,
+            serial: structure.get_string(0x18)?,
+            asset_tag: structure.get_string(0x19)?,
+            part_number: structure.get_string(0x1A)?,
+            attributes: structure.get::<u8>(0x1B)?,
+            extended_size: structure.get::<u32>(0x1C)?,
+            configured_memory_speed: structure.get::<u16>(0x20).ok().filter(|v| v != &0x0000),
+            minimum_voltage: structure.get::<u16>(0x22).ok().filter(|v| v != &0x0000),
+            maximum_voltage: structure.get::<u16>(0x24).ok().filter(|v| v != &0x0000),
+            configured_voltage: structure.get::<u16>(0x26).ok().filter(|v| v != &0x0000),
+            memory_technology: structure.get::<u8>(0x28).ok().map(Into::into),
+            operating_mode_capability: structure.get::<u16>(0x29).ok().map(OperatingModes::from_bits_truncate),
+            firmware_version: structure.get_string(0x2B).ok(),
+            module_manufacturer: structure.get::<u16>(0x2C).ok(),
+            module_product_id: structure.get::<u16>(0x2E).ok(),
+            memory_subsystem_controller_manufacturer_id: structure.get::<u16>(0x30).ok(),
+            memory_subsystem_controller_product_id: structure.get::<u16>(0x32).ok(),
+            non_volatile_size: structure.get::<u64>(0x34).ok(),
+            volatile_size: structure.get::<u64>(0x3C).ok(),
+            cache_size: structure.get::<u64>(0x44).ok(),
+            logical_size: structure.get::<u64>(0x4C).ok(),
+            extended_speed: structure.get::<u32>(0x54).ok(),
+            extended_configured_memory_speed: structure.get::<u32>(0x58).ok(),
+        })
     }
 }
 
@@ -558,6 +544,48 @@ mod tests {
                 ..Default::default()
             },
             MemoryDevice::try_from(structure).unwrap()
+        );
+    }
+
+    #[test]
+    fn foo() {
+        let memory_device = MemoryDevice::try_from(RawStructure {
+            version: (3, 14).into(),
+            info: InfoType::MemoryDevice,
+            length: 34,
+            handle: 112,
+            data: &[
+                0, 2, 254, 255, 64, 0, 64, 0, 0, 16, 9, 0, 1, 0, 7, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ],
+            strings: &[68, 73, 77, 77, 32, 48, 0, 0],
+        })
+        .expect("failed to create memory device");
+
+        assert_eq!(
+            memory_device,
+            MemoryDevice {
+                handle: 112,
+                physical_memory_handle: 512,
+                memory_error_handle: None,
+                total_width: Some(64),
+                data_width: Some(64),
+                size: Some(4096),
+                form_factor: FormFactor::Dimm,
+                device_set: Some(0),
+                device_locator: "DIMM 0",
+                bank_locator: "",
+                memory_type: Type::Ram,
+                type_detail: Detail::SYNCHRONOUS,
+                speed: None,
+                manufacturer: "",
+                serial: "",
+                asset_tag: "",
+                part_number: "",
+                attributes: 0,
+                extended_size: 0,
+                configured_memory_speed: None,
+                ..MemoryDevice::default()
+            }
         );
     }
 }

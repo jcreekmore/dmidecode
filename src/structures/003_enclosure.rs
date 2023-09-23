@@ -736,7 +736,7 @@ mod tests {
             data: &[1, 1, 0, 0, 0, 3, 3, 3, 2, 0, 0, 0, 0, 0, 0, 0],
             strings: &[71, 111, 111, 103, 108, 101, 0, 0],
         })
-            .expect("failed to create enclosure");
+        .expect("failed to create enclosure");
 
         assert_eq!(
             enclosure,
