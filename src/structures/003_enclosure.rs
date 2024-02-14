@@ -506,7 +506,7 @@ fn read_bytes<T: Copy>(data: &mut &[u8]) -> Option<T> {
         return None;
     }
 
-    let value = unsafe { core::ptr::read((*data).as_ptr() as *const T) };
+    let value = unsafe { core::ptr::read_unaligned((*data).as_ptr() as *const T) };
     *data = &data[core::mem::size_of::<T>()..];
     Some(value)
 }
