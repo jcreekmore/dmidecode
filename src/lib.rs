@@ -408,26 +408,30 @@ pub enum Structure<'buffer> {
 
 #[derive(Debug)]
 pub enum MalformedStructureError {
-      /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
-      BadSize(u32, u8),
-      /// The SMBIOS structure contains an unterminated strings section.
-      UnterminatedStrings(u32),
-      /// The SMBIOS structure contains an invalid string index.
-      InvalidStringIndex(InfoType, u16, u8),
-      /// This error returned when a conversion from a slice to an array fails.
-      InvalidSlice(core::array::TryFromSliceError),
-      /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
-      /// specification
-      InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
-      /// The SMBIOS structure contains an invalid processor family
-      InvalidProcessorFamily,
+    /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
+    BadSize(u32, u8),
+    /// The SMBIOS structure contains an unterminated strings section.
+    UnterminatedStrings(u32),
+    /// The SMBIOS structure contains an invalid string index.
+    InvalidStringIndex(InfoType, u16, u8),
+    /// This error returned when a conversion from a slice to an array fails.
+    InvalidSlice(core::array::TryFromSliceError),
+    /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
+    /// specification
+    InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
+    /// The SMBIOS structure contains an invalid processor family
+    InvalidProcessorFamily,
 }
 
 impl fmt::Display for MalformedStructureError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MalformedStructureError::BadSize(offset, length) => {
-                write!(f, "Structure at offset {} with length {} extends beyond SMBIOS", offset, length)
+                write!(
+                    f,
+                    "Structure at offset {} with length {} extends beyond SMBIOS",
+                    offset, length
+                )
             }
             MalformedStructureError::UnterminatedStrings(offset) => {
                 write!(f, "Structure at offset {} with unterminated strings", offset)
@@ -465,7 +469,6 @@ impl std::error::Error for MalformedStructureError {
         }
     }
 }
-
 
 #[doc(hidden)]
 /// Finds the final nul nul terminator of a buffer and returns the index of the final nul
