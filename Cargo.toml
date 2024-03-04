@@ -10,13 +10,11 @@ rust-version = "1.62"
 
 [dependencies]
 bitflags = "1.2"
-lazy_static = "1.0.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6"
 lazy_static = "1.4"
 
 [features]
-default = ["spin_no_std"]
+default = ["std"]
 std = []
-spin_no_std = ["lazy_static/spin_no_std"]
