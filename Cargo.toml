@@ -16,5 +16,5 @@ pretty_assertions = "0.6"
 lazy_static = "1.4"
 
 [features]
-default = ["std"]
+default = []
 std = []
