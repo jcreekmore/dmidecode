@@ -56,10 +56,9 @@
 
 #![no_std]
 
-extern crate failure;
+#[cfg(any(feature = "std", test))]
 #[macro_use]
-extern crate failure_derive;
-
+extern crate std;
 #[macro_use]
 extern crate bitflags;
 #[cfg(test)]
@@ -321,21 +320,37 @@ struct SmbiosBound {
 }
 
 /// Failure type for trying to find the SMBIOS `EntryPoint` structure in memory.
-#[derive(Debug, Fail)]
+#[derive(Debug)]
 pub enum InvalidEntryPointError {
     /// The SMBIOS `EntryPoint` structure was not found in the memory buffer.
-    #[fail(display = "Input did not contain a valid SMBIOS entry point")]
     NotFound,
     /// The SMBIOS `EntryPoint` structure was versioned before 2.0.
-    #[fail(display = "Input version number was below 2.0: {}", _0)]
     TooOldVersion(u8),
     /// The SMBIOS `EntryPoint` structure was smaller than the size of the SMBIOS 2.1 structure.
-    #[fail(display = "Input contained an invalid-sized SMBIOS entry: {}", _0)]
     BadSize(u8),
     /// The SMBIOS `EntryPoint` structure had an invalid checksum.
-    #[fail(display = "SMBIOS entry point has an invalid checksum: {}", _0)]
     BadChecksum(u8),
 }
+
+impl fmt::Display for InvalidEntryPointError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InvalidEntryPointError::NotFound => write!(f, "Input did not contain a valid SMBIOS entry point"),
+            InvalidEntryPointError::TooOldVersion(version) => {
+                write!(f, "Input version number was below 2.0: {}", version)
+            }
+            InvalidEntryPointError::BadSize(size) => {
+                write!(f, "Input contained an invalid-sized SMBIOS entry: {}", size)
+            }
+            InvalidEntryPointError::BadChecksum(checksum) => {
+                write!(f, "SMBIOS entry point has an invalid checksum: {}", checksum)
+            }
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for InvalidEntryPointError {}
 
 fn find_signature(buffer: &[u8]) -> Option<(EntryPointFormat, usize)> {
     static STRIDE: usize = 16;
@@ -390,31 +405,67 @@ pub enum Structure<'buffer> {
 }
 
 /// Failure type for trying to decode the SMBIOS `Structures` iterator into the `Structure` variant type.
-#[derive(Debug, Fail)]
+
+#[derive(Debug)]
 pub enum MalformedStructureError {
-    /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
-    #[fail(display = "Structure at offset {} with length {} extends beyond SMBIOS", _0, _1)]
-    BadSize(u32, u8),
-    /// The SMBIOS structure contains an unterminated strings section.
-    #[fail(display = "Structure at offset {} with unterminated strings", _0)]
-    UnterminatedStrings(u32),
-    /// The SMBIOS structure contains an invalid string index.
-    #[fail(display = "Structure {:?} with handle {} has invalid string index {}", _0, _1, _2)]
-    InvalidStringIndex(InfoType, u16, u8),
-    /// This error returned when a conversion from a slice to an array fails.
-    #[fail(display = "{}", _0)]
-    InvalidSlice(#[fail(cause)] core::array::TryFromSliceError),
-    /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
-    /// specification
-    #[fail(
-        display = "Formatted section length of structure {:?} with handle {} should be {}{} bytes",
-        _0, _1, _2, _3
-    )]
-    InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
-    /// The SMBIOS structure contains an invalid processor family
-    #[fail(display = "Invalid processor family")]
-    InvalidProcessorFamily,
+      /// The SMBIOS structure exceeds the end of the memory buffer given to the `EntryPoint::structures` method.
+      BadSize(u32, u8),
+      /// The SMBIOS structure contains an unterminated strings section.
+      UnterminatedStrings(u32),
+      /// The SMBIOS structure contains an invalid string index.
+      InvalidStringIndex(InfoType, u16, u8),
+      /// This error returned when a conversion from a slice to an array fails.
+      InvalidSlice(core::array::TryFromSliceError),
+      /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
+      /// specification
+      InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
+      /// The SMBIOS structure contains an invalid processor family
+      InvalidProcessorFamily,
 }
+
+impl fmt::Display for MalformedStructureError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MalformedStructureError::BadSize(offset, length) => {
+                write!(f, "Structure at offset {} with length {} extends beyond SMBIOS", offset, length)
+            }
+            MalformedStructureError::UnterminatedStrings(offset) => {
+                write!(f, "Structure at offset {} with unterminated strings", offset)
+            }
+            MalformedStructureError::InvalidStringIndex(info_type, handle, index) => {
+                write!(
+                    f,
+                    "Structure {:?} with handle {} has invalid string index {}",
+                    info_type, handle, index
+                )
+            }
+            MalformedStructureError::InvalidSlice(cause) => {
+                write!(f, "{}", cause)
+            }
+            MalformedStructureError::InvalidFormattedSectionLength(info_type, handle, spec, length) => {
+                write!(
+                    f,
+                    "Formatted section length of structure {:?} with handle {} should be {}{} bytes",
+                    info_type, handle, spec, length
+                )
+            }
+            MalformedStructureError::InvalidProcessorFamily => {
+                write!(f, "Invalid processor family")
+            }
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for MalformedStructureError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            MalformedStructureError::InvalidSlice(ref cause) => Some(cause),
+            _ => None,
+        }
+    }
+}
+
 
 #[doc(hidden)]
 /// Finds the final nul nul terminator of a buffer and returns the index of the final nul
@@ -766,10 +817,6 @@ impl fmt::Display for InfoType {
         }
     }
 }
-
-#[cfg(test)]
-#[macro_use]
-extern crate std;
 
 #[cfg(test)]
 mod tests {

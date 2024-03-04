@@ -9,12 +9,14 @@ license = "MIT"
 rust-version = "1.62"
 
 [dependencies]
-aho-corasick = "0.6.4"
 bitflags = "1.2"
-failure = "0.1.1"
-failure_derive = "0.1.1"
 lazy_static = "1.0.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6"
 lazy_static = "1.4"
+
+[features]
+default = ["spin_no_std"]
+std = []
+spin_no_std = ["lazy_static/spin_no_std"]

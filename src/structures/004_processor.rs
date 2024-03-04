@@ -6,6 +6,9 @@
 //! IntelSX2™ processor would have a structure to describe the main CPU and a second structure to
 //! describe the 80487 co1021 processor.
 
+#[cfg(feature = "std")]
+extern crate std;
+
 use core::{
     convert::{TryFrom, TryInto},
     fmt,
@@ -803,15 +806,24 @@ impl TryFrom<u8> for ProcessorFamily {
         ProcessorFamily::try_from(byte as u16)
     }
 }
-
-#[derive(Debug, Fail)]
+#[derive(Debug)]
 /// Failure type for trying to decode a word into a processor family
 pub enum DecodingError {
     /// The word being parsed is invalid according to the spec
     /// and thus could no be decoded
-    #[fail(display = "Word does not exist in the processor family spec")]
     InvalidWord,
 }
+
+impl fmt::Display for DecodingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DecodingError::InvalidWord => write!(f, "Word does not exist in the processor family spec"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for DecodingError {}
 
 impl From<DecodingError> for MalformedStructureError {
     fn from(_: DecodingError) -> Self {
