@@ -156,11 +156,10 @@ impl EntryPoint {
     /// # Example
     ///
     /// ```
-    /// # extern crate failure;
     /// # extern crate dmidecode;
-    /// # use failure::Error;
+    /// # use std::error::Error;
     /// use dmidecode::EntryPoint;
-    /// # fn try_main() -> Result<(), Error> {
+    /// # fn try_main() -> Result<(), Box<dyn Error>> {
     /// #
     /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmidecode.bin");
     ///
