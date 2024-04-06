@@ -4,7 +4,7 @@ name = "dmidecode"
 version = "0.8.0"
 description = "Decode SMBIOS/DMI information into accessible data structures"
 documentation = "https://docs.rs/dmidecode/"
-homepage = "https://github.com/jcreekmore/dmidecode.git"
+repository = "https://github.com/jcreekmore/dmidecode"
 license = "MIT"
 rust-version = "1.62"
 
