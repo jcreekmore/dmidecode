@@ -96,11 +96,13 @@ pub mod bitfield;
 pub mod structures;
 pub use structures::*;
 
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 enum EntryPointFormat {
     V2,
     V3,
 }
 
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub enum EntryPoint {
     V2(EntryPointV2),
     V3(EntryPointV3),
