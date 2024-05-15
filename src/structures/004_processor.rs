@@ -768,6 +768,27 @@ impl<'buffer> Processor<'buffer> {
                 ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.try_into()?,
                 family => family,
             };
+
+            // The Core Count 2 field supports core counts > 255. For core counts of 256 or greater, the Core Count
+            // field is set to FFh and the Core Count 2 field is set to the number of cores. For core counts of 255 or
+            // fewer, if Core Count 2 is present it shall be set the same value as Core Count
+            //
+            // The rule is same for Core Enabled and Thread Count as well.
+            let core_count = if packed.core_count == 0xFF {
+                Some(packed.core_count_2)
+            } else {
+                Some(packed.core_count as u16)
+            };
+            let core_enabled = if packed.core_enabled == 0xFF {
+                Some(packed.core_enabled_2)
+            } else {
+                Some(packed.core_enabled as u16)
+            };
+            let thread_count = if packed.thread_count == 0xFF {
+                Some(packed.thread_count_2)
+            } else {
+                Some(packed.thread_count as u16)
+            };
             Ok(Processor {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
@@ -788,9 +809,9 @@ impl<'buffer> Processor<'buffer> {
                 serial_number: Some(structure.find_string(packed.serial_number)?),
                 asset_tag: Some(structure.find_string(packed.asset_tag)?),
                 part_number: Some(structure.find_string(packed.part_number)?),
-                core_count: Some(packed.core_count_2),
-                core_enabled: Some(packed.core_enabled_2),
-                thread_count: Some(packed.thread_count_2),
+                core_count,
+                core_enabled,
+                thread_count,
                 processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(
                     packed.processor_characteristics,
                 )),
