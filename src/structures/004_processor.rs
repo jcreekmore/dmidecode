@@ -66,6 +66,7 @@ bitflags! {
         const EXECUTE_PROTECTION = 0b0010_0000;
         const ENHANCED_VIRTUALIZATION = 0b0100_0000;
         const POWER_PERFORMANCE_CONTROL = 0b1000_0000;
+        const ARM64_SOC_ID = 0b0000_0010_0000_0000;
     }
 }
 
