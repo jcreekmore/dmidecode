@@ -207,7 +207,7 @@ impl<'buffer> Bios<'buffer> {
     }
 }
 
-impl<'a> BitField<'a> for Characteristics {
+impl BitField<'_> for Characteristics {
     type Size = u64;
     fn value(&self) -> Self::Size {
         self.0
@@ -268,7 +268,7 @@ impl<'a> BitField<'a> for Characteristics {
     );
 }
 
-impl<'a> BitField<'a> for CharacteristicsExtension1 {
+impl BitField<'_> for CharacteristicsExtension1 {
     type Size = u8;
     fn value(&self) -> Self::Size {
         self.0
@@ -288,7 +288,7 @@ impl<'a> BitField<'a> for CharacteristicsExtension1 {
     );
 }
 
-impl<'a> BitField<'a> for CharacteristicsExtension2 {
+impl BitField<'_> for CharacteristicsExtension2 {
     type Size = u8;
     fn value(&self) -> Self::Size {
         self.0

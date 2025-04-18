@@ -149,7 +149,7 @@ impl<'a> ManufactureDate<'a> {
         }
     }
 }
-impl<'a> fmt::Display for ManufactureDate<'a> {
+impl fmt::Display for ManufactureDate<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::None => Ok(()),
@@ -172,7 +172,7 @@ impl<'a> SerialNumber<'a> {
         }
     }
 }
-impl<'a> fmt::Display for SerialNumber<'a> {
+impl fmt::Display for SerialNumber<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::None => Ok(()),
@@ -203,7 +203,7 @@ impl<'a> DeviceChemistry<'a> {
         }
     }
 }
-impl<'a> fmt::Display for DeviceChemistry<'a> {
+impl fmt::Display for DeviceChemistry<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Other => write!(f, "Other"),

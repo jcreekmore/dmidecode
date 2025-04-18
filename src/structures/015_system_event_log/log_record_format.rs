@@ -412,7 +412,7 @@ impl fmt::Display for VariableDataFormatType {
     }
 }
 
-impl<'a> BitField<'a> for PostResults {
+impl BitField<'_> for PostResults {
     type Size = u64;
     fn value(&self) -> Self::Size {
         self.0
