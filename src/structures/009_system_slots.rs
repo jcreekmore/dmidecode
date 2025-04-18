@@ -390,11 +390,11 @@ impl<'a> SystemSlots<'a> {
                         .map(Into::into),
                     data_bus_width: structure.get::<u8>(0x11).ok(),
                     peer_devices: structure.get_slice(0x13, 5 * n).map(Into::into),
-                    /// According to (SMBIOS Reference Specification
-                    /// 3.4)[https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.4.0.pdf]
-                    /// fields below starts from offset 14h + 5*n, that looks like mistake.
-                    /// It shoud start from 13h + 5*n, because *Peer (S/B/D/F/Width)
-                    /// groups* field may has zero length
+                    // According to (SMBIOS Reference Specification
+                    // 3.4)[https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.4.0.pdf]
+                    // fields below starts from offset 14h + 5*n, that looks like mistake.
+                    // It shoud start from 13h + 5*n, because *Peer (S/B/D/F/Width)
+                    // groups* field may has zero length
                     slot_information: structure.get::<u8>(0x14 + 5 * n).ok(),
                     slot_physical_width: structure.get::<u8>(0x15 + 5 * n).ok().map(Into::into),
                     slot_pitch: structure.get::<u16>(0x16 + 5 * n).ok().map(Into::into),
@@ -844,7 +844,7 @@ impl From<DeviceAndFunctionNumber> for u8 {
 }
 
 impl<'a> From<&'a [u8]> for PeerDevices<'a> {
-    fn from(data: &'a [u8]) -> PeerDevices {
+    fn from(data: &'a [u8]) -> Self {
         Self(data.chunks(5))
     }
 }
