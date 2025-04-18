@@ -314,12 +314,6 @@ impl From<(usize, usize)> for SmbiosVersion {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-struct SmbiosBound {
-    len: u16,
-    count: u16,
-}
-
 /// Failure type for trying to find the SMBIOS `EntryPoint` structure in memory.
 #[derive(Debug)]
 pub enum InvalidEntryPointError {
