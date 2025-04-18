@@ -436,22 +436,22 @@ impl<'buffer> ContainedElements<'buffer> {
     }
 }
 
-impl<'buffer> PartialEq for ContainedElements<'buffer> {
+impl PartialEq for ContainedElements<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.chunks.clone().eq(other.chunks.clone())
             && self.count == other.count
             && self.record_length == other.record_length
     }
 }
-impl<'buffer> Eq for ContainedElements<'buffer> {}
-impl<'buffer> Hash for ContainedElements<'buffer> {
+impl Eq for ContainedElements<'_> {}
+impl Hash for ContainedElements<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.chunks.clone().for_each(|c| c.hash(state));
         self.count.hash(state);
         self.record_length.hash(state);
     }
 }
-impl<'buffer> Iterator for ContainedElements<'buffer> {
+impl Iterator for ContainedElements<'_> {
     type Item = ContainedElement;
 
     fn next(&mut self) -> Option<Self::Item> {

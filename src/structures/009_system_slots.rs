@@ -733,7 +733,7 @@ impl fmt::Display for SlotLength {
     }
 }
 
-impl<'a> BitField<'a> for SlotCharacteristics1 {
+impl BitField<'_> for SlotCharacteristics1 {
     type Size = u8;
     fn value(&self) -> Self::Size {
         self.0
@@ -763,7 +763,7 @@ impl From<u8> for SlotCharacteristics1 {
     }
 }
 
-impl<'a> BitField<'a> for SlotCharacteristics2 {
+impl BitField<'_> for SlotCharacteristics2 {
     type Size = u8;
     fn value(&self) -> Self::Size {
         self.0
@@ -848,18 +848,18 @@ impl<'a> From<&'a [u8]> for PeerDevices<'a> {
         Self(data.chunks(5))
     }
 }
-impl<'a> PartialEq for PeerDevices<'a> {
+impl PartialEq for PeerDevices<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.0.clone().eq(other.0.clone())
     }
 }
-impl<'buffer> Eq for PeerDevices<'buffer> {}
-impl<'buffer> Hash for PeerDevices<'buffer> {
+impl Eq for PeerDevices<'_> {}
+impl Hash for PeerDevices<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.clone().for_each(|c| c.hash(state));
     }
 }
-impl<'buffer> Iterator for PeerDevices<'buffer> {
+impl Iterator for PeerDevices<'_> {
     type Item = Device;
 
     fn next(&mut self) -> Option<Self::Item> {

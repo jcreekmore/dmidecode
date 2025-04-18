@@ -319,7 +319,7 @@ impl fmt::Display for AccessMethod {
     }
 }
 
-impl<'a> BitField<'a> for LogStatus {
+impl BitField<'_> for LogStatus {
     type Size = u8;
     fn value(&self) -> Self::Size {
         self.0
@@ -365,18 +365,18 @@ impl<'a> SupportedEventLogTypeDescriptors<'a> {
         Self(data.chunks(size))
     }
 }
-impl<'a> PartialEq for SupportedEventLogTypeDescriptors<'a> {
+impl PartialEq for SupportedEventLogTypeDescriptors<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.0.clone().eq(other.0.clone())
     }
 }
-impl<'a> Eq for SupportedEventLogTypeDescriptors<'a> {}
-impl<'a> Hash for SupportedEventLogTypeDescriptors<'a> {
+impl Eq for SupportedEventLogTypeDescriptors<'_> {}
+impl Hash for SupportedEventLogTypeDescriptors<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.clone().for_each(|c| c.hash(state));
     }
 }
-impl<'a> Iterator for SupportedEventLogTypeDescriptors<'a> {
+impl Iterator for SupportedEventLogTypeDescriptors<'_> {
     type Item = EventLogTypeDescriptor;
 
     fn next(&mut self) -> Option<Self::Item> {

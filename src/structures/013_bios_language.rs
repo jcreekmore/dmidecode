@@ -86,7 +86,7 @@ impl<'a> Iterator for InstallableLanguages<'a> {
     }
 }
 
-impl<'a> BitField<'a> for LanguageFlags {
+impl BitField<'_> for LanguageFlags {
     type Size = u8;
     fn value(&self) -> Self::Size {
         self.0

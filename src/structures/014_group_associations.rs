@@ -63,7 +63,7 @@ impl<'a> GroupItems<'a> {
         Self { data, index: 0 }
     }
 }
-impl<'a> Iterator for GroupItems<'a> {
+impl Iterator for GroupItems<'_> {
     type Item = GroupItem;
 
     fn next(&mut self) -> Option<Self::Item> {

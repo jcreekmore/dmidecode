@@ -138,7 +138,7 @@ macro_rules! layout {
     };
 }
 
-impl<'a> fmt::Display for Flag<'a> {
+impl fmt::Display for Flag<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.type_ {
             FlagType::Significant(meaning, description) => {
@@ -157,7 +157,7 @@ impl<'a> fmt::Display for Flag<'a> {
         }
     }
 }
-impl<'a> fmt::Debug for Flag<'a> {
+impl fmt::Debug for Flag<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Flag")
             .field("position", &self.position)
@@ -166,7 +166,7 @@ impl<'a> fmt::Debug for Flag<'a> {
     }
 }
 
-impl<'a> Default for FlagType<'a> {
+impl Default for FlagType<'_> {
     fn default() -> Self {
         Self::Unknown
     }

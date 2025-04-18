@@ -1647,8 +1647,6 @@ impl fmt::Display for ProcessorUpgrade {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
-
     use super::*;
     use crate::InfoType;
 
@@ -1703,7 +1701,7 @@ mod tests {
                 ),
                 _ => continue,
             };
-            assert_eq!(e, i.try_into().unwrap(), "{:#x}", i);
+            assert_eq!(e, i.into(), "{:#x}", i);
             assert_eq!(s, format!("{}", e));
         }
     }
