@@ -420,8 +420,6 @@ pub enum MalformedStructureError {
     /// The SMBIOS structure formatted section length does not correspond to SMBIOS reference
     /// specification
     InvalidFormattedSectionLength(InfoType, u16, &'static str, u8),
-    /// The SMBIOS structure contains an invalid processor family
-    InvalidProcessorFamily,
 }
 
 impl fmt::Display for MalformedStructureError {
@@ -453,9 +451,6 @@ impl fmt::Display for MalformedStructureError {
                     "Formatted section length of structure {:?} with handle {} should be {}{} bytes",
                     info_type, handle, spec, length
                 )
-            }
-            MalformedStructureError::InvalidProcessorFamily => {
-                write!(f, "Invalid processor family")
             }
         }
     }

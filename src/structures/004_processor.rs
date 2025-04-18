@@ -9,10 +9,7 @@
 #[cfg(feature = "std")]
 extern crate std;
 
-use core::{
-    convert::{TryFrom, TryInto},
-    fmt,
-};
+use core::fmt;
 
 use crate::{MalformedStructureError, RawStructure};
 
@@ -377,6 +374,7 @@ pub enum ProcessorFamily {
     NotUsed(u16),
     ForFutureUse,
     ProcessorFamily2,
+    OutOfSpec,
 }
 
 /// Two forms of information can be specified by the SMBIOS in this field, dependent on the value
@@ -622,7 +620,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.try_into()?,
+                processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -650,7 +648,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.try_into()?,
+                processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -678,7 +676,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.try_into()?,
+                processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -706,7 +704,7 @@ impl<'buffer> Processor<'buffer> {
                 handle: structure.handle,
                 socket_designation: structure.find_string(packed.socket_designation)?,
                 processor_type: packed.processor_type.into(),
-                processor_family: packed.processor_family.try_into()?,
+                processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
                 processor_id: packed.processor_id,
                 processor_version: structure.find_string(packed.processor_version)?,
@@ -731,8 +729,8 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
             // smbios spec specifies 0xFE as an indicator to obtain processor
             // family from the Processor Family 2 field.
-            let processor_family = match packed.processor_family.try_into()? {
-                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.try_into()?,
+            let processor_family = match packed.processor_family.into() {
+                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.into(),
                 family => family,
             };
             Ok(Processor {
@@ -766,8 +764,8 @@ impl<'buffer> Processor<'buffer> {
             let_as_struct!(packed, ProcessorPacked_3_0, structure.data);
             // smbios spec specifies 0xFE as an indicator to obtain processor
             // family from the Processor Family 2 field.
-            let processor_family = match packed.processor_family.try_into()? {
-                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.try_into()?,
+            let processor_family = match packed.processor_family.into() {
+                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.into(),
                 family => family,
             };
 
@@ -822,44 +820,16 @@ impl<'buffer> Processor<'buffer> {
     }
 }
 
-impl TryFrom<u8> for ProcessorFamily {
-    type Error = DecodingError;
-
-    fn try_from(byte: u8) -> Result<ProcessorFamily, DecodingError> {
-        ProcessorFamily::try_from(byte as u16)
-    }
-}
-#[derive(Debug)]
-/// Failure type for trying to decode a word into a processor family
-pub enum DecodingError {
-    /// The word being parsed is invalid according to the spec
-    /// and thus could no be decoded
-    InvalidWord,
-}
-
-impl fmt::Display for DecodingError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            DecodingError::InvalidWord => write!(f, "Word does not exist in the processor family spec"),
-        }
+impl From<u8> for ProcessorFamily {
+    fn from(byte: u8) -> ProcessorFamily {
+        ProcessorFamily::from(byte as u16)
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for DecodingError {}
-
-impl From<DecodingError> for MalformedStructureError {
-    fn from(_: DecodingError) -> Self {
-        MalformedStructureError::InvalidProcessorFamily
-    }
-}
-
-impl TryFrom<u16> for ProcessorFamily {
-    type Error = DecodingError;
-
-    fn try_from(word: u16) -> Result<ProcessorFamily, DecodingError> {
-        let family = match word {
-            0x00 => return Err(DecodingError::InvalidWord),
+impl From<u16> for ProcessorFamily {
+    fn from(word: u16) -> Self {
+        match word {
+            0x00 => ProcessorFamily::OutOfSpec,
             0x01 => ProcessorFamily::Other,
             0x02 => ProcessorFamily::Unknown,
             0x03 => ProcessorFamily::Intel8086,
@@ -1100,9 +1070,7 @@ impl TryFrom<u16> for ProcessorFamily {
             n @ 0x203..=0xFFFD => ProcessorFamily::Available(n),
             0xFFFE => ProcessorFamily::ForFutureUse,
             n @ 0xFFFF => ProcessorFamily::NotUsed(n),
-        };
-
-        Ok(family)
+        }
     }
 }
 impl fmt::Display for ProcessorFamily {
@@ -1489,6 +1457,7 @@ impl fmt::Display for ProcessorFamily {
             }
             ProcessorFamily::Available(n) => write!(f, "Available {:#X}", n),
             ProcessorFamily::NotUsed(n) => write!(f, "Not used. {:X}h is the un-initialized value of Flash memory.", n),
+            ProcessorFamily::OutOfSpec => write!(f, "OUT OF SPEC"),
         }
     }
 }
@@ -1948,6 +1917,83 @@ mod tests {
                 core_enabled: Some(8),
                 thread_count: Some(8),
                 processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(0b0000_0100)),
+            },
+            Processor::try_from(structure).unwrap()
+        );
+    }
+
+    #[test]
+    fn zero_process_family() {
+        let structure = RawStructure {
+            version: (3, 2).into(),
+            info: InfoType::Processor,
+            length: 0x32,
+            handle: 0x000c,
+            // data and strings from processor handler, eg: dmidecode -H 0x48 -u
+            // $ hexdump -s 0x4c6 -n 42 -C processor_bin
+            data: &[
+                // 04 // type
+                // 32 // length
+                // 0c 00 // handle
+                0x01, // socket_designation
+                0x03, // processor_type
+                0x00, // processor_family
+                0x00, // processor_manufacturer
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // processor_id
+                0x00, // processor_version
+                0x00, // voltage
+                0x00, 0x00, // external_clock
+                0xa0, 0x0f, // max_speed
+                0x00, 0x00, // current_speed
+                0x00, // status
+                0x3f, // processor_upgrade
+                0xff, 0xff, // l1_cache
+                0xff, 0xff, // l2_cache
+                0xff, 0xff, // l3_cache
+                0x00, // serial_number
+                0x00, // asset_tag
+                0x00, // part_number
+                0x00, // core_count
+                0x00, // core_enabled
+                0x00, // thread_count
+                0x00, 0x00, // processor_characteristics
+                0x00, 0x00, // processor_family2
+                0x00, 0x00, // core count 2
+                0x00, 0x00, // core enabled 2
+                0x00, 0x00, // thread count 2
+                0x00, 0x00,
+            ],
+            strings: &[
+                // CPU0
+                0x43, 0x50, 0x55, 0x30, 0x00,
+            ],
+        };
+
+        assert_eq!(
+            Processor {
+                handle: 0x000c,
+                socket_designation: "CPU0",
+                processor_type: ProcessorType::CentralProcessor,
+                processor_family: ProcessorFamily::OutOfSpec,
+                processor_manufacturer: "",
+                processor_id: 0,
+                processor_version: "",
+                voltage: Voltage::Legacy(VoltageLegacy::empty()),
+                external_clock: 0,
+                max_speed: 4000,
+                current_speed: 0,
+                status: ProcessorStatus::from_bits_truncate(0b0),
+                processor_upgrade: ProcessorUpgrade::Undefined(0x3f),
+                l1_cache_handle: Some(0xffff),
+                l2_cache_handle: Some(0xffff),
+                l3_cache_handle: Some(0xffff),
+                serial_number: Some(""),
+                asset_tag: Some(""),
+                part_number: Some(""),
+                core_count: Some(0),
+                core_enabled: Some(0),
+                thread_count: Some(0),
+                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(0b0)),
             },
             Processor::try_from(structure).unwrap()
         );
