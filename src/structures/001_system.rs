@@ -51,7 +51,7 @@ pub struct System<'buffer> {
     pub product: &'buffer str,
     pub version: &'buffer str,
     pub serial: &'buffer str,
-    pub uuid: Option<[u8; 16]>,
+    pub uuid: Option<uuid::Uuid>,
     pub wakeup: Option<WakeupType>,
     pub sku: Option<&'buffer str>,
     pub family: Option<&'buffer str>,
@@ -59,6 +59,29 @@ pub struct System<'buffer> {
 
 impl<'buffer> System<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<System<'buffer>, MalformedStructureError> {
+        /// Internal helpers for decoding complex representations
+        mod wrapper {
+            /// Wrapper around the 16-byte UUID field to implement SMBIOS-version-aware decoding.
+            #[repr(transparent)]
+            pub struct UuidRepr([u8; 16]);
+
+            impl UuidRepr {
+                /// Decodes the raw UUID according to the SMBIOS specification.
+                ///
+                /// - For SMBIOS versions >= 2.6, the first 3 fields are encoded in little-endian format according
+                ///   to the SMBIOS specification.
+                /// - For older versions, the UUID is returned as-is to be consistent with `dmidecode` utility.
+                #[inline(always)]
+                pub fn decode_by_smbios_version(self, version: crate::SmbiosVersion) -> uuid::Uuid {
+                    if version < (2, 6).into() {
+                        uuid::Uuid::from_bytes(self.0)
+                    } else {
+                        uuid::Uuid::from_bytes_le(self.0)
+                    }
+                }
+            }
+        }
+
         #[repr(C)]
         #[repr(packed)]
         struct SystemPacked_2_0 {
@@ -72,7 +95,7 @@ impl<'buffer> System<'buffer> {
         #[repr(packed)]
         struct SystemPacked_2_1 {
             v2_0: SystemPacked_2_0,
-            uuid: [u8; 16],
+            uuid: wrapper::UuidRepr,
             wakeup: u8,
         }
 
@@ -107,7 +130,7 @@ impl<'buffer> System<'buffer> {
                 product: structure.find_string(packed.v2_0.product)?,
                 version: structure.find_string(packed.v2_0.version)?,
                 serial: structure.find_string(packed.v2_0.serial)?,
-                uuid: Some(packed.uuid),
+                uuid: Some(packed.uuid.decode_by_smbios_version(structure.version)),
                 wakeup: Some(packed.wakeup.into()),
                 sku: None,
                 family: None,
@@ -121,7 +144,7 @@ impl<'buffer> System<'buffer> {
                 product: structure.find_string(packed.v2_1.v2_0.product)?,
                 version: structure.find_string(packed.v2_1.v2_0.version)?,
                 serial: structure.find_string(packed.v2_1.v2_0.serial)?,
-                uuid: Some(packed.v2_1.uuid),
+                uuid: Some(packed.v2_1.uuid.decode_by_smbios_version(structure.version)),
                 wakeup: Some(packed.v2_1.wakeup.into()),
                 sku: Some(structure.find_string(packed.sku)?),
                 family: Some(structure.find_string(packed.family)?),
