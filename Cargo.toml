@@ -10,6 +10,7 @@ rust-version = "1.62"
 
 [dependencies]
 bitflags = "1.2"
+uuid = "1.17.0"
 
 [dev-dependencies]
 pretty_assertions = "0.6"
