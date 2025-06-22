@@ -255,6 +255,7 @@ impl From<u8> for Type {
 
 bitflags! {
     /// The memory device details
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Detail: u16 {
         const RESERVED =      0b0000000000000000;
         const OTHER =         0b0000000000000010;
@@ -282,6 +283,7 @@ impl Default for Detail {
 }
 
 bitflags! {
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct OperatingModes: u16 {
         const RESERVED =                    0b0000000000000000;
         const OTHER =                       0b0000000000000010;

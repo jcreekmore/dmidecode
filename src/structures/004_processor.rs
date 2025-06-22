@@ -41,6 +41,7 @@ impl From<u8> for ProcessorType {
 
 bitflags! {
     /// The processor status flags defined in the SMBIOS specification.
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct ProcessorStatus: u8 {
         const CPU_SOCKET_POPULATED = 0b0100_0000;
         const CPU_ENABLED = 0b0000_0001;
@@ -53,6 +54,7 @@ bitflags! {
 
 bitflags! {
     /// The processor characteristic flags defined in the SMBIOS specification.
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct ProcessorCharacteristics: u16 {
         const RESERVED = 0b0000_0001;
         const UNKNOWN = 0b0000_0010;
@@ -390,6 +392,7 @@ pub enum Voltage {
 
 bitflags! {
     /// Voltage Capability. A set bit indicates that the voltage is supported
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct VoltageLegacy: u8 {
         const VOLTAGE_CAPABILITY_5V0  = 0b0000_0001;
         const VOLTAGE_CAPABILITY_3V3  = 0b0000_0010;
