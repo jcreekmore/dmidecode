@@ -59,12 +59,6 @@
 #[cfg(any(feature = "std", test))]
 #[macro_use]
 extern crate std;
-#[macro_use]
-extern crate bitflags;
-#[cfg(test)]
-extern crate lazy_static;
-#[cfg(test)]
-extern crate pretty_assertions;
 
 use core::array::TryFromSliceError;
 use core::convert::TryInto;
@@ -158,19 +152,14 @@ impl EntryPoint {
     /// # Example
     ///
     /// ```
-    /// # extern crate dmidecode;
-    /// # use std::error::Error;
     /// use dmidecode::EntryPoint;
-    /// # fn try_main() -> Result<(), Box<dyn Error>> {
-    /// #
     /// const DMIDECODE_BIN: &'static [u8] = include_bytes!("../tests/data/dmidecode.bin");
     ///
-    /// let entry_point = EntryPoint::search(DMIDECODE_BIN)?;
+    /// let entry_point = EntryPoint::search(DMIDECODE_BIN).unwrap();
     /// for s in entry_point.structures(&DMIDECODE_BIN[entry_point.smbios_address() as usize..]) {
-    ///   let table = s?;
+    ///     let table = s.unwrap();
+    ///     // process raw...
     /// }
-    /// Ok(())
-    /// # }
     /// ```
     pub fn structures<'buffer>(&self, buffer: &'buffer [u8]) -> Structures<'buffer> {
         Structures {
@@ -186,7 +175,6 @@ impl EntryPoint {
     /// # Example
     ///
     /// ```
-    /// # extern crate dmidecode;
     /// use dmidecode::EntryPoint;
     ///
     /// const ENTRY_BIN: &'static [u8] = include_bytes!("../tests/data/entry.bin");

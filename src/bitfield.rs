@@ -84,7 +84,6 @@ pub trait BitField<'a> {
 ///
 /// ```ignore
 /// # #[macro_use]
-/// # extern crate dmidecode;
 /// # use dmidecode::bitfield::{FlagType, Layout};
 /// # fn main() {
 /// layout!(

@@ -5,6 +5,7 @@
 //! This structure describes a single memory device that is part of a larger [Physical Memory
 //! Array](super::physical_memory_array "structures::physical_memory_array") (Type 16)
 //! structure.
+use bitflags::bitflags;
 
 use crate::{
     InfoType,

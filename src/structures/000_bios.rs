@@ -81,7 +81,7 @@ impl<'buffer> Bios<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Bios<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
-        struct BiosPacked_3_1 {
+        struct BiosPacked3_1 {
             vendor: u8,
             bios_version: u8,
             bios_starting_address_segment: u16,
@@ -99,7 +99,7 @@ impl<'buffer> Bios<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct BiosPacked_2_4 {
+        struct BiosPacked2_4 {
             vendor: u8,
             bios_version: u8,
             bios_starting_address_segment: u16,
@@ -116,7 +116,7 @@ impl<'buffer> Bios<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct BiosPacked_2_0 {
+        struct BiosPacked2_0 {
             vendor: u8,
             bios_version: u8,
             bios_starting_address_segment: u16,
@@ -127,7 +127,7 @@ impl<'buffer> Bios<'buffer> {
 
         match structure.version {
             v if v >= (3, 1).into() => {
-                let_as_struct!(packed, BiosPacked_3_1, structure.data);
+                let_as_struct!(packed, BiosPacked3_1, structure.data);
                 Ok(Bios {
                     handle: structure.handle,
                     vendor: structure.find_string(packed.vendor)?,
@@ -156,7 +156,7 @@ impl<'buffer> Bios<'buffer> {
                 })
             }
             v if v >= (2, 4).into() => {
-                let_as_struct!(packed, BiosPacked_2_4, structure.data);
+                let_as_struct!(packed, BiosPacked2_4, structure.data);
                 Ok(Bios {
                     handle: structure.handle,
                     vendor: structure.find_string(packed.vendor)?,
@@ -185,7 +185,7 @@ impl<'buffer> Bios<'buffer> {
                 })
             }
             _ => {
-                let_as_struct!(packed, BiosPacked_2_0, structure.data);
+                let_as_struct!(packed, BiosPacked2_0, structure.data);
                 Ok(Bios {
                     handle: structure.handle,
                     vendor: structure.find_string(packed.vendor)?,

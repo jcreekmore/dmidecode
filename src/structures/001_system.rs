@@ -84,7 +84,7 @@ impl<'buffer> System<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct SystemPacked_2_0 {
+        struct SystemPacked2_0 {
             manufacturer: u8,
             product: u8,
             version: u8,
@@ -93,22 +93,22 @@ impl<'buffer> System<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct SystemPacked_2_1 {
-            v2_0: SystemPacked_2_0,
+        struct SystemPacked2_1 {
+            v2_0: SystemPacked2_0,
             uuid: wrapper::UuidRepr,
             wakeup: u8,
         }
 
         #[repr(C)]
         #[repr(packed)]
-        struct SystemPacked_2_4 {
-            v2_1: SystemPacked_2_1,
+        struct SystemPacked2_4 {
+            v2_1: SystemPacked2_1,
             sku: u8,
             family: u8,
         }
 
         if structure.version < (2, 1).into() {
-            let_as_struct!(packed, SystemPacked_2_0, structure.data);
+            let_as_struct!(packed, SystemPacked2_0, structure.data);
 
             Ok(System {
                 handle: structure.handle,
@@ -122,7 +122,7 @@ impl<'buffer> System<'buffer> {
                 family: None,
             })
         } else if structure.version < (2, 4).into() {
-            let_as_struct!(packed, SystemPacked_2_1, structure.data);
+            let_as_struct!(packed, SystemPacked2_1, structure.data);
 
             Ok(System {
                 handle: structure.handle,
@@ -136,7 +136,7 @@ impl<'buffer> System<'buffer> {
                 family: None,
             })
         } else {
-            let_as_struct!(packed, SystemPacked_2_4, structure.data);
+            let_as_struct!(packed, SystemPacked2_4, structure.data);
 
             Ok(System {
                 handle: structure.handle,

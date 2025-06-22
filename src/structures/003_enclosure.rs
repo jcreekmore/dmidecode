@@ -165,7 +165,7 @@ impl<'buffer> Enclosure<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Enclosure<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
-        struct EnclosurePacked_2_0 {
+        struct EnclosurePacked2_0 {
             manufacturer: u8,
             enclosure_type: u8,
             version: u8,
@@ -176,7 +176,7 @@ impl<'buffer> Enclosure<'buffer> {
         // compile time assertion that our minimum enclosure structure
         // fits the minimum required by the BIOS spec
         const _: () = {
-            assert!(core::mem::size_of::<EnclosurePacked_2_0>() + core::mem::size_of::<HeaderPacked>() == 0x09);
+            assert!(core::mem::size_of::<EnclosurePacked2_0>() + core::mem::size_of::<HeaderPacked>() == 0x09);
         };
 
         struct RawEnclosureType(u8);
@@ -192,17 +192,17 @@ impl<'buffer> Enclosure<'buffer> {
             }
         }
 
-        if structure.data.len() < core::mem::size_of::<EnclosurePacked_2_0>() {
+        if structure.data.len() < core::mem::size_of::<EnclosurePacked2_0>() {
             return Err(crate::MalformedStructureError::InvalidFormattedSectionLength(
                 structure.info,
                 structure.handle,
                 "minimum of ",
-                core::mem::size_of::<EnclosurePacked_2_0>() as u8,
+                core::mem::size_of::<EnclosurePacked2_0>() as u8,
             ));
         }
 
-        let (minimum, mut extra) = structure.data.split_at(core::mem::size_of::<EnclosurePacked_2_0>());
-        let_as_struct!(packed, EnclosurePacked_2_0, minimum);
+        let (minimum, mut extra) = structure.data.split_at(core::mem::size_of::<EnclosurePacked2_0>());
+        let_as_struct!(packed, EnclosurePacked2_0, minimum);
         let enclosure_type = RawEnclosureType::new(packed.enclosure_type);
         let mut enclosure = Enclosure {
             handle: structure.handle,
@@ -463,12 +463,12 @@ impl From<&[u8]> for ContainedElement {
     fn from(data: &[u8]) -> ContainedElement {
         #[repr(C)]
         #[repr(packed)]
-        struct ContainedElement_2_3 {
+        struct ContainedElement2_3 {
             type_: u8,
             minimum: u8,
             maximum: u8,
         }
-        let_as_struct!(packed, ContainedElement_2_3, data);
+        let_as_struct!(packed, ContainedElement2_3, data);
         ContainedElement {
             type_: packed.type_.into(),
             minimum: packed.minimum,

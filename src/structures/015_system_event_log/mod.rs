@@ -438,7 +438,7 @@ mod tests {
     #[test]
     fn log_status() {
         use super::LogStatus;
-        use bitfield::BitField;
+        use crate::bitfield::BitField;
 
         let byte: u8 = 0b111;
         let ls: LogStatus = byte.into();

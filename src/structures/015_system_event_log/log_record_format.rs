@@ -582,7 +582,7 @@ mod tests {
     #[test]
     fn post_results() {
         use super::PostResults;
-        use bitfield::{BitField, FlagType::Reserved, Position};
+        use crate::bitfield::{BitField, FlagType::Reserved, Position};
 
         let qword: u64 = 0b10101010000 << 32 | 0b101010;
         let pr: PostResults = qword.into();

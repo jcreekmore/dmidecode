@@ -6,10 +6,9 @@
 //! IntelSX2™ processor would have a structure to describe the main CPU and a second structure to
 //! describe the 80487 co1021 processor.
 
-#[cfg(feature = "std")]
-extern crate std;
-
 use core::fmt;
+
+use bitflags::bitflags;
 
 use crate::{MalformedStructureError, RawStructure};
 
@@ -469,7 +468,7 @@ impl<'buffer> Processor<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Processor<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
-        struct ProcessorPacked_2_0 {
+        struct ProcessorPacked2_0 {
             socket_designation: u8,
             processor_type: u8,
             processor_family: u8,
@@ -486,7 +485,7 @@ impl<'buffer> Processor<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct ProcessorPacked_2_1 {
+        struct ProcessorPacked2_1 {
             socket_designation: u8,
             processor_type: u8,
             processor_family: u8,
@@ -506,7 +505,7 @@ impl<'buffer> Processor<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct ProcessorPacked_2_3 {
+        struct ProcessorPacked2_3 {
             socket_designation: u8,
             processor_type: u8,
             processor_family: u8,
@@ -529,7 +528,7 @@ impl<'buffer> Processor<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct ProcessorPacked_2_5 {
+        struct ProcessorPacked2_5 {
             socket_designation: u8,
             processor_type: u8,
             processor_family: u8,
@@ -556,7 +555,7 @@ impl<'buffer> Processor<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct ProcessorPacked_2_6 {
+        struct ProcessorPacked2_6 {
             socket_designation: u8,
             processor_type: u8,
             processor_family: u8,
@@ -584,7 +583,7 @@ impl<'buffer> Processor<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct ProcessorPacked_3_0 {
+        struct ProcessorPacked3_0 {
             socket_designation: u8,
             processor_type: u8,
             processor_family: u8,
@@ -614,7 +613,7 @@ impl<'buffer> Processor<'buffer> {
         }
 
         if structure.version < (2, 1).into() {
-            let_as_struct!(packed, ProcessorPacked_2_0, structure.data);
+            let_as_struct!(packed, ProcessorPacked2_0, structure.data);
 
             Ok(Processor {
                 handle: structure.handle,
@@ -642,7 +641,7 @@ impl<'buffer> Processor<'buffer> {
                 processor_characteristics: None,
             })
         } else if structure.version < (2, 3).into() {
-            let_as_struct!(packed, ProcessorPacked_2_1, structure.data);
+            let_as_struct!(packed, ProcessorPacked2_1, structure.data);
 
             Ok(Processor {
                 handle: structure.handle,
@@ -670,7 +669,7 @@ impl<'buffer> Processor<'buffer> {
                 processor_characteristics: None,
             })
         } else if structure.version < (2, 5).into() {
-            let_as_struct!(packed, ProcessorPacked_2_3, structure.data);
+            let_as_struct!(packed, ProcessorPacked2_3, structure.data);
 
             Ok(Processor {
                 handle: structure.handle,
@@ -698,7 +697,7 @@ impl<'buffer> Processor<'buffer> {
                 processor_characteristics: None,
             })
         } else if structure.version < (2, 6).into() {
-            let_as_struct!(packed, ProcessorPacked_2_5, structure.data);
+            let_as_struct!(packed, ProcessorPacked2_5, structure.data);
 
             Ok(Processor {
                 handle: structure.handle,
@@ -726,7 +725,7 @@ impl<'buffer> Processor<'buffer> {
                 processor_characteristics: None,
             })
         } else if structure.version < (3, 0).into() {
-            let_as_struct!(packed, ProcessorPacked_2_6, structure.data);
+            let_as_struct!(packed, ProcessorPacked2_6, structure.data);
             // smbios spec specifies 0xFE as an indicator to obtain processor
             // family from the Processor Family 2 field.
             let processor_family = match packed.processor_family.into() {
@@ -761,7 +760,7 @@ impl<'buffer> Processor<'buffer> {
                 )),
             })
         } else {
-            let_as_struct!(packed, ProcessorPacked_3_0, structure.data);
+            let_as_struct!(packed, ProcessorPacked3_0, structure.data);
             // smbios spec specifies 0xFE as an indicator to obtain processor
             // family from the Processor Family 2 field.
             let processor_family = match packed.processor_family.into() {
