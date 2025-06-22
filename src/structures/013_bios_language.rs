@@ -33,7 +33,7 @@ impl<'a> BiosLanguage<'a> {
     pub(crate) fn try_from(structure: RawStructure<'a>) -> Result<BiosLanguage<'a>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
-        struct BiosLanguagePacked_2_1 {
+        struct BiosLanguagePacked2_1 {
             installable_languages: u8,
             flags: u8,
             reserved: [u8; 15],
@@ -42,7 +42,7 @@ impl<'a> BiosLanguage<'a> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct BiosLanguagePacked_2_0 {
+        struct BiosLanguagePacked2_0 {
             installable_languages: u8,
             reserved: [u8; 15],
             current_language: u8,
@@ -50,7 +50,7 @@ impl<'a> BiosLanguage<'a> {
 
         match structure.version {
             v if v >= (2, 1).into() => {
-                let_as_struct!(packed, BiosLanguagePacked_2_1, structure.data);
+                let_as_struct!(packed, BiosLanguagePacked2_1, structure.data);
                 Ok(BiosLanguage {
                     handle: structure.handle,
                     installable_languages: InstallableLanguages::new(structure),
@@ -59,7 +59,7 @@ impl<'a> BiosLanguage<'a> {
                 })
             }
             _ => {
-                let_as_struct!(packed, BiosLanguagePacked_2_0, structure.data);
+                let_as_struct!(packed, BiosLanguagePacked2_0, structure.data);
                 Ok(BiosLanguage {
                     handle: structure.handle,
                     installable_languages: InstallableLanguages::new(structure),

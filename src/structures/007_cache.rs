@@ -7,6 +7,8 @@
 
 use core::fmt;
 
+use bitflags::bitflags;
+
 use crate::{MalformedStructureError, RawStructure};
 
 /// The `Cache Information` table defined in the SMBIOS specification.
@@ -167,7 +169,7 @@ impl<'buffer> Cache<'buffer> {
     pub(crate) fn try_from(structure: RawStructure<'buffer>) -> Result<Cache<'buffer>, MalformedStructureError> {
         #[repr(C)]
         #[repr(packed)]
-        struct CachePacked_3_1 {
+        struct CachePacked3_1 {
             socket_designation: u8,
             cache_configuration: u16,
             maximum_cache_size: u16,
@@ -184,7 +186,7 @@ impl<'buffer> Cache<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct CachePacked_2_1 {
+        struct CachePacked2_1 {
             socket_designation: u8,
             cache_configuration: u16,
             maximum_cache_size: u16,
@@ -199,7 +201,7 @@ impl<'buffer> Cache<'buffer> {
 
         #[repr(C)]
         #[repr(packed)]
-        struct CachePacked_2_0 {
+        struct CachePacked2_0 {
             socket_designation: u8,
             cache_configuration: u16,
             maximum_cache_size: u16,
@@ -210,7 +212,7 @@ impl<'buffer> Cache<'buffer> {
 
         match structure.version {
             v if v > (3, 1).into() => {
-                let_as_struct!(packed, CachePacked_3_1, structure.data);
+                let_as_struct!(packed, CachePacked3_1, structure.data);
                 Ok(Cache {
                     handle: structure.handle,
                     socket_designation: structure.find_string(packed.socket_designation)?,
@@ -228,7 +230,7 @@ impl<'buffer> Cache<'buffer> {
                 })
             }
             v if v > (2, 1).into() => {
-                let_as_struct!(packed, CachePacked_2_1, structure.data);
+                let_as_struct!(packed, CachePacked2_1, structure.data);
                 Ok(Cache {
                     handle: structure.handle,
                     socket_designation: structure.find_string(packed.socket_designation)?,
@@ -246,7 +248,7 @@ impl<'buffer> Cache<'buffer> {
                 })
             }
             v if v > (2, 0).into() => {
-                let_as_struct!(packed, CachePacked_2_0, structure.data);
+                let_as_struct!(packed, CachePacked2_0, structure.data);
                 Ok(Cache {
                     handle: structure.handle,
                     socket_designation: structure.find_string(packed.socket_designation)?,

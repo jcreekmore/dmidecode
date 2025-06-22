@@ -4,6 +4,8 @@
 //! motherboard, planar, server blade, or other standard system module).
 use core::fmt;
 
+use bitflags::bitflags;
+
 use crate::{MalformedStructureError, RawStructure};
 
 /// The baseboard type defined in the SMBIOS specification.
