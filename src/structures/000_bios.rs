@@ -355,9 +355,8 @@ impl fmt::Display for FirmwareRevision {
 
 #[cfg(test)]
 mod tests {
-    use std::prelude::v1::*;
+    use std::{prelude::v1::*, sync::OnceLock};
 
-    use lazy_static::lazy_static;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -365,8 +364,10 @@ mod tests {
 
     const PRIMES: &[usize] = &[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61];
     const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
-    lazy_static! {
-        static ref ENTRY_POINT: crate::EntryPoint = crate::EntryPoint::search(DMIDECODE_BIN).unwrap();
+
+    fn entrypoint() -> &'static crate::EntryPoint {
+        static ENTRYPOINT: OnceLock<crate::EntryPoint> = OnceLock::new();
+        ENTRYPOINT.get_or_init(|| crate::EntryPoint::search(DMIDECODE_BIN).unwrap())
     }
 
     #[test]
@@ -542,8 +543,8 @@ mod tests {
                 minor: 0xFF,
             }),
         };
-        let bios_result = ENTRY_POINT
-            .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
+        let bios_result = entrypoint()
+            .structures(&DMIDECODE_BIN[(entrypoint().smbios_address() as usize)..])
             .find_map(|s| {
                 if let Ok(crate::Structure::Bios(bios)) = s {
                     Some(bios)
@@ -580,8 +581,8 @@ mod tests {
             "Targeted content distribution is supported",
             "UEFI is supported",
         ];
-        let bios_result = ENTRY_POINT
-            .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
+        let bios_result = entrypoint()
+            .structures(&DMIDECODE_BIN[(entrypoint().smbios_address() as usize)..])
             .find_map(|s| {
                 if let Ok(crate::Structure::Bios(bios)) = s {
                     Some(bios)
@@ -607,8 +608,8 @@ mod tests {
     fn dmi_bin_revisions() {
         let bios_revision = "2.8";
         let firmware_revision = "N/A";
-        let bios_result = ENTRY_POINT
-            .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
+        let bios_result = entrypoint()
+            .structures(&DMIDECODE_BIN[(entrypoint().smbios_address() as usize)..])
             .find_map(|s| {
                 if let Ok(crate::Structure::Bios(bios)) = s {
                     Some(bios)
@@ -632,8 +633,8 @@ mod tests {
     #[test]
     fn dmi_bin_bios_size() {
         let size = 32u64 << 20;
-        let bios_result = ENTRY_POINT
-            .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
+        let bios_result = entrypoint()
+            .structures(&DMIDECODE_BIN[(entrypoint().smbios_address() as usize)..])
             .find_map(|s| {
                 if let Ok(crate::Structure::Bios(bios)) = s {
                     Some(bios)
