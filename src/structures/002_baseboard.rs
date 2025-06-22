@@ -73,6 +73,7 @@ impl fmt::Display for BoardType {
 
 bitflags! {
     /// The baseboard characteristic flags defined in the SMBIOS specification.
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct BaseBoardFlags: u8 {
         const HOSTING = 0b0000_0001;
         const REQUIRES_DAUGHTER = 0b0000_0010;

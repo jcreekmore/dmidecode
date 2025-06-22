@@ -100,6 +100,7 @@ pub enum CacheSize {
 
 bitflags! {
     /// Cache SRAM Type is same for Supported SRAM Type and Current SRAM Type
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct CacheSramType: u16 {
         const OTHER             = 0b0000_0001;
         const UNKNOWN           = 0b0000_0010;
