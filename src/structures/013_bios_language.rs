@@ -104,16 +104,17 @@ impl BitField<'_> for LanguageFlags {
 
 #[cfg(test)]
 mod tests {
-    use std::prelude::v1::*;
+    use std::{prelude::v1::*, sync::OnceLock};
 
-    use lazy_static::lazy_static;
     use pretty_assertions::assert_eq;
 
     use super::*;
 
     const DMIDECODE_BIN: &[u8] = include_bytes!("../../tests/data/dmi.0.bin");
-    lazy_static! {
-        static ref ENTRY_POINT: crate::EntryPoint = crate::EntryPoint::search(DMIDECODE_BIN).unwrap();
+
+    fn entrypoint() -> &'static crate::EntryPoint {
+        static ENTRYPOINT: OnceLock<crate::EntryPoint> = OnceLock::new();
+        ENTRYPOINT.get_or_init(|| crate::EntryPoint::search(DMIDECODE_BIN).unwrap())
     }
 
     #[test]
@@ -176,8 +177,8 @@ mod tests {
     #[test]
     fn dmi_bin() {
         use crate::InfoType;
-        let bios_language_result = ENTRY_POINT
-            .structures(&DMIDECODE_BIN[(ENTRY_POINT.smbios_address() as usize)..])
+        let bios_language_result = entrypoint()
+            .structures(&DMIDECODE_BIN[(entrypoint().smbios_address() as usize)..])
             .find_map(|s| {
                 if let Ok(crate::Structure::BiosLanguage(bl)) = s {
                     Some(bl)
