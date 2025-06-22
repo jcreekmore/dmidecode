@@ -6,7 +6,7 @@ description = "Decode SMBIOS/DMI information into accessible data structures"
 documentation = "https://docs.rs/dmidecode/"
 repository = "https://github.com/jcreekmore/dmidecode"
 license = "MIT"
-rust-version = "1.62"
+rust-version = "1.69"
 
 [dependencies]
 bitflags = "1.2"
@@ -17,5 +17,5 @@ pretty_assertions = "0.6"
 lazy_static = "1.4"
 
 [features]
-default = []
+default = ["std"]
 std = []
