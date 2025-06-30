@@ -10,8 +10,8 @@ rust-version = "1.70"
 edition = "2021"
 
 [dependencies]
-bitflags = "2.9.1"
-uuid = "1.17.0"
+bitflags = { version = "2.9.1", default-features = false }
+uuid = { version = "1.17.0", default-features = false }
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"

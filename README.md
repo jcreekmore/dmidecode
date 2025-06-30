@@ -51,17 +51,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## No-std support
 
-In no_std mode, almost all of the same API is available and works the same way.
-To depend on `dmidecode` in `no_std` mode, disable our default enabled "std" feature in
-`Cargo.toml`.
+In no_std mode, almost all of the same API is available and works the same
+way. To depend on `dmidecode` in `no_std` mode, disable our default enabled
+`std` feature in `Cargo.toml`.
+
+The `std` feature just implements the `Error` trait on error types used by
+`dmidecode`.
 
 ```toml
 [dependencies]
 dmidecode = { version = "0.9", default-features = false }
 ```
 
-## Rust Version Support
-The minimum supported Rust version is documented in the Cargo.toml file. This may be bumped in minor releases as necessary.
+## Rust Version Support The minimum supported Rust version is documented in
+the Cargo.toml file. This may be bumped in minor releases as necessary.
 
 ## License
 
