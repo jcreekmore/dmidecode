@@ -63,7 +63,8 @@ The `std` feature just implements the `Error` trait on error types used by
 dmidecode = { version = "0.9", default-features = false }
 ```
 
-## Rust Version Support The minimum supported Rust version is documented in
+## Rust Version Support
+The minimum supported Rust version is documented in
 the Cargo.toml file. This may be bumped in minor releases as necessary.
 
 ## License
