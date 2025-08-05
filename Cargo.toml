@@ -6,8 +6,10 @@ description = "Decode SMBIOS/DMI information into accessible data structures"
 documentation = "https://docs.rs/dmidecode/"
 repository = "https://github.com/jcreekmore/dmidecode"
 license = "MIT"
-rust-version = "1.70"
 edition = "2021"
+
+# if you change it, remember to change it also in ci msrv workflow
+rust-version = "1.70"
 
 [dependencies]
 bitflags = { version = "2.9.1", default-features = false }
