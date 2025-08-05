@@ -1457,8 +1457,8 @@ impl fmt::Display for ProcessorFamily {
             ProcessorFamily::ProcessorFamily2 => {
                 write!(f, "Processor Family 2 has the enumerated value")
             }
-            ProcessorFamily::Available(n) => write!(f, "Available {:#X}", n),
-            ProcessorFamily::NotUsed(n) => write!(f, "Not used. {:X}h is the un-initialized value of Flash memory.", n),
+            ProcessorFamily::Available(n) => write!(f, "Available {n:#X}"),
+            ProcessorFamily::NotUsed(n) => write!(f, "Not used. {n:X}h is the un-initialized value of Flash memory."),
             ProcessorFamily::OutOfSpec => write!(f, "OUT OF SPEC"),
         }
     }
@@ -1481,7 +1481,7 @@ impl fmt::Display for Voltage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Current(v) => write!(f, "Current voltage: {:.1} V", *v as f32 / 10.0),
-            Self::Undefined(n) => write!(f, "Undefined {:#b}", n),
+            Self::Undefined(n) => write!(f, "Undefined {n:#b}"),
             Self::Legacy(legacy) => {
                 let s55 = if legacy.contains(VoltageLegacy::VOLTAGE_CAPABILITY_5V0) {
                     "5.5V "
@@ -1501,7 +1501,7 @@ impl fmt::Display for Voltage {
                 if s55.is_empty() && s33.is_empty() && s29.is_empty() {
                     write!(f, "Voltage capability unknown")
                 } else {
-                    write!(f, "Processor socket accept: {}{}{}", s55, s33, s29)
+                    write!(f, "Processor socket accept: {s55}{s33}{s29}")
                 }
             }
         }
@@ -1642,7 +1642,7 @@ impl fmt::Display for ProcessorUpgrade {
             ProcessorUpgrade::SocketBGA1528 => write!(f, "Socket BGA1528"),
             ProcessorUpgrade::SocketLGA4189 => write!(f, "Socket LGA4189"),
             ProcessorUpgrade::SocketLGA1200 => write!(f, "Socket LGA1200"),
-            ProcessorUpgrade::Undefined(n) => write!(f, "Undefined {}", n),
+            ProcessorUpgrade::Undefined(n) => write!(f, "Undefined {n}"),
         }
     }
 }
@@ -1678,33 +1678,33 @@ mod tests {
                 0x104 => (SH3, "SH-3".into()),
                 0x118 => (ARM, "ARM".into()),
                 0x140 => (WinChip, "WinChip".into()),
-                n @ 0x16..=0x17 => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x59..=0x5F => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x6C..=0x6F => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x71..=0x77 => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x7B..=0x7F => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x81 => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x97..=0x9F => (Available(n), format!("Available {:#X}", n)),
-                n @ 0xD0..=0xD1 => (Available(n), format!("Available {:#X}", n)),
-                n @ 0xDC => (Available(n), format!("Available {:#X}", n)),
-                n @ 0xE1..=0xE3 => (Available(n), format!("Available {:#X}", n)),
-                n @ 0xF0..=0xF9 => (Available(n), format!("Available {:#X}", n)),
-                n @ 0xFC..=0xFD => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x1F5..=0x1FF => (Available(n), format!("Available {:#X}", n)),
-                n @ 0x203..=0xFFFD => (Available(n), format!("Available {:#X}", n)),
+                n @ 0x16..=0x17 => (Available(n), format!("Available {n:#X}")),
+                n @ 0x59..=0x5F => (Available(n), format!("Available {n:#X}")),
+                n @ 0x6C..=0x6F => (Available(n), format!("Available {n:#X}")),
+                n @ 0x71..=0x77 => (Available(n), format!("Available {n:#X}")),
+                n @ 0x7B..=0x7F => (Available(n), format!("Available {n:#X}")),
+                n @ 0x81 => (Available(n), format!("Available {n:#X}")),
+                n @ 0x97..=0x9F => (Available(n), format!("Available {n:#X}")),
+                n @ 0xD0..=0xD1 => (Available(n), format!("Available {n:#X}")),
+                n @ 0xDC => (Available(n), format!("Available {n:#X}")),
+                n @ 0xE1..=0xE3 => (Available(n), format!("Available {n:#X}")),
+                n @ 0xF0..=0xF9 => (Available(n), format!("Available {n:#X}")),
+                n @ 0xFC..=0xFD => (Available(n), format!("Available {n:#X}")),
+                n @ 0x1F5..=0x1FF => (Available(n), format!("Available {n:#X}")),
+                n @ 0x203..=0xFFFD => (Available(n), format!("Available {n:#X}")),
                 n @ 0xFF => (
                     NotUsed(n),
-                    format!("Not used. {:X}h is the un-initialized value of Flash memory.", n),
+                    format!("Not used. {n:X}h is the un-initialized value of Flash memory."),
                 ),
                 0xFFFE => (ForFutureUse, "For special use in the future".into()),
                 n @ 0xFFFF => (
                     NotUsed(n),
-                    format!("Not used. {:X}h is the un-initialized value of Flash memory.", n),
+                    format!("Not used. {n:X}h is the un-initialized value of Flash memory."),
                 ),
                 _ => continue,
             };
-            assert_eq!(e, i.into(), "{:#x}", i);
-            assert_eq!(s, format!("{}", e));
+            assert_eq!(e, i.into(), "{i:#x}");
+            assert_eq!(s, format!("{e}"));
         }
     }
 
@@ -1741,8 +1741,8 @@ mod tests {
         ];
         for (byte, sample, display) in test_data.iter() {
             let result = Voltage::from(*byte);
-            assert_eq!(*sample, result, "Byte: {:#b}", byte);
-            assert_eq!(format!("{}", result), format!("{}", display), "Byte: {:#b}", byte);
+            assert_eq!(*sample, result, "Byte: {byte:#b}");
+            assert_eq!(format!("{result}"), format!("{}", display), "Byte: {:#b}", byte);
         }
     }
 
@@ -1756,11 +1756,11 @@ mod tests {
                 0x18 => (SocketF, "Socket F (1207)".into()),
                 0x2B => (SocketLGA2011Three, "Socket LGA2011-3".into()),
                 0x3E => (SocketLGA1200, "Socket LGA1200".into()),
-                n @ 0x3F..=0xFF => (Undefined(n), format!("Undefined {}", n)),
+                n @ 0x3F..=0xFF => (Undefined(n), format!("Undefined {n}")),
                 _ => continue,
             };
-            assert_eq!(e, i.into(), "{:#x}", i);
-            assert_eq!(s, format!("{}", e));
+            assert_eq!(e, i.into(), "{i:#x}");
+            assert_eq!(s, format!("{e}"));
         }
     }
 

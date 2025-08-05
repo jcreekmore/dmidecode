@@ -243,7 +243,7 @@ impl fmt::Display for ConnectorType {
             Self::Pc98Note => write!(f, "PC-98Note"),
             Self::Pc98Full => write!(f, "PC-98Full"),
             Self::Other => write!(f, "Other – Use Reference Designator Strings to supply information."),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -336,7 +336,7 @@ impl fmt::Display for PortType {
             PortType::Intel8251Compatible => write!(f, "8251 Compatible"),
             PortType::Intel8251FifoCompatible => write!(f, "8251 FIFO Compatible"),
             PortType::Other => write!(f, "Other"),
-            PortType::Undefined(v) => write!(f, "Undefined: {}", v),
+            PortType::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -362,7 +362,7 @@ mod test {
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
         assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
-            result.iter().map(|r| (r, format!("{}", r))).collect::<Vec<_>>(),
+            result.iter().map(|r| (r, format!("{r}"))).collect::<Vec<_>>(),
         );
     }
     #[test]
@@ -378,7 +378,7 @@ mod test {
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
         assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
-            result.iter().map(|r| (r, format!("{}", r))).collect::<Vec<_>>(),
+            result.iter().map(|r| (r, format!("{r}"))).collect::<Vec<_>>(),
         );
     }
     #[test]

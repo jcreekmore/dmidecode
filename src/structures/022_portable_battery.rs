@@ -153,11 +153,11 @@ impl fmt::Display for ManufactureDate<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::None => Ok(()),
-            Self::Basic(s) => write!(f, "{}", s),
+            Self::Basic(s) => write!(f, "{s}"),
             Self::SmartBatteryDataSpecification { year, month, date } =>
             // ISO 8601
             {
-                write!(f, "{:04}-{:02}-{:02}", year, month, date)
+                write!(f, "{year:04}-{month:02}-{date:02}")
             }
         }
     }
@@ -176,8 +176,8 @@ impl fmt::Display for SerialNumber<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::None => Ok(()),
-            Self::Basic(s) => write!(f, "{}", s),
-            Self::SmartBatteryDataSpecification(word) => write!(f, "{:#04X}", word),
+            Self::Basic(s) => write!(f, "{s}"),
+            Self::SmartBatteryDataSpecification(word) => write!(f, "{word:#04X}"),
         }
     }
 }
@@ -214,8 +214,8 @@ impl fmt::Display for DeviceChemistry<'_> {
             Self::LithiumIon => write!(f, "Lithium-ion"),
             Self::ZincAir => write!(f, "Zinc air"),
             Self::LithiumPolymer => write!(f, "Lithium Polymer"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
-            Self::SmartBatteryDataSpecification(s) => write!(f, "{}", s),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
+            Self::SmartBatteryDataSpecification(s) => write!(f, "{s}"),
         }
     }
 }

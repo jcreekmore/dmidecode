@@ -281,39 +281,33 @@ impl fmt::Display for AccessMethod {
             (false, Self::GeneralPurposeNonVolatileData { .. }) => {
                 write!(f, "General-purpose non-volatile data functions")
             }
-            (false, Self::OemSpecific { method, .. }) => write!(f, "OEM-specific: {}", method),
-            (false, Self::Available { method, .. }) => write!(f, "Available: {}", method),
+            (false, Self::OemSpecific { method, .. }) => write!(f, "OEM-specific: {method}"),
+            (false, Self::Available { method, .. }) => write!(f, "Available: {method}"),
             // With address
             (true, Self::IndexedIoOne8bitIndexOne8bitData { index, data }) => write!(
                 f,
-                "Indexed I/O, one 8-bit index port, one 8-bit data port: Index 0x{:02X}, Data 0x{:02X}",
-                index, data
+                "Indexed I/O, one 8-bit index port, one 8-bit data port: Index 0x{index:02X}, Data 0x{data:02X}"
             ),
             (true, Self::IndexedIoTwo8bitIndexOne8bitData { index, data }) => write!(
                 f,
-                "Indexed I/O, two 8-bit index ports, one 8-bit data port: Index {:X?}, Data 0x{:02X}",
-                index, data
+                "Indexed I/O, two 8-bit index ports, one 8-bit data port: Index {index:X?}, Data 0x{data:02X}"
             ),
             (true, Self::IndexedIoOne16bitIndexOne8bitData { index, data }) => write!(
                 f,
-                "Indexed I/O, one 16-bit index port, one 8-bit data port: Index 0x{:04X}, Data 0x{:02X}",
-                index, data
+                "Indexed I/O, one 16-bit index port, one 8-bit data port: Index 0x{index:04X}, Data 0x{data:02X}"
             ),
             (true, Self::MemoryMappedPhysicaAddress { physical_address }) => {
-                write!(f, "Memory-mapped physical 32-bit address: 0x{:08X}", physical_address)
+                write!(f, "Memory-mapped physical 32-bit address: 0x{physical_address:08X}")
             }
             (true, Self::GeneralPurposeNonVolatileData { gpnv_handle }) => write!(
                 f,
-                "General-Purpose NonVolatile Data functions, handle 0x{:04X}",
-                gpnv_handle
+                "General-Purpose NonVolatile Data functions, handle 0x{gpnv_handle:04X}"
             ),
-            (true, Self::OemSpecific { method, address }) => write!(
-                f,
-                "BIOS Vendor/OEM-specific: Method {}, Address 0x{:08X}",
-                method, address
-            ),
+            (true, Self::OemSpecific { method, address }) => {
+                write!(f, "BIOS Vendor/OEM-specific: Method {method}, Address 0x{address:08X}")
+            }
             (true, Self::Available { method, address }) => {
-                write!(f, "Available: Method {}, Address 0x{:08X}", method, address)
+                write!(f, "Available: Method {method}, Address 0x{address:08X}")
             }
         }
     }
@@ -353,9 +347,9 @@ impl fmt::Display for LogHeaderFormat {
             (_, Self::NoHeader) => write!(f, "No Header"),
             (true, Self::LogHeaderType1) => write!(f, "Type 1 log header"),
             (false, Self::LogHeaderType1) => write!(f, "Type 1"),
-            (true, Self::OemSpecific(v)) => write!(f, "BIOS vendor or OEM-specific format: {}", v),
+            (true, Self::OemSpecific(v)) => write!(f, "BIOS vendor or OEM-specific format: {v}"),
             (false, Self::OemSpecific(_)) => write!(f, "OEM-specific"),
-            (_, Self::Available(v)) => write!(f, "Available: {}", v),
+            (_, Self::Available(v)) => write!(f, "Available: {v}"),
         }
     }
 }
@@ -443,10 +437,7 @@ mod tests {
         let byte: u8 = 0b111;
         let ls: LogStatus = byte.into();
         let sample = vec!["Log area valid", "Log area full"];
-        assert_eq!(
-            sample,
-            ls.significants().map(|v| format!("{:#}", v)).collect::<Vec<_>>()
-        );
+        assert_eq!(sample, ls.significants().map(|v| format!("{v:#}")).collect::<Vec<_>>());
     }
 
     #[test]

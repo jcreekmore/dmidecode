@@ -284,7 +284,7 @@ impl From<EventLogType> for u8 {
 impl fmt::Display for EventLogType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (f.alternate(), self) {
-            (true, Self::Reserved(v)) => write!(f, "Reserved: {}", v),
+            (true, Self::Reserved(v)) => write!(f, "Reserved: {v}"),
             (false, Self::Reserved(_)) => write!(f, "Reserved"),
             (_, Self::SingleBitEccMemoryError) => write!(f, "Single-bit ECC memory error"),
             (_, Self::MultiBitEccMemoryError) => write!(f, "Multi-bit ECC memory error"),
@@ -329,8 +329,8 @@ impl fmt::Display for EventLogType {
             (true, Self::LogAreaReset) => write!(f, "Log Area Reset/Cleared"),
             (false, Self::LogAreaReset) => write!(f, "Log area reset/cleared"),
             (_, Self::SystemBoot) => write!(f, "System boot"),
-            (_, Self::Unused(v)) => write!(f, "Unused: {}", v),
-            (true, Self::Available(v)) => write!(f, "Available for system- and OEM-specific assignments: {}", v),
+            (_, Self::Unused(v)) => write!(f, "Unused: {v}"),
+            (true, Self::Available(v)) => write!(f, "Available for system- and OEM-specific assignments: {v}"),
             (false, Self::Available(_)) => write!(f, "OEM-specific"),
             (_, Self::EndOfLog) => write!(f, "End of log"),
         }
@@ -376,20 +376,20 @@ impl fmt::Display for VariableDataFormatType {
             (true, Self::None) => write!(f, "No standard format data is available"),
             (false, Self::None) => write!(f, "None"),
             (true, Self::Handle { handle }) => {
-                write!(f, "SMBIOS structure associated handle: {}", handle)
+                write!(f, "SMBIOS structure associated handle: {handle}")
             }
             (false, Self::Handle { .. }) => write!(f, "Handle"),
             (true, Self::MultipleEvent { counter }) => {
-                write!(f, "Multiple-event counter value: {}", counter)
+                write!(f, "Multiple-event counter value: {counter}")
             }
             (false, Self::MultipleEvent { .. }) => write!(f, "Multiple-event"),
             (true, Self::MultipleEventHandle { handle, counter }) => {
-                write!(f, "Multiple-event: Handle 0x{:04X}, Count {}", handle, counter)
+                write!(f, "Multiple-event: Handle 0x{handle:04X}, Count {counter}")
             }
             (false, Self::MultipleEventHandle { .. }) => write!(f, "Multiple-event handle"),
             (true, Self::PostResults(pr)) => write!(f, "POST result: {:#X}", pr.0),
             (false, Self::PostResults(_)) => write!(f, "POST results bitmap"),
-            (true, Self::SystemManagementType(sm)) => write!(f, "System management: {}", sm),
+            (true, Self::SystemManagementType(sm)) => write!(f, "System management: {sm}"),
             (false, Self::SystemManagementType(_)) => write!(f, "System management"),
             (
                 true,
@@ -399,14 +399,13 @@ impl fmt::Display for VariableDataFormatType {
                 },
             ) => write!(
                 f,
-                "Multiple-event system management: Type {}, Count {}",
-                system_management_type, counter
+                "Multiple-event system management: Type {system_management_type}, Count {counter}"
             ),
             (false, Self::MultipleEventSystemManagementType { .. }) => {
                 write!(f, "Multiple-event system management")
             }
-            (_, Self::Unused(v)) => write!(f, "Unused: {}", v),
-            (true, Self::OemAssigned(v)) => write!(f, "OEM assigned: {}", v),
+            (_, Self::Unused(v)) => write!(f, "Unused: {v}"),
+            (true, Self::OemAssigned(v)) => write!(f, "OEM assigned: {v}"),
             (false, Self::OemAssigned(_)) => write!(f, "OEM-specific"),
         }
     }
@@ -511,7 +510,7 @@ impl fmt::Display for SystemManagementType {
             Self::OutOfRangeVoltageMinus5 => write!(f, "-5V Out of range"),
             Self::OutOfRangeVoltagePlus12 => write!(f, "+12V Out of range"),
             Self::OutOfRangeVoltageMinus12 => write!(f, "-12V Out of range"),
-            Self::OutOfRangeVoltageReserved(v) => write!(f, "Out-of-range voltage reserved: {}", v),
+            Self::OutOfRangeVoltageReserved(v) => write!(f, "Out-of-range voltage reserved: {v}"),
             Self::OutOfRangeTemperatureSystemBoard => {
                 write!(f, "System board temperature out of range")
             }
@@ -528,17 +527,16 @@ impl fmt::Display for SystemManagementType {
                 write!(f, "Processor #4 temperature out of range")
             }
             Self::OutOfRangeTemperatureReserved(v) => {
-                write!(f, "Out-of-range temperatures reserved: {}", v)
+                write!(f, "Out-of-range temperatures reserved: {v}")
             }
-            Self::OutOfRangeFan(v) => write!(f, "Fan {} Out of range", v),
+            Self::OutOfRangeFan(v) => write!(f, "Fan {v} Out of range"),
             Self::ChassisSecureSwitchActivated => write!(f, "Chassis secure switch activated"),
             Self::OutOfRangeSystemManagementProbe(v) => write!(
                 f,
-                "A system-management probe or cooling device with handle 0x{:04X} is out of range",
-                v
+                "A system-management probe or cooling device with handle 0x{v:04X} is out of range"
             ),
-            Self::OemAssigned(v) => write!(f, "OEM assigned: {}", v),
-            Self::Reserved(v) => write!(f, "Reserved: {}", v),
+            Self::OemAssigned(v) => write!(f, "OEM assigned: {v}"),
+            Self::Reserved(v) => write!(f, "Reserved: {v}"),
         }
     }
 }
@@ -574,7 +572,7 @@ mod tests {
         assert_eq!(enum_sample, result, "Enum variants");
         assert_eq!(
             display_sample,
-            result.iter().map(|v| format!("{}", v)).collect::<Vec<_>>(),
+            result.iter().map(|v| format!("{v}")).collect::<Vec<_>>(),
             "Enum variants"
         );
     }
@@ -599,7 +597,7 @@ mod tests {
         ];
         assert_eq!(
             significant_sample,
-            pr.significants().map(|v| format!("{}", v)).collect::<Vec<_>>(),
+            pr.significants().map(|v| format!("{v}")).collect::<Vec<_>>(),
             "Significants"
         );
         assert_eq!(
@@ -607,7 +605,7 @@ mod tests {
             pr.iter()
                 .filter_map(|f| {
                     if f.is_set && matches!(f.type_, Reserved(_)) {
-                        Some((f.position, format!("{}", f)))
+                        Some((f.position, format!("{f}")))
                     } else {
                         None
                     }

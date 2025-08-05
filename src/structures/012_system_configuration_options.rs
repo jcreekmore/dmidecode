@@ -81,7 +81,7 @@ mod tests {
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])
             .filter_map(|s| {
                 if let Err(ref s) = s {
-                    println!("{}", s);
+                    println!("{s}");
                 }
                 s.ok().filter(|s| matches!(s, Structure::SystemConfigurationOptions(_)))
             })

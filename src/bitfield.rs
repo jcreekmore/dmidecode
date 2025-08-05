@@ -142,13 +142,13 @@ impl fmt::Display for Flag<'_> {
         match self.type_ {
             FlagType::Significant(meaning, description) => {
                 if f.alternate() {
-                    write!(f, "{}", description)
+                    write!(f, "{description}")
                 } else {
-                    write!(f, "{}", meaning)
+                    write!(f, "{meaning}")
                 }
             }
             FlagType::Reserved(note) => {
-                write!(f, "{}", note)
+                write!(f, "{note}")
             }
             FlagType::Unknown => {
                 write!(f, "Unknown")
@@ -385,7 +385,7 @@ mod tests {
             (7, true, LAYOUT[7]),
         ];
         for i in iter {
-            println!("{:?}", i);
+            println!("{i:?}");
         }
         assert_eq!(8, iter.count(), "BYTE setted flags count");
         assert_eq!(
@@ -400,10 +400,10 @@ mod tests {
         let iter = Significants::new(Iter::new(0b1010_1001u8, LAYOUT));
         let meanings = vec!["A", "C", "E"];
         let descriptions = vec!["A Long", "C Long", "E Long"];
-        assert_eq!(meanings, iter.map(|v| format!("{}", v)).collect::<Vec<_>>(), "Meanings");
+        assert_eq!(meanings, iter.map(|v| format!("{v}")).collect::<Vec<_>>(), "Meanings");
         assert_eq!(
             descriptions,
-            iter.map(|v| format!("{:#}", v)).collect::<Vec<_>>(),
+            iter.map(|v| format!("{v:#}")).collect::<Vec<_>>(),
             "Descriptions"
         );
     }
@@ -478,34 +478,34 @@ mod tests {
             .take_while(|&&p| p < 8)
             .map(|&p| Position(p))
             .collect();
-        assert_eq!(a, b, "u8:\n{:08b}\n{:08b}", a, b);
+        assert_eq!(a, b, "u8:\n{a:08b}\n{b:08b}");
         let a = 0b0010_1000_1010_1100u16;
         let b = INDEX_SAMPLE
             .iter()
             .take_while(|&&p| p < 16)
             .map(|&p| Position(p))
             .collect();
-        assert_eq!(a, b, "u16:\n{:016b}\n{:016b}", a, b);
+        assert_eq!(a, b, "u16:\n{a:016b}\n{b:016b}");
         let a = 2693408940u32;
         let b = INDEX_SAMPLE
             .iter()
             .take_while(|&&p| p < 32)
             .map(|&p| Position(p))
             .collect();
-        assert_eq!(a, b, "u32:\n{:032b}\n{:032b}", a, b);
+        assert_eq!(a, b, "u32:\n{a:032b}\n{b:032b}");
         let a = 2891462833508853932u64;
         let b = INDEX_SAMPLE
             .iter()
             .take_while(|&&p| p < 64)
             .map(|&p| Position(p))
             .collect();
-        assert_eq!(a, b, "u64:\n{:064b}\n{:064b}", a, b);
+        assert_eq!(a, b, "u64:\n{a:064b}\n{b:064b}");
         let a = 170152392186162032610075049835446806700u128;
         let b = INDEX_SAMPLE
             .iter()
             .take_while(|&&p| p < 128)
             .map(|&p| Position(p))
             .collect();
-        assert_eq!(a, b, "u128:\n{:0128b}\n{:0128b}", a, b);
+        assert_eq!(a, b, "u128:\n{a:0128b}\n{b:0128b}");
     }
 }

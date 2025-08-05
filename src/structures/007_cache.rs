@@ -398,7 +398,7 @@ impl fmt::Display for CacheErrorCorrectionType {
             Self::Parity => write!(f, "Parity"),
             Self::SingleBitEcc => write!(f, "Single-bit ECC"),
             Self::MultiBitEcc => write!(f, "Multi-bit ECC"),
-            Self::Undefined(t) => write!(f, "Undefined: {}", t),
+            Self::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }
@@ -423,7 +423,7 @@ impl fmt::Display for SystemCacheType {
             Self::Instruction => write!(f, "Instruction"),
             Self::Data => write!(f, "Data"),
             Self::Unified => write!(f, "Unified"),
-            Self::Undefined(t) => write!(f, "Undefined: {}", t),
+            Self::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }
@@ -466,7 +466,7 @@ impl fmt::Display for CacheAssociativity {
             Self::FourtyEightWaySetAssociative => write!(f, "48-way Set-Associative"),
             Self::SixtyFourWaySetAssociative => write!(f, "64-way Set-Associative"),
             Self::TwentyWaySetAssociative => write!(f, "20-way Set-Associative"),
-            Self::Undefined(t) => write!(f, "Undefined: {}", t),
+            Self::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }

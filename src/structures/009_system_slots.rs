@@ -626,7 +626,7 @@ impl fmt::Display for SlotType {
                     write!(f, "EDSFF E3")
                 }
             }
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -669,7 +669,7 @@ impl fmt::Display for SlotWidth {
             Self::X12 => write!(f, "12x or x12"),
             Self::X16 => write!(f, "16x or x16"),
             Self::X32 => write!(f, "32x or x32"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -701,7 +701,7 @@ impl fmt::Display for CurrentUsage {
                     write!(f, "Unavailable")
                 }
             }
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -728,7 +728,7 @@ impl fmt::Display for SlotLength {
             Self::LongLength => write!(f, "Long Length"),
             Self::DriveFormFactor2_5 => write!(f, "2.5\" drive form factor"),
             Self::DriveFormFactor3_5 => write!(f, "3.5\" drive form factor"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -918,7 +918,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             result
                 .iter()
-                .map(|r| (r, format!("{}", r), format!("{:#}", r)))
+                .map(|r| (r, format!("{r}"), format!("{r:#}")))
                 .collect::<Vec<_>>(),
         );
     }
@@ -937,7 +937,7 @@ mod tests {
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
         assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
-            result.iter().map(|r| (r, format!("{}", r))).collect::<Vec<_>>(),
+            result.iter().map(|r| (r, format!("{r}"))).collect::<Vec<_>>(),
         );
     }
 
@@ -958,7 +958,7 @@ mod tests {
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
         assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
-            result.iter().map(|r| (r, format!("{:#}", r))).collect::<Vec<_>>(),
+            result.iter().map(|r| (r, format!("{r:#}"))).collect::<Vec<_>>(),
         );
     }
 
@@ -975,7 +975,7 @@ mod tests {
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
         assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
-            result.iter().map(|r| (r, format!("{:}", r))).collect::<Vec<_>>(),
+            result.iter().map(|r| (r, format!("{r:}"))).collect::<Vec<_>>(),
         );
     }
 
@@ -995,13 +995,13 @@ mod tests {
         let alt_sample = vec!["Provides 5.0 volts", "PC Card slot supports Modem Ring Resume"];
         let byte = 0b1000_0010;
         let iter = SlotCharacteristics1(byte).significants();
-        let dflt_result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        let dflt_result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
         assert_eq!(
             dflt_sample, dflt_result,
             "Significant values, default formatting ({:08b})",
             byte
         );
-        let alt_result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        let alt_result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
         assert_eq!(
             alt_sample, alt_result,
             "Significant values, alternative formatting ({:08b})",
@@ -1028,13 +1028,13 @@ mod tests {
         let alt_sample = vec!["PCI slot supports Power Management Event (PME#) signal","Slot supports async/surprise removal (i.e., removal without prior notification to the operating system, device driver, or applications)"];
         let byte = 0b0001_0001;
         let iter = SlotCharacteristics2(byte).significants();
-        let dflt_result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        let dflt_result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
         assert_eq!(
             dflt_sample, dflt_result,
             "Significant values, default formatting ({:08b})",
             byte
         );
-        let alt_result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        let alt_result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
         assert_eq!(
             alt_sample, alt_result,
             "Significant values, alternative formatting ({:08b})",
@@ -1072,7 +1072,7 @@ mod tests {
         .iter()
         .map(|v| v.to_string())
         .collect();
-        assert_eq!(display_sample, result.map(|v| format!("{}", v)).collect::<Vec<_>>());
+        assert_eq!(display_sample, result.map(|v| format!("{v}")).collect::<Vec<_>>());
     }
 
     #[test]
@@ -1235,7 +1235,7 @@ mod tests {
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])
             .filter_map(|s| {
                 if let Err(ref s) = s {
-                    println!("{}", s);
+                    println!("{s}");
                 }
                 s.ok().filter(|s| matches!(s, Structure::SystemSlots(_)))
             })

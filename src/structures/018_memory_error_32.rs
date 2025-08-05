@@ -137,7 +137,7 @@ impl fmt::Display for ErrorType {
             Self::CorrectedSingleBitError => write!(f, "Corrected single-bit error"),
             Self::CorrectedError => write!(f, "Corrected error"),
             Self::UncorrectableError => write!(f, "Uncorrectable error"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -160,7 +160,7 @@ impl fmt::Display for ErrorGranularity {
             Self::Unknown => write!(f, "Unknown"),
             Self::DeviceLevel => write!(f, "Device level"),
             Self::MemoryPartitionLevel => write!(f, "Memory partition level"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -185,7 +185,7 @@ impl fmt::Display for ErrorOperation {
             Self::Read => write!(f, "Read"),
             Self::Write => write!(f, "Write"),
             Self::PartialWrite => write!(f, "Partial write"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }

@@ -351,7 +351,7 @@ impl fmt::Display for EnclosureType {
             Self::EmbeddedPc => write!(f, "Embedded PC"),
             Self::MiniPc => write!(f, "Mini PC"),
             Self::StickPc => write!(f, "Stick PC"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -378,7 +378,7 @@ impl fmt::Display for State {
             Self::Warning => write!(f, "Warning"),
             Self::Critical => write!(f, "Critical"),
             Self::NonRecoverable => write!(f, "Non-recoverable"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -403,7 +403,7 @@ impl fmt::Display for SecurityStatus {
             Self::None => write!(f, "None"),
             Self::ExternalInterfaceLockedOut => write!(f, "External interface locked out"),
             Self::ExternalInterfaceEnabled => write!(f, "External interface enabled"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -495,8 +495,8 @@ impl From<u8> for ContainedElementType {
 impl fmt::Display for ContainedElementType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::BoardType(board) => write!(f, "Baseboard type: {}", board),
-            Self::InfoType(info) => write!(f, "Structure type: {}", info),
+            Self::BoardType(board) => write!(f, "Baseboard type: {board}"),
+            Self::InfoType(info) => write!(f, "Structure type: {info}"),
         }
     }
 }
@@ -523,11 +523,11 @@ mod tests {
                 0x09 => (Laptop, "Laptop".into()),
                 0x18 => (SealedCasePc, "Sealed-case PC".into()),
                 0x22 => (EmbeddedPc, "Embedded PC".into()),
-                v @ 0xF0..=0xFF => (Undefined(v), format!("Undefined: {}", v)),
+                v @ 0xF0..=0xFF => (Undefined(v), format!("Undefined: {v}")),
                 _ => continue,
             };
-            assert_eq!(e, i.into(), "{:#x}", i);
-            assert_eq!(s, format!("{}", e));
+            assert_eq!(e, i.into(), "{i:#x}");
+            assert_eq!(s, format!("{e}"));
         }
     }
 
@@ -539,11 +539,11 @@ mod tests {
                 0x01 => (Other, "Other".into()),
                 0x04 => (Warning, "Warning".into()),
                 0x06 => (NonRecoverable, "Non-recoverable".into()),
-                v @ 0xF0..=0xFF => (Undefined(v), format!("Undefined: {}", v)),
+                v @ 0xF0..=0xFF => (Undefined(v), format!("Undefined: {v}")),
                 _ => continue,
             };
-            assert_eq!(e, i.into(), "{:#x}", i);
-            assert_eq!(s, format!("{}", e));
+            assert_eq!(e, i.into(), "{i:#x}");
+            assert_eq!(s, format!("{e}"));
         }
     }
 
@@ -555,11 +555,11 @@ mod tests {
                 0x01 => (Other, "Other".into()),
                 0x03 => (None, "None".into()),
                 0x05 => (ExternalInterfaceEnabled, "External interface enabled".into()),
-                v @ 0xF0..=0xFF => (Undefined(v), format!("Undefined: {}", v)),
+                v @ 0xF0..=0xFF => (Undefined(v), format!("Undefined: {v}")),
                 _ => continue,
             };
-            assert_eq!(e, i.into(), "{:#x}", i);
-            assert_eq!(s, format!("{}", e));
+            assert_eq!(e, i.into(), "{i:#x}");
+            assert_eq!(s, format!("{e}"));
         }
     }
 
@@ -591,7 +591,7 @@ mod tests {
         for (array, contained_element, display) in data {
             let v = &ContainedElement::from(&array[..]);
             assert_eq!(contained_element, v);
-            assert_eq!(format!("{}", display), format!("{}", v));
+            assert_eq!(format!("{display}"), format!("{}", v));
         }
     }
 
@@ -677,27 +677,27 @@ mod tests {
         assert_eq!(format!("{}", enc.serial_number), "XXXXXXX", "Serial Number");
         assert_eq!(format!("{}", enc.asset_tag_number), "", "Asset Tag");
         assert_eq!(
-            enc.boot_up_state.map(|v| format!("{}", v)),
+            enc.boot_up_state.map(|v| format!("{v}")),
             Some("Safe".into()),
             "Boot-up State"
         );
         assert_eq!(
-            enc.power_supply_state.map(|v| format!("{}", v)),
+            enc.power_supply_state.map(|v| format!("{v}")),
             Some("Safe".into()),
             "Power Supply State"
         );
         assert_eq!(
-            enc.thermal_state.map(|v| format!("{}", v)),
+            enc.thermal_state.map(|v| format!("{v}")),
             Some("Safe".into()),
             "Thermal State"
         );
         assert_eq!(
-            enc.security_status.map(|v| format!("{}", v)),
+            enc.security_status.map(|v| format!("{v}")),
             Some("Unknown".into()),
             "Security Status"
         );
         assert_eq!(
-            enc.oem_defined.map(|v| format!("{:#010X}", v)),
+            enc.oem_defined.map(|v| format!("{v:#010X}")),
             Some("0x01010101".into()),
             "OEM Information"
         );
@@ -706,14 +706,14 @@ mod tests {
         assert_eq!(
             enc.contained_elements
                 .clone()
-                .and_then(|mut ce| ce.next().map(|s| format!("{}", s))),
+                .and_then(|mut ce| ce.next().map(|s| format!("{s}"))),
             Some("Structure type: Memory Device (1-2)".into()),
             "Number Of Power Cords"
         );
         assert_eq!(
             enc.contained_elements
                 .clone()
-                .and_then(|mut ce| ce.nth(1).map(|s| format!("{}", s))),
+                .and_then(|mut ce| ce.nth(1).map(|s| format!("{s}"))),
             Some("Baseboard type: Server Blade (255-0)".into()),
             "Number Of Power Cords"
         );
