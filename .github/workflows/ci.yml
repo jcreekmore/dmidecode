@@ -1,19 +1,111 @@
 name: ci
+
 on:
-  pull_request:
   push:
     branches:
-    - master
+      - master
+  pull_request:
+
+# Cancel redundant workflows on the same branch/PR
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  msrv:
-    name: msrv
+  fmt:
+    name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+
+      - name: Install toolchain (stable) + rustfmt
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.70.0
           components: rustfmt
-      - run: cargo fmt --check
-      - run: cargo check --all-features
-      - run: cargo test --all-features
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install toolchain (stable) + clippy
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run clippy
+        run: cargo clippy --all-features -- -D warnings
+
+  build:
+    name: Build (${{ matrix.build_type }})
+    needs: clippy
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - build_type: debug
+            cargo_profile: dev
+          - build_type: release
+            cargo_profile: release
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo build
+        run: cargo build --profile ${{ matrix.cargo_profile }} --all-features
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --all-features
+
+  msrv:
+    name: MSRV (${{ matrix.build_type }})
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      MSRV: "1.70.0" # if you change it, remember to change it also in Cargo.toml
+    strategy:
+      matrix:
+        include:
+          - build_type: debug
+            cargo_profile: dev
+          - build_type: release
+            cargo_profile: release
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install toolchain (MSRV)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.MSRV }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "rust-msrv"
+
+      - name: cargo build
+        run: cargo build --profile ${{ matrix.cargo_profile }} --all-features
