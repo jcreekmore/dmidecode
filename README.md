@@ -10,7 +10,7 @@ A Rust library for parsing raw **SMBIOS/DMI tables**. This crate lets you read a
 ```toml
 # Cargo.toml
 [dependencies]
-dmidecode = "0.9"
+dmidecode = "1"
 ```
 
 ## Example
@@ -60,7 +60,7 @@ The `std` feature just implements the `Error` trait on error types used by
 
 ```toml
 [dependencies]
-dmidecode = { version = "0.9", default-features = false }
+dmidecode = { version = "1", default-features = false }
 ```
 
 ## Rust Version Support
