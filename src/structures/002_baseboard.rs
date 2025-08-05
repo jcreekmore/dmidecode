@@ -66,7 +66,7 @@ impl fmt::Display for BoardType {
             BoardType::ProcessorMemoryModule => write!(f, "Processor/Memory Module"),
             BoardType::ProcessorIoModule => write!(f, "Processor/IO Module"),
             BoardType::InterconnectBoard => write!(f, "Interconnect board"),
-            BoardType::Undefined(t) => write!(f, "Undefined: {}", t),
+            BoardType::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }

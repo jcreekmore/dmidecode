@@ -383,13 +383,13 @@ mod tests {
         let sample = vec!["ISA is supported", "EISA is supported"];
         let qword = 0b0101_0000;
         let iter = Characteristics(qword).significants();
-        let result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        let result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
         assert_eq!(
             sample, result,
             "Significant values, default formatting ({:064b})",
             qword
         );
-        let result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        let result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
         assert_eq!(
             sample, result,
             "Significant values, alternative formatting ({:064b})",
@@ -420,13 +420,13 @@ mod tests {
         let alt_sample = vec!["ACPI is supported", "1394 boot is supported"];
         let byte = 0b0100_0001;
         let iter = CharacteristicsExtension1(byte).significants();
-        let dflt_result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        let dflt_result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
         assert_eq!(
             dflt_sample, dflt_result,
             "Significant values, default formatting ({:08b})",
             byte
         );
-        let alt_result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        let alt_result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
         assert_eq!(
             alt_sample, alt_result,
             "Significant values, alternative formatting ({:08b})",
@@ -450,13 +450,13 @@ mod tests {
         let long_sample = vec!["UEFI is supported","SMBIOS table describes a virtual machine. (If this bit is not set, no inference can be made about the virtuality of the system.)"];
         let byte = 0b0001_1000;
         let iter = CharacteristicsExtension2(byte).significants();
-        let result = iter.map(|f| format!("{}", f)).collect::<Vec<_>>();
+        let result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
         assert_eq!(
             short_sample, result,
             "Significant values, default formatting ({:08b})",
             byte
         );
-        let result = iter.map(|f| format!("{:#}", f)).collect::<Vec<_>>();
+        let result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
         assert_eq!(
             long_sample, result,
             "Significant values, alternative formatting ({:08b})",
@@ -596,7 +596,7 @@ mod tests {
             .significants()
             .chain(bios_result.bios_characteristics_exttension_1.unwrap().significants())
             .chain(bios_result.bios_characteristics_exttension_2.unwrap().significants())
-            .map(|v| format!("{}", v))
+            .map(|v| format!("{v}"))
             .collect::<Vec<_>>();
         assert_eq!(
             all_characteristics_sample, all_char_result,

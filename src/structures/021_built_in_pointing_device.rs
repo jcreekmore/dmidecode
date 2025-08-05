@@ -110,7 +110,7 @@ impl fmt::Display for Type {
             Self::TouchPad => write!(f, "Touch Pad"),
             Self::TouchScreen => write!(f, "Touch Screen"),
             Self::OpticalSensor => write!(f, "Optical Sensor"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }
@@ -147,7 +147,7 @@ impl fmt::Display for Interface {
             Self::BusMouseDb9 => write!(f, "Bus mouse DB-9"),
             Self::BusMouseMicroDin => write!(f, "Bus mouse micro-DIN"),
             Self::Usb => write!(f, "USB"),
-            Self::Undefined(v) => write!(f, "Undefined: {}", v),
+            Self::Undefined(v) => write!(f, "Undefined: {v}"),
         }
     }
 }

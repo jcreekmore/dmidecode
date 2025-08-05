@@ -320,13 +320,13 @@ impl fmt::Display for InvalidEntryPointError {
         match self {
             InvalidEntryPointError::NotFound => write!(f, "Input did not contain a valid SMBIOS entry point"),
             InvalidEntryPointError::TooOldVersion(version) => {
-                write!(f, "Input version number was below 2.0: {}", version)
+                write!(f, "Input version number was below 2.0: {version}")
             }
             InvalidEntryPointError::BadSize(size) => {
-                write!(f, "Input contained an invalid-sized SMBIOS entry: {}", size)
+                write!(f, "Input contained an invalid-sized SMBIOS entry: {size}")
             }
             InvalidEntryPointError::BadChecksum(checksum) => {
-                write!(f, "SMBIOS entry point has an invalid checksum: {}", checksum)
+                write!(f, "SMBIOS entry point has an invalid checksum: {checksum}")
             }
         }
     }
@@ -410,28 +410,25 @@ impl fmt::Display for MalformedStructureError {
             MalformedStructureError::BadSize(offset, length) => {
                 write!(
                     f,
-                    "Structure at offset {} with length {} extends beyond SMBIOS",
-                    offset, length
+                    "Structure at offset {offset} with length {length} extends beyond SMBIOS"
                 )
             }
             MalformedStructureError::UnterminatedStrings(offset) => {
-                write!(f, "Structure at offset {} with unterminated strings", offset)
+                write!(f, "Structure at offset {offset} with unterminated strings")
             }
             MalformedStructureError::InvalidStringIndex(info_type, handle, index) => {
                 write!(
                     f,
-                    "Structure {:?} with handle {} has invalid string index {}",
-                    info_type, handle, index
+                    "Structure {info_type:?} with handle {handle} has invalid string index {index}"
                 )
             }
             MalformedStructureError::InvalidSlice(cause) => {
-                write!(f, "{}", cause)
+                write!(f, "{cause}")
             }
             MalformedStructureError::InvalidFormattedSectionLength(info_type, handle, spec, length) => {
                 write!(
                     f,
-                    "Formatted section length of structure {:?} with handle {} should be {}{} bytes",
-                    info_type, handle, spec, length
+                    "Formatted section length of structure {info_type:?} with handle {handle} should be {spec}{length} bytes"
                 )
             }
         }
@@ -794,7 +791,7 @@ impl fmt::Display for InfoType {
             //InfoType::                          => write!(f, "Processor Additional Information"),
             //InfoType::                          => write!(f, "Inactive"),
             InfoType::End => write!(f, "End-of-Table"),
-            InfoType::Oem(t) => write!(f, "OEM: {}", t),
+            InfoType::Oem(t) => write!(f, "OEM: {t}"),
         }
     }
 }
@@ -849,7 +846,7 @@ mod tests {
             .structures(&DMIDECODE_BIN[(entry_point.smbios_address() as usize)..])
             .filter_map(|s| s.ok())
         {
-            println!("{:?}", s);
+            println!("{s:?}");
         }
     }
 
@@ -857,7 +854,7 @@ mod tests {
     fn iterator_through_structures_v3_short() {
         let entry_point = EntryPoint::search(ENTRY_V3_SHORT).unwrap();
         for s in entry_point.structures(DMI_V3_SHORT).filter_map(|s| s.ok()) {
-            println!("{:?}", s);
+            println!("{s:?}");
         }
     }
 
@@ -865,7 +862,7 @@ mod tests {
     fn iterator_through_structures_v3() {
         let entry_point = EntryPoint::search(ENTRY_V3_BIN).unwrap();
         for s in entry_point.structures(DMI_V3_BIN).filter_map(|s| s.ok()) {
-            println!("{:?}", s);
+            println!("{s:?}");
         }
     }
 

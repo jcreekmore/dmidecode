@@ -75,7 +75,7 @@ impl fmt::Display for MemoryArrayLocation {
             Self::Pc98eAddOnCard => write!(f, "PC-98/E add-on card"),
             Self::Pc98LocalBusAddOnCard => write!(f, "PC-98/Local bus add-on card"),
             Self::CxlAddOnCard => write!(f, "CXL add-on card"),
-            Self::Undefined(t) => write!(f, "Undefined: {}", t),
+            Self::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }
@@ -123,7 +123,7 @@ impl fmt::Display for MemoryArrayUse {
             Self::FlashMemory => write!(f, "Flash memory"),
             Self::NonVolatileRam => write!(f, "Non-volatile RAM"),
             Self::CacheMemory => write!(f, "Cache memory"),
-            Self::Undefined(t) => write!(f, "Undefined: {}", t),
+            Self::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }
@@ -171,7 +171,7 @@ impl fmt::Display for MemoryArrayErrorCorrectionTypes {
             Self::SingleBitEcc => write!(f, "Single-bit ECC"),
             Self::MultiBitEcc => write!(f, "Multi-bit ECC"),
             Self::CRC => write!(f, "CRC"),
-            Self::Undefined(t) => write!(f, "Undefined: {}", t),
+            Self::Undefined(t) => write!(f, "Undefined: {t}"),
         }
     }
 }
