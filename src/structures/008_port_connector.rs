@@ -343,7 +343,7 @@ impl fmt::Display for PortType {
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
     #[test]
     fn connector_type() {
@@ -360,7 +360,7 @@ mod test {
             ),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
-        assert_eq!(
+        pretty_assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{r}"))).collect::<Vec<_>>(),
         );
@@ -376,7 +376,7 @@ mod test {
             (0xFE, PortType::Undefined(254), "Undefined: 254"),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
-        assert_eq!(
+        pretty_assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{r}"))).collect::<Vec<_>>(),
         );
@@ -407,7 +407,7 @@ mod test {
             ],
         };
         let result = PortConnector::try_from(structure).unwrap();
-        assert_eq!(sample, result);
+        pretty_assert_eq!(sample, result);
     }
     #[test]
     fn dmi_bin() {
@@ -435,18 +435,18 @@ mod test {
                 _ => None,
             })
             .unwrap();
-        assert_eq!(&usb_sample, usb_result, "USB");
-        assert_eq!(
+        pretty_assert_eq!(&usb_sample, usb_result, "USB");
+        pretty_assert_eq!(
             "Access Bus (USB)",
             format!("{}", usb_result.internal_connector_type),
             "USB: Internal Connector Type"
         );
-        assert_eq!(
+        pretty_assert_eq!(
             "None",
             format!("{}", usb_result.external_connector_type),
             "USB: External Connector Type"
         );
-        assert_eq!("USB", format!("{}", usb_result.port_type), "USB: Port Type");
+        pretty_assert_eq!("USB", format!("{}", usb_result.port_type), "USB: Port Type");
 
         let rj45_sample = PortConnector {
             handle: 0x080A,
@@ -463,17 +463,17 @@ mod test {
                 _ => None,
             })
             .unwrap();
-        assert_eq!(&rj45_sample, rj45_result, "RJ-45");
-        assert_eq!(
+        pretty_assert_eq!(&rj45_sample, rj45_result, "RJ-45");
+        pretty_assert_eq!(
             "None",
             format!("{}", rj45_result.internal_connector_type),
             "RJ-45: Internal Connector Type"
         );
-        assert_eq!(
+        pretty_assert_eq!(
             "RJ-45",
             format!("{}", rj45_result.external_connector_type),
             "RJ-45: External Connector Type"
         );
-        assert_eq!("Network Port", format!("{}", rj45_result.port_type), "RJ-45: Port Type");
+        pretty_assert_eq!("Network Port", format!("{}", rj45_result.port_type), "RJ-45: Port Type");
     }
 }

@@ -243,20 +243,20 @@ impl From<DesignCapacity> for u64 {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
     fn manufacture_date() {
         use super::ManufactureDate;
 
-        assert_eq!("", format!("{}", ManufactureDate::new(None, None)), "Empty");
-        assert_eq!(
+        pretty_assert_eq!("", format!("{}", ManufactureDate::new(None, None)), "Empty");
+        pretty_assert_eq!(
             "07/17/2019",
             format!("{}", ManufactureDate::new(Some("07/17/2019"), None)),
             "Basic"
         );
-        assert_eq!(
+        pretty_assert_eq!(
             "2000-02-01",
             format!("{}", ManufactureDate::new(None, Some(0x2841))),
             "SBDS"
@@ -267,13 +267,13 @@ mod tests {
     fn serial_number() {
         use super::SerialNumber;
 
-        assert_eq!("", format!("{}", SerialNumber::new(None, None)), "Empty");
-        assert_eq!(
+        pretty_assert_eq!("", format!("{}", SerialNumber::new(None, None)), "Empty");
+        pretty_assert_eq!(
             "S/N 1111",
             format!("{}", SerialNumber::new(Some("S/N 1111"), None)),
             "Basic"
         );
-        assert_eq!("0xBEAF", format!("{}", SerialNumber::new(None, Some(0xBEAF))), "SBDS");
+        pretty_assert_eq!("0xBEAF", format!("{}", SerialNumber::new(None, Some(0xBEAF))), "SBDS");
     }
 
     #[test]
@@ -293,10 +293,10 @@ mod tests {
         ];
         for (n, &s) in sample.iter().enumerate() {
             let sbds = None;
-            assert_eq!(s, format!("{}", DeviceChemistry::new(n as u8, sbds)));
+            pretty_assert_eq!(s, format!("{}", DeviceChemistry::new(n as u8, sbds)));
             if n == 0x02 {
                 let sbds = Some("PbAc");
-                assert_eq!("PbAc", format!("{:#}", DeviceChemistry::new(n as u8, sbds)));
+                pretty_assert_eq!("PbAc", format!("{:#}", DeviceChemistry::new(n as u8, sbds)));
             }
         }
     }
@@ -305,10 +305,10 @@ mod tests {
     fn design_capacity() {
         use super::DesignCapacity;
 
-        assert_eq!(0u64, DesignCapacity::new(0, None).into(), "Unknown");
-        assert_eq!(0u64, DesignCapacity::new(0, Some(42)).into(), "Unknown");
-        assert_eq!(4800u64, DesignCapacity::new(4800, None).into(), "w/o multiplier");
-        assert_eq!(9600u64, DesignCapacity::new(4800, Some(2)).into(), "With multiplier");
+        pretty_assert_eq!(0u64, DesignCapacity::new(0, None).into(), "Unknown");
+        pretty_assert_eq!(0u64, DesignCapacity::new(0, Some(42)).into(), "Unknown");
+        pretty_assert_eq!(4800u64, DesignCapacity::new(4800, None).into(), "w/o multiplier");
+        pretty_assert_eq!(9600u64, DesignCapacity::new(4800, Some(2)).into(), "With multiplier");
     }
 
     #[test]
@@ -349,6 +349,6 @@ mod tests {
             oem_specific: Some(0),
         };
         let result = PortableBattery::try_from(structure).unwrap();
-        assert_eq!(sample, result, "PortableBattery");
+        pretty_assert_eq!(sample, result, "PortableBattery");
     }
 }

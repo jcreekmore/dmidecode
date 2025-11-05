@@ -96,7 +96,7 @@ impl<'a> MemoryDeviceMappedAddress {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -128,6 +128,6 @@ mod tests {
             extended_ending_address: Some(0),
         };
         let result = MemoryDeviceMappedAddress::try_from(structure).unwrap();
-        assert_eq!(sample, result, "MemoryDeviceMappedAddress");
+        pretty_assert_eq!(sample, result, "MemoryDeviceMappedAddress");
     }
 }

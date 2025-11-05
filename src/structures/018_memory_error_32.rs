@@ -192,7 +192,7 @@ impl fmt::Display for ErrorOperation {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -201,7 +201,7 @@ mod tests {
 
         let sample = &["", "Other", "Unknown", "Read", "Write", "Partial write", "Undefined: 6"];
         for n in 1u8..7 {
-            assert_eq!(sample[n as usize], format!("{:#}", ErrorOperation::from(n)));
+            pretty_assert_eq!(sample[n as usize], format!("{:#}", ErrorOperation::from(n)));
         }
     }
 
@@ -218,7 +218,7 @@ mod tests {
             "Undefined: 5",
         ];
         for n in 0u8..6 {
-            assert_eq!(sample[n as usize], format!("{:#}", ErrorGranularity::from(n)));
+            pretty_assert_eq!(sample[n as usize], format!("{:#}", ErrorGranularity::from(n)));
         }
     }
 
@@ -244,7 +244,7 @@ mod tests {
             "Uncorrectable error",
         ];
         for n in 0u8..0x0E {
-            assert_eq!(sample[n as usize], format!("{:#}", ErrorType::from(n)));
+            pretty_assert_eq!(sample[n as usize], format!("{:#}", ErrorType::from(n)));
         }
     }
 
@@ -275,6 +275,6 @@ mod tests {
             error_resolution: 0x8000_0000,
         };
         let result = MemoryError32::try_from(structure).unwrap();
-        assert_eq!(sample, result);
+        pretty_assert_eq!(sample, result);
     }
 }

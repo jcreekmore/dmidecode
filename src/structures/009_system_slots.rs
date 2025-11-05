@@ -884,7 +884,7 @@ impl fmt::Display for SlotPitch {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
     const PRIMES: &[usize] = &[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61];
 
@@ -911,7 +911,7 @@ mod tests {
             (0xFE, SlotType::Undefined(254), "Undefined: 254", "Undefined: 254"),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
-        assert_eq!(
+        pretty_assert_eq!(
             samples
                 .iter()
                 .map(|(_, v, s, m)| (v, (*s).into(), (*m).into()))
@@ -935,7 +935,7 @@ mod tests {
             (0xFE, SlotWidth::Undefined(254), "Undefined: 254"),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
-        assert_eq!(
+        pretty_assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{r}"))).collect::<Vec<_>>(),
         );
@@ -956,7 +956,7 @@ mod tests {
             (0xFE, CurrentUsage::Undefined(254), "Undefined: 254"),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
-        assert_eq!(
+        pretty_assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{r:#}"))).collect::<Vec<_>>(),
         );
@@ -973,7 +973,7 @@ mod tests {
             (0xFE, SlotLength::Undefined(254), "Undefined: 254"),
         ];
         let result = samples.iter().map(|v| Into::into(v.0)).collect::<Vec<_>>();
-        assert_eq!(
+        pretty_assert_eq!(
             samples.iter().map(|(_, v, s)| (v, (*s).into())).collect::<Vec<_>>(),
             result.iter().map(|r| (r, format!("{r:}"))).collect::<Vec<_>>(),
         );
@@ -989,27 +989,29 @@ mod tests {
             .iter()
             .filter_map(|f| if f.is_set { Some(*f.position) } else { None })
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Positions");
+        pretty_assert_eq!(sample, result, "Positions");
 
         let dflt_sample = vec!["5.0 V is provided", "Modem ring resume is supported"];
         let alt_sample = vec!["Provides 5.0 volts", "PC Card slot supports Modem Ring Resume"];
         let byte = 0b1000_0010;
         let iter = SlotCharacteristics1(byte).significants();
         let dflt_result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
-        assert_eq!(
-            dflt_sample, dflt_result,
+        pretty_assert_eq!(
+            dflt_sample,
+            dflt_result,
             "Significant values, default formatting ({:08b})",
             byte
         );
         let alt_result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
-        assert_eq!(
-            alt_sample, alt_result,
+        pretty_assert_eq!(
+            alt_sample,
+            alt_result,
             "Significant values, alternative formatting ({:08b})",
             byte
         );
 
         let result = SlotCharacteristics1(0).reserved().count();
-        assert_eq!(0, result, "Reserved fields");
+        pretty_assert_eq!(0, result, "Reserved fields");
     }
 
     #[test]
@@ -1022,27 +1024,29 @@ mod tests {
             .iter()
             .filter_map(|f| if f.is_set { Some(*f.position) } else { None })
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Positions");
+        pretty_assert_eq!(sample, result, "Positions");
 
         let dflt_sample = vec!["PME signal is supported", "Async/surprise removal is supported"];
         let alt_sample = vec!["PCI slot supports Power Management Event (PME#) signal","Slot supports async/surprise removal (i.e., removal without prior notification to the operating system, device driver, or applications)"];
         let byte = 0b0001_0001;
         let iter = SlotCharacteristics2(byte).significants();
         let dflt_result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
-        assert_eq!(
-            dflt_sample, dflt_result,
+        pretty_assert_eq!(
+            dflt_sample,
+            dflt_result,
             "Significant values, default formatting ({:08b})",
             byte
         );
         let alt_result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
-        assert_eq!(
-            alt_sample, alt_result,
+        pretty_assert_eq!(
+            alt_sample,
+            alt_result,
             "Significant values, alternative formatting ({:08b})",
             byte
         );
 
         let result = SlotCharacteristics2(0).reserved().count();
-        assert_eq!(1, result, "Reserved fields");
+        pretty_assert_eq!(1, result, "Reserved fields");
     }
 
     #[test]
@@ -1052,9 +1056,9 @@ mod tests {
             0x09, 0x11, 0x03, 0x09, 0x01, 0xB1, 0x0D, 0x04, 0x04, 0x04, 0x00, 0x04, 0x01, 0xE9, 0x05, 0xB5, 0xDF, 0x10,
         ];
         let result: Device = sample_data[0x0D..=0x11].into();
-        assert_eq!("05e9:b5:1b.7 (Width 16)", format!("{}", result), "Display trait");
+        pretty_assert_eq!("05e9:b5:1b.7 (Width 16)", format!("{}", result), "Display trait");
         let as_array: [u8; 5] = (&result).into();
-        assert_eq!([0xE9, 0x05, 0xB5, 0xDF, 0x10], as_array, "Display into [u8; 5]");
+        pretty_assert_eq!([0xE9, 0x05, 0xB5, 0xDF, 0x10], as_array, "Display into [u8; 5]");
     }
 
     #[test]
@@ -1072,7 +1076,7 @@ mod tests {
         .iter()
         .map(|v| v.to_string())
         .collect();
-        assert_eq!(display_sample, result.map(|v| format!("{v}")).collect::<Vec<_>>());
+        pretty_assert_eq!(display_sample, result.map(|v| format!("{v}")).collect::<Vec<_>>());
     }
 
     #[test]
@@ -1092,38 +1096,38 @@ mod tests {
                 let result = SystemSlots::try_from(structure);
                 match ((major, minor), result) {
                     (v, Err(e)) if ((2, 0)..(2, 1)).contains(&v) => {
-                        assert_eq!(
+                        pretty_assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be 12 bytes",
                             format!("{}", e)
                         );
                     }
                     (v, Err(e)) if ((2, 1)..(2, 6)).contains(&v) => {
-                        assert_eq!(
+                        pretty_assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be 13 bytes",
                             format!("{}", e)
                         );
                     }
                     (v, Err(e)) if ((2, 6)..(3, 2)).contains(&v) => {
-                        assert_eq!(
+                        pretty_assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be 17 bytes",
                             format!("{}", e)
                         );
                     }
                     (v, Err(e)) if ((3, 2)..).contains(&v) => {
-                        assert_eq!(
+                        pretty_assert_eq!(
                             "Formatted section length of structure SystemSlots with handle 666 \
                             should be minimum of 17 bytes",
                             format!("{}", e)
                         );
                     }
                     (_, Err(e)) => {
-                        assert_eq!("could not convert slice to array", format!("{}", e));
+                        pretty_assert_eq!("could not convert slice to array", format!("{}", e));
                     }
                     (_, Ok(ss)) => {
-                        assert_eq!(666, ss.handle);
+                        pretty_assert_eq!(666, ss.handle);
                     }
                 }
             }
@@ -1223,7 +1227,7 @@ mod tests {
             ],
         };
         let result = SystemSlots::try_from(structure).unwrap();
-        assert_eq!(sample, result, "Sample:\n{:X?}\nResult:\n{:X?}", sample, result);
+        pretty_assert_eq!(sample, result, "Sample:\n{:X?}\nResult:\n{:X?}", sample, result);
     }
     #[test]
     fn dmi_bin() {
@@ -1240,7 +1244,7 @@ mod tests {
                 s.ok().filter(|s| matches!(s, Structure::SystemSlots(_)))
             })
             .collect::<Vec<_>>();
-        assert_eq!(4, slots.len(), "Slots count: {}. Should be 4", slots.len());
+        pretty_assert_eq!(4, slots.len(), "Slots count: {}. Should be 4", slots.len());
 
         let slot1_sample = SystemSlots {
             handle: 0x0900,
@@ -1268,7 +1272,7 @@ mod tests {
                 _ => None,
             })
             .unwrap();
-        assert_eq!(&slot1_sample, slot1_result, "Entire SystemSlots struct: Slot 1");
+        pretty_assert_eq!(&slot1_sample, slot1_result, "Entire SystemSlots struct: Slot 1");
         let slot4_sample = SystemSlots {
             handle: 0x0903,
             slot_designation: "PCIe Slot 4",
@@ -1295,6 +1299,6 @@ mod tests {
                 _ => None,
             })
             .unwrap();
-        assert_eq!(&slot4_sample, slot4_result, "Entire SystemSlots struct: Slot 4");
+        pretty_assert_eq!(&slot4_sample, slot4_result, "Entire SystemSlots struct: Slot 4");
     }
 }

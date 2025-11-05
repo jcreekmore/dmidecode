@@ -79,7 +79,7 @@ impl Iterator for GroupItems<'_> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -107,7 +107,7 @@ mod tests {
             },
         ];
 
-        assert_eq!(sample, result.collect::<Vec<_>>());
+        pretty_assert_eq!(sample, result.collect::<Vec<_>>());
     }
 
     #[test]
@@ -143,7 +143,7 @@ mod tests {
         };
         let result = GroupAssociations::try_from(structure).unwrap();
 
-        assert_eq!("Dual-Processor CPU Complex", result.group_name, "Group name");
-        assert_eq!(sample, result.items.collect::<Vec<_>>(), "Items");
+        pretty_assert_eq!("Dual-Processor CPU Complex", result.group_name, "Group name");
+        pretty_assert_eq!(sample, result.items.collect::<Vec<_>>(), "Items");
     }
 }
