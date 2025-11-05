@@ -357,7 +357,7 @@ impl fmt::Display for FirmwareRevision {
 mod tests {
     use std::{prelude::v1::*, sync::OnceLock};
 
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
 
     use super::*;
     use crate::bitfield::Position;
@@ -378,20 +378,22 @@ mod tests {
             .iter()
             .filter_map(|f| if f.is_set { Some(*f.position) } else { None })
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Positions");
+        pretty_assert_eq!(sample, result, "Positions");
 
         let sample = vec!["ISA is supported", "EISA is supported"];
         let qword = 0b0101_0000;
         let iter = Characteristics(qword).significants();
         let result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
-        assert_eq!(
-            sample, result,
+        pretty_assert_eq!(
+            sample,
+            result,
             "Significant values, default formatting ({:064b})",
             qword
         );
         let result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
-        assert_eq!(
-            sample, result,
+        pretty_assert_eq!(
+            sample,
+            result,
             "Significant values, alternative formatting ({:064b})",
             qword
         );
@@ -404,7 +406,7 @@ mod tests {
             .reserved()
             .map(|v| (v.description, v.range))
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Reserved fields");
+        pretty_assert_eq!(sample, result, "Reserved fields");
     }
     #[test]
     fn characteristics_extension1() {
@@ -414,27 +416,29 @@ mod tests {
             .iter()
             .filter_map(|f| if f.is_set { Some(*f.position) } else { None })
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Positions");
+        pretty_assert_eq!(sample, result, "Positions");
 
         let dflt_sample = vec!["ACPI is supported", "IEEE 1394 boot is supported"];
         let alt_sample = vec!["ACPI is supported", "1394 boot is supported"];
         let byte = 0b0100_0001;
         let iter = CharacteristicsExtension1(byte).significants();
         let dflt_result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
-        assert_eq!(
-            dflt_sample, dflt_result,
+        pretty_assert_eq!(
+            dflt_sample,
+            dflt_result,
             "Significant values, default formatting ({:08b})",
             byte
         );
         let alt_result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
-        assert_eq!(
-            alt_sample, alt_result,
+        pretty_assert_eq!(
+            alt_sample,
+            alt_result,
             "Significant values, alternative formatting ({:08b})",
             byte
         );
 
         let result = CharacteristicsExtension1(0).reserved().count();
-        assert_eq!(0, result, "Reserved fields");
+        pretty_assert_eq!(0, result, "Reserved fields");
     }
     #[test]
     fn characteristics_extension2() {
@@ -444,21 +448,23 @@ mod tests {
             .iter()
             .filter_map(|f| if f.is_set { Some(*f.position) } else { None })
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Positions");
+        pretty_assert_eq!(sample, result, "Positions");
 
         let short_sample = vec!["UEFI is supported", "System is a virtual machine"];
         let long_sample = vec!["UEFI is supported","SMBIOS table describes a virtual machine. (If this bit is not set, no inference can be made about the virtuality of the system.)"];
         let byte = 0b0001_1000;
         let iter = CharacteristicsExtension2(byte).significants();
         let result = iter.map(|f| format!("{f}")).collect::<Vec<_>>();
-        assert_eq!(
-            short_sample, result,
+        pretty_assert_eq!(
+            short_sample,
+            result,
             "Significant values, default formatting ({:08b})",
             byte
         );
         let result = iter.map(|f| format!("{f:#}")).collect::<Vec<_>>();
-        assert_eq!(
-            long_sample, result,
+        pretty_assert_eq!(
+            long_sample,
+            result,
             "Significant values, alternative formatting ({:08b})",
             byte
         );
@@ -468,7 +474,7 @@ mod tests {
             .reserved()
             .map(|v| (v.description, v.range))
             .collect::<Vec<_>>();
-        assert_eq!(sample, result, "Reserved fields");
+        pretty_assert_eq!(sample, result, "Reserved fields");
     }
     #[test]
     fn rom_size() {
@@ -490,7 +496,7 @@ mod tests {
                 .into()
             })
             .collect();
-        assert_eq!(sample, result, "ROM Size");
+        pretty_assert_eq!(sample, result, "ROM Size");
     }
     #[test]
     fn dmi_bin_full_bios_structure() {
@@ -553,7 +559,7 @@ mod tests {
                 }
             })
             .unwrap();
-        assert_eq!(bios_sample, bios_result, "Full BIOS Struct");
+        pretty_assert_eq!(bios_sample, bios_result, "Full BIOS Struct");
     }
 
     #[test]
@@ -598,8 +604,9 @@ mod tests {
             .chain(bios_result.bios_characteristics_exttension_2.unwrap().significants())
             .map(|v| format!("{v}"))
             .collect::<Vec<_>>();
-        assert_eq!(
-            all_characteristics_sample, all_char_result,
+        pretty_assert_eq!(
+            all_characteristics_sample,
+            all_char_result,
             "Characteristics as in dmidecode tool"
         );
     }
@@ -618,12 +625,12 @@ mod tests {
                 }
             })
             .unwrap();
-        assert_eq!(
+        pretty_assert_eq!(
             bios_revision,
             format!("{}", bios_result.bios_revision.unwrap()),
             "BIOS Revision"
         );
-        assert_eq!(
+        pretty_assert_eq!(
             firmware_revision,
             format!("{}", bios_result.firmware_revision.unwrap()),
             "Firmware Revision"
@@ -643,6 +650,6 @@ mod tests {
                 }
             })
             .unwrap();
-        assert_eq!(size, bios_result.rom_size.into(), "ROM BIOS size");
+        pretty_assert_eq!(size, bios_result.rom_size.into(), "ROM BIOS size");
     }
 }

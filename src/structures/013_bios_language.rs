@@ -106,7 +106,7 @@ impl BitField<'_> for LanguageFlags {
 mod tests {
     use std::{prelude::v1::*, sync::OnceLock};
 
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
 
     use super::*;
 
@@ -171,7 +171,7 @@ mod tests {
             ],
         };
         let result = InstallableLanguages::new(structure);
-        assert_eq!(sample, result.collect::<Vec<_>>(), "Installable language list");
+        pretty_assert_eq!(sample, result.collect::<Vec<_>>(), "Installable language list");
     }
 
     #[test]
@@ -203,6 +203,6 @@ mod tests {
             flags: Some(LanguageFlags([].iter().collect())),
             current_language: 1,
         };
-        assert_eq!(bios_language_sample, bios_language_result, "BIOS language structure");
+        pretty_assert_eq!(bios_language_sample, bios_language_result, "BIOS language structure");
     }
 }

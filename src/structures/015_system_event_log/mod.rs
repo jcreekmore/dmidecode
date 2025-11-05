@@ -398,7 +398,7 @@ impl From<EventLogTypeDescriptor> for [u8; 2] {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -425,7 +425,7 @@ mod tests {
             (0x80, "BIOS Vendor/OEM-specific: Method 128, Address 0x12345678"),
         ];
         for (m, s) in data {
-            assert_eq!(*s, format!("{:#}", AccessMethod::new(*m, address)));
+            pretty_assert_eq!(*s, format!("{:#}", AccessMethod::new(*m, address)));
         }
     }
 
@@ -437,7 +437,7 @@ mod tests {
         let byte: u8 = 0b111;
         let ls: LogStatus = byte.into();
         let sample = vec!["Log area valid", "Log area full"];
-        assert_eq!(sample, ls.significants().map(|v| format!("{v:#}")).collect::<Vec<_>>());
+        pretty_assert_eq!(sample, ls.significants().map(|v| format!("{v:#}")).collect::<Vec<_>>());
     }
 
     #[test]
@@ -451,7 +451,7 @@ mod tests {
             (0xFF, "BIOS vendor or OEM-specific format: 255"),
         ];
         for (v, s) in data {
-            assert_eq!(*s, format!("{:#}", LogHeaderFormat::from(*v)));
+            pretty_assert_eq!(*s, format!("{:#}", LogHeaderFormat::from(*v)));
         }
     }
 
@@ -496,7 +496,7 @@ mod tests {
             },
         ];
         let result = SupportedEventLogTypeDescriptors::new(data, 2);
-        assert_eq!(sample, result.collect::<Vec<_>>());
+        pretty_assert_eq!(sample, result.collect::<Vec<_>>());
     }
 
     #[test]
@@ -522,13 +522,13 @@ mod tests {
         let access_method = AccessMethod::MemoryMappedPhysicaAddress {
             physical_address: 0xFFC40000,
         };
-        assert_eq!(access_method, result.access_method, "AccessMethod");
+        pretty_assert_eq!(access_method, result.access_method, "AccessMethod");
 
         let log_status = [Position(0)].iter().collect::<u8>().into();
-        assert_eq!(log_status, result.log_status, "LogStatus");
+        pretty_assert_eq!(log_status, result.log_status, "LogStatus");
 
         let seltd_length = result.supported_event_log_type_descriptors.clone().unwrap().count();
-        assert_eq!(27, seltd_length, "Supported Log Type Descriptors count");
+        pretty_assert_eq!(27, seltd_length, "Supported Log Type Descriptors count");
 
         let seltd_sample = [
             (T::SingleBitEccMemoryError, D::None),
@@ -570,7 +570,7 @@ mod tests {
             .clone()
             .unwrap()
             .collect::<Vec<_>>();
-        assert_eq!(seltd_sample, seltd_result, "SupportedEventLogTypeDescriptors");
+        pretty_assert_eq!(seltd_sample, seltd_result, "SupportedEventLogTypeDescriptors");
 
         let sample_bytes = seltd_sample.iter().fold(Vec::new(), |mut vec: Vec<u8>, eltd| {
             vec.push(eltd.log_type.into());
@@ -588,6 +588,6 @@ mod tests {
             log_header_format: Some(LogHeaderFormat::LogHeaderType1),
             supported_event_log_type_descriptors: Some(SupportedEventLogTypeDescriptors::new(&sample_bytes, 2)),
         };
-        assert_eq!(sample, result, "SystemEventLog");
+        pretty_assert_eq!(sample, result, "SystemEventLog");
     }
 }

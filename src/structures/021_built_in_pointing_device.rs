@@ -154,7 +154,7 @@ impl fmt::Display for Interface {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -174,7 +174,7 @@ mod tests {
             "Optical Sensor",
         ];
         for (n, &s) in sample.iter().enumerate() {
-            assert_eq!(s, format!("{:#}", Type::from(n as u8)));
+            pretty_assert_eq!(s, format!("{:#}", Type::from(n as u8)));
         }
     }
 
@@ -194,11 +194,11 @@ mod tests {
             "ADB (Apple Desktop Bus)",
         ];
         for (n, &s) in sample.iter().enumerate() {
-            assert_eq!(s, format!("{:#}", Interface::from(n as u8)));
+            pretty_assert_eq!(s, format!("{:#}", Interface::from(n as u8)));
         }
         let sample = &["Bus mouse DB-9", "Bus mouse micro-DIN", "USB"];
         for n in 0xA0..(0xA0 + sample.len()) {
-            assert_eq!(sample[n - 0xA0], format!("{:#}", Interface::from(n as u8)));
+            pretty_assert_eq!(sample[n - 0xA0], format!("{:#}", Interface::from(n as u8)));
         }
     }
 
@@ -225,6 +225,6 @@ mod tests {
             number_of_buttons: 3,
         };
         let result = BuiltInPointingDevice::try_from(structure).unwrap();
-        assert_eq!(sample, result, "BuiltInPointingDevice");
+        pretty_assert_eq!(sample, result, "BuiltInPointingDevice");
     }
 }

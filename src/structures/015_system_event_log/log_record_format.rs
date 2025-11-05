@@ -543,7 +543,7 @@ impl fmt::Display for SystemManagementType {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -569,8 +569,8 @@ mod tests {
         let result = data.iter().map(|v| v.0.into()).collect::<Vec<SystemManagementType>>();
         let enum_sample = data.iter().map(|v| v.1).collect::<Vec<_>>();
         let display_sample = data.iter().map(|v| v.2).collect::<Vec<_>>();
-        assert_eq!(enum_sample, result, "Enum variants");
-        assert_eq!(
+        pretty_assert_eq!(enum_sample, result, "Enum variants");
+        pretty_assert_eq!(
             display_sample,
             result.iter().map(|v| format!("{v}")).collect::<Vec<_>>(),
             "Enum variants"
@@ -595,12 +595,12 @@ mod tests {
             (Position(36), "Available for OEM assignment".to_string()),
             (Position(38), "Available for OEM assignment".to_string()),
         ];
-        assert_eq!(
+        pretty_assert_eq!(
             significant_sample,
             pr.significants().map(|v| format!("{v}")).collect::<Vec<_>>(),
             "Significants"
         );
-        assert_eq!(
+        pretty_assert_eq!(
             reserved_sample,
             pr.iter()
                 .filter_map(|f| {

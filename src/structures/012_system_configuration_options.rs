@@ -39,7 +39,7 @@ impl<'a> SystemConfigurationOptions<'a> {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
+    use pretty_assertions::assert_eq as pretty_assert_eq;
     use std::prelude::v1::*;
 
     #[test]
@@ -68,7 +68,7 @@ mod tests {
         };
         let result = SystemConfigurationOptions::try_from(structure).unwrap();
 
-        assert_eq!(sample, result.strings.collect::<Vec<_>>());
+        pretty_assert_eq!(sample, result.strings.collect::<Vec<_>>());
     }
 
     #[test]
@@ -107,12 +107,12 @@ mod tests {
                 _ => None,
             })
             .unwrap();
-        assert_eq!(&sample, result, "Sample\n{:?}\nResult\n{:?}", sample, result);
+        pretty_assert_eq!(&sample, result, "Sample\n{:?}\nResult\n{:?}", sample, result);
 
         let string_sample = vec![
             "NVRAM_CLR: Clear user settable NVRAM areas and set defaults",
             "PWRD_EN: Close to enable password",
         ];
-        assert_eq!(string_sample, result.strings.collect::<Vec<_>>(), "Strings");
+        pretty_assert_eq!(string_sample, result.strings.collect::<Vec<_>>(), "Strings");
     }
 }
