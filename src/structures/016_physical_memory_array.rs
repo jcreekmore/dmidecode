@@ -9,8 +9,10 @@ use core::fmt;
 use crate::{MalformedStructureError, RawStructure};
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Default)]
 pub enum MemoryArrayLocation {
     Other,
+    #[default]
     Unknown,
     SystemBoardOrMotherboard,
     IsaAddOnCard,
@@ -28,11 +30,6 @@ pub enum MemoryArrayLocation {
     Undefined(u8),
 }
 
-impl Default for MemoryArrayLocation {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
 
 impl From<u8> for MemoryArrayLocation {
     fn from(_type: u8) -> Self {
@@ -81,8 +78,10 @@ impl fmt::Display for MemoryArrayLocation {
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Default)]
 pub enum MemoryArrayUse {
     Other,
+    #[default]
     Unknown,
     SystemMemory,
     VideoMemory,
@@ -92,11 +91,6 @@ pub enum MemoryArrayUse {
     Undefined(u8),
 }
 
-impl Default for MemoryArrayUse {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
 
 impl From<u8> for MemoryArrayUse {
     fn from(_type: u8) -> Self {
@@ -129,8 +123,10 @@ impl fmt::Display for MemoryArrayUse {
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Default)]
 pub enum MemoryArrayErrorCorrectionTypes {
     Other,
+    #[default]
     Unknown,
     None,
     Parity,
@@ -140,11 +136,6 @@ pub enum MemoryArrayErrorCorrectionTypes {
     Undefined(u8),
 }
 
-impl Default for MemoryArrayErrorCorrectionTypes {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
 
 impl From<u8> for MemoryArrayErrorCorrectionTypes {
     fn from(_type: u8) -> Self {

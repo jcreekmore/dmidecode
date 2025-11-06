@@ -18,7 +18,9 @@ pub struct Flag<'a> {
 
 /// There are 2 types of *Bit Field* flag meaningful and reserved for some purposes
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Default)]
 pub enum FlagType<'a> {
+    #[default]
     Unknown,
     Significant(&'a str, &'a str),
     Reserved(&'a str),
@@ -165,11 +167,6 @@ impl fmt::Debug for Flag<'_> {
     }
 }
 
-impl Default for FlagType<'_> {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
 
 impl<'a, T> Iter<'a, T> {
     fn new(value: T, layout: Layout<'a>) -> Self {
