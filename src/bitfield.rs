@@ -17,8 +17,7 @@ pub struct Flag<'a> {
 }
 
 /// There are 2 types of *Bit Field* flag meaningful and reserved for some purposes
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-#[derive(Default)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum FlagType<'a> {
     #[default]
     Unknown,
@@ -166,7 +165,6 @@ impl fmt::Debug for Flag<'_> {
             .finish()
     }
 }
-
 
 impl<'a, T> Iter<'a, T> {
     fn new(value: T, layout: Layout<'a>) -> Self {

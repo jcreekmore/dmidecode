@@ -8,8 +8,7 @@ use core::fmt;
 
 use crate::{MalformedStructureError, RawStructure};
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-#[derive(Default)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum MemoryArrayLocation {
     Other,
     #[default]
@@ -29,7 +28,6 @@ pub enum MemoryArrayLocation {
     CxlAddOnCard,
     Undefined(u8),
 }
-
 
 impl From<u8> for MemoryArrayLocation {
     fn from(_type: u8) -> Self {
@@ -77,8 +75,7 @@ impl fmt::Display for MemoryArrayLocation {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-#[derive(Default)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum MemoryArrayUse {
     Other,
     #[default]
@@ -90,7 +87,6 @@ pub enum MemoryArrayUse {
     CacheMemory,
     Undefined(u8),
 }
-
 
 impl From<u8> for MemoryArrayUse {
     fn from(_type: u8) -> Self {
@@ -122,8 +118,7 @@ impl fmt::Display for MemoryArrayUse {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-#[derive(Default)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, Default)]
 pub enum MemoryArrayErrorCorrectionTypes {
     Other,
     #[default]
@@ -135,7 +130,6 @@ pub enum MemoryArrayErrorCorrectionTypes {
     CRC,
     Undefined(u8),
 }
-
 
 impl From<u8> for MemoryArrayErrorCorrectionTypes {
     fn from(_type: u8) -> Self {
