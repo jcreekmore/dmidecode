@@ -199,6 +199,14 @@ impl EntryPoint {
                             InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                         );
                         let_as_struct!(entry_point, EntryPointV2, sub_buffer);
+                        let entry_point = EntryPointV2 {
+                            signature: u32::from_le(entry_point.signature),
+                            struct_max: u16::from_le(entry_point.struct_max),
+                            smbios_len: u16::from_le(entry_point.smbios_len),
+                            smbios_address: u32::from_le(entry_point.smbios_address),
+                            smbios_count: u16::from_le(entry_point.smbios_count),
+                            ..entry_point
+                        };
                         lib_ensure!(
                             entry_point.len as usize >= mem::size_of::<EntryPointV2>(),
                             InvalidEntryPointError::BadSize(entry_point.len)
@@ -211,6 +219,11 @@ impl EntryPoint {
                             InvalidEntryPointError::BadSize(sub_buffer.len() as u8)
                         );
                         let_as_struct!(entry_point, EntryPointV3, sub_buffer);
+                        let entry_point = EntryPointV3 {
+                            smbios_len_max: u32::from_le(entry_point.smbios_len_max),
+                            smbios_address: u64::from_le(entry_point.smbios_address),
+                            ..entry_point
+                        };
                         lib_ensure!(
                             entry_point.len as usize >= mem::size_of::<EntryPointV3>(),
                             InvalidEntryPointError::BadSize(entry_point.len)
@@ -528,6 +541,10 @@ impl<'buffer> Structures<'buffer> {
 
         let working = &self.buffer[(self.idx as usize)..];
         let_as_struct!(header, HeaderPacked, working);
+        let header = HeaderPacked {
+            handle: u16::from_le(header.handle),
+            ..header
+        };
 
         let strings_idx: u32 = self.idx + header.len as u32;
         if strings_idx >= self.smbios_len {

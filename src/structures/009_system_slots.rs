@@ -799,7 +799,7 @@ impl<'a> From<&'a [u8]> for Device {
     fn from(data: &'a [u8]) -> Device {
         let_as_struct!(packed, DevicePacked, data);
         Device {
-            segment_group_number: packed.segment_group_number,
+            segment_group_number: u16::from_le(packed.segment_group_number),
             bus_number: packed.bus_number,
             device_and_function_number: packed.dev_and_fun_number.into(),
             data_bus_width: packed.data_bus_width,
@@ -808,7 +808,7 @@ impl<'a> From<&'a [u8]> for Device {
 }
 impl<'a> From<&'a Device> for [u8; 5] {
     fn from(d: &'a Device) -> [u8; 5] {
-        let segment = d.segment_group_number.to_ne_bytes();
+        let segment = d.segment_group_number.to_le_bytes();
         [
             segment[0],
             segment[1],

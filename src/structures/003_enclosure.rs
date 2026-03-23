@@ -244,7 +244,7 @@ impl<'buffer> Enclosure<'buffer> {
             })
             // Optional 2.3+ fields
             .and_then(|oem_defined: u32| {
-                enclosure.oem_defined = Some(oem_defined);
+                enclosure.oem_defined = Some(u32::from_le(oem_defined));
                 read_bytes(data)
             })
             .and_then(|height: u8| {

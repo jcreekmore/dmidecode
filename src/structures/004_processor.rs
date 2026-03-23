@@ -624,12 +624,12 @@ impl<'buffer> Processor<'buffer> {
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
-                processor_id: packed.processor_id,
+                processor_id: u64::from_le(packed.processor_id),
                 processor_version: structure.find_string(packed.processor_version)?,
                 voltage: packed.voltage.into(),
-                external_clock: packed.external_clock,
-                max_speed: packed.max_speed,
-                current_speed: packed.current_speed,
+                external_clock: u16::from_le(packed.external_clock),
+                max_speed: u16::from_le(packed.max_speed),
+                current_speed: u16::from_le(packed.current_speed),
                 status: ProcessorStatus::from_bits_truncate(packed.status),
                 processor_upgrade: packed.processor_upgrade.into(),
                 l1_cache_handle: None,
@@ -652,17 +652,17 @@ impl<'buffer> Processor<'buffer> {
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
-                processor_id: packed.processor_id,
+                processor_id: u64::from_le(packed.processor_id),
                 processor_version: structure.find_string(packed.processor_version)?,
                 voltage: packed.voltage.into(),
-                external_clock: packed.external_clock,
-                max_speed: packed.max_speed,
-                current_speed: packed.current_speed,
+                external_clock: u16::from_le(packed.external_clock),
+                max_speed: u16::from_le(packed.max_speed),
+                current_speed: u16::from_le(packed.current_speed),
                 status: ProcessorStatus::from_bits_truncate(packed.status),
                 processor_upgrade: packed.processor_upgrade.into(),
-                l1_cache_handle: Some(packed.l1_cache_handle),
-                l2_cache_handle: Some(packed.l2_cache_handle),
-                l3_cache_handle: Some(packed.l3_cache_handle),
+                l1_cache_handle: Some(u16::from_le(packed.l1_cache_handle)),
+                l2_cache_handle: Some(u16::from_le(packed.l2_cache_handle)),
+                l3_cache_handle: Some(u16::from_le(packed.l3_cache_handle)),
                 serial_number: None,
                 asset_tag: None,
                 part_number: None,
@@ -680,17 +680,17 @@ impl<'buffer> Processor<'buffer> {
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
-                processor_id: packed.processor_id,
+                processor_id: u64::from_le(packed.processor_id),
                 processor_version: structure.find_string(packed.processor_version)?,
                 voltage: packed.voltage.into(),
-                external_clock: packed.external_clock,
-                max_speed: packed.max_speed,
-                current_speed: packed.current_speed,
+                external_clock: u16::from_le(packed.external_clock),
+                max_speed: u16::from_le(packed.max_speed),
+                current_speed: u16::from_le(packed.current_speed),
                 status: ProcessorStatus::from_bits_truncate(packed.status),
                 processor_upgrade: packed.processor_upgrade.into(),
-                l1_cache_handle: Some(packed.l1_cache_handle),
-                l2_cache_handle: Some(packed.l2_cache_handle),
-                l3_cache_handle: Some(packed.l3_cache_handle),
+                l1_cache_handle: Some(u16::from_le(packed.l1_cache_handle)),
+                l2_cache_handle: Some(u16::from_le(packed.l2_cache_handle)),
+                l3_cache_handle: Some(u16::from_le(packed.l3_cache_handle)),
                 serial_number: Some(structure.find_string(packed.serial_number)?),
                 asset_tag: Some(structure.find_string(packed.asset_tag)?),
                 part_number: Some(structure.find_string(packed.part_number)?),
@@ -708,17 +708,17 @@ impl<'buffer> Processor<'buffer> {
                 processor_type: packed.processor_type.into(),
                 processor_family: packed.processor_family.into(),
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
-                processor_id: packed.processor_id,
+                processor_id: u64::from_le(packed.processor_id),
                 processor_version: structure.find_string(packed.processor_version)?,
                 voltage: packed.voltage.into(),
-                external_clock: packed.external_clock,
-                max_speed: packed.max_speed,
-                current_speed: packed.current_speed,
+                external_clock: u16::from_le(packed.external_clock),
+                max_speed: u16::from_le(packed.max_speed),
+                current_speed: u16::from_le(packed.current_speed),
                 status: ProcessorStatus::from_bits_truncate(packed.status),
                 processor_upgrade: packed.processor_upgrade.into(),
-                l1_cache_handle: Some(packed.l1_cache_handle),
-                l2_cache_handle: Some(packed.l2_cache_handle),
-                l3_cache_handle: Some(packed.l3_cache_handle),
+                l1_cache_handle: Some(u16::from_le(packed.l1_cache_handle)),
+                l2_cache_handle: Some(u16::from_le(packed.l2_cache_handle)),
+                l3_cache_handle: Some(u16::from_le(packed.l3_cache_handle)),
                 serial_number: Some(structure.find_string(packed.serial_number)?),
                 asset_tag: Some(structure.find_string(packed.asset_tag)?),
                 part_number: Some(structure.find_string(packed.part_number)?),
@@ -732,7 +732,7 @@ impl<'buffer> Processor<'buffer> {
             // smbios spec specifies 0xFE as an indicator to obtain processor
             // family from the Processor Family 2 field.
             let processor_family = match packed.processor_family.into() {
-                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.into(),
+                ProcessorFamily::ProcessorFamily2 => u16::from_le(packed.processor_family_2).into(),
                 family => family,
             };
             Ok(Processor {
@@ -741,33 +741,33 @@ impl<'buffer> Processor<'buffer> {
                 processor_type: packed.processor_type.into(),
                 processor_family,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
-                processor_id: packed.processor_id,
+                processor_id: u64::from_le(packed.processor_id),
                 processor_version: structure.find_string(packed.processor_version)?,
                 voltage: packed.voltage.into(),
-                external_clock: packed.external_clock,
-                max_speed: packed.max_speed,
-                current_speed: packed.current_speed,
+                external_clock: u16::from_le(packed.external_clock),
+                max_speed: u16::from_le(packed.max_speed),
+                current_speed: u16::from_le(packed.current_speed),
                 status: ProcessorStatus::from_bits_truncate(packed.status),
                 processor_upgrade: packed.processor_upgrade.into(),
-                l1_cache_handle: Some(packed.l1_cache_handle),
-                l2_cache_handle: Some(packed.l2_cache_handle),
-                l3_cache_handle: Some(packed.l3_cache_handle),
+                l1_cache_handle: Some(u16::from_le(packed.l1_cache_handle)),
+                l2_cache_handle: Some(u16::from_le(packed.l2_cache_handle)),
+                l3_cache_handle: Some(u16::from_le(packed.l3_cache_handle)),
                 serial_number: Some(structure.find_string(packed.serial_number)?),
                 asset_tag: Some(structure.find_string(packed.asset_tag)?),
                 part_number: Some(structure.find_string(packed.part_number)?),
                 core_count: Some(packed.core_count as u16),
                 core_enabled: Some(packed.core_enabled as u16),
                 thread_count: Some(packed.thread_count as u16),
-                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(
+                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(u16::from_le(
                     packed.processor_characteristics,
-                )),
+                ))),
             })
         } else {
             let_as_struct!(packed, ProcessorPacked3_0, structure.data);
             // smbios spec specifies 0xFE as an indicator to obtain processor
             // family from the Processor Family 2 field.
             let processor_family = match packed.processor_family.into() {
-                ProcessorFamily::ProcessorFamily2 => packed.processor_family_2.into(),
+                ProcessorFamily::ProcessorFamily2 => u16::from_le(packed.processor_family_2).into(),
                 family => family,
             };
 
@@ -777,17 +777,17 @@ impl<'buffer> Processor<'buffer> {
             //
             // The rule is same for Core Enabled and Thread Count as well.
             let core_count = if packed.core_count == 0xFF {
-                Some(packed.core_count_2)
+                Some(u16::from_le(packed.core_count_2))
             } else {
                 Some(packed.core_count as u16)
             };
             let core_enabled = if packed.core_enabled == 0xFF {
-                Some(packed.core_enabled_2)
+                Some(u16::from_le(packed.core_enabled_2))
             } else {
                 Some(packed.core_enabled as u16)
             };
             let thread_count = if packed.thread_count == 0xFF {
-                Some(packed.thread_count_2)
+                Some(u16::from_le(packed.thread_count_2))
             } else {
                 Some(packed.thread_count as u16)
             };
@@ -797,26 +797,26 @@ impl<'buffer> Processor<'buffer> {
                 processor_type: packed.processor_type.into(),
                 processor_family,
                 processor_manufacturer: structure.find_string(packed.processor_manufacturer)?,
-                processor_id: packed.processor_id,
+                processor_id: u64::from_le(packed.processor_id),
                 processor_version: structure.find_string(packed.processor_version)?,
                 voltage: packed.voltage.into(),
-                external_clock: packed.external_clock,
-                max_speed: packed.max_speed,
-                current_speed: packed.current_speed,
+                external_clock: u16::from_le(packed.external_clock),
+                max_speed: u16::from_le(packed.max_speed),
+                current_speed: u16::from_le(packed.current_speed),
                 status: ProcessorStatus::from_bits_truncate(packed.status),
                 processor_upgrade: packed.processor_upgrade.into(),
-                l1_cache_handle: Some(packed.l1_cache_handle),
-                l2_cache_handle: Some(packed.l2_cache_handle),
-                l3_cache_handle: Some(packed.l3_cache_handle),
+                l1_cache_handle: Some(u16::from_le(packed.l1_cache_handle)),
+                l2_cache_handle: Some(u16::from_le(packed.l2_cache_handle)),
+                l3_cache_handle: Some(u16::from_le(packed.l3_cache_handle)),
                 serial_number: Some(structure.find_string(packed.serial_number)?),
                 asset_tag: Some(structure.find_string(packed.asset_tag)?),
                 part_number: Some(structure.find_string(packed.part_number)?),
                 core_count,
                 core_enabled,
                 thread_count,
-                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(
+                processor_characteristics: Some(ProcessorCharacteristics::from_bits_truncate(u16::from_le(
                     packed.processor_characteristics,
-                )),
+                ))),
             })
         }
     }

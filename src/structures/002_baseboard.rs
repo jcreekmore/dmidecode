@@ -135,7 +135,7 @@ impl<'buffer> BaseBoard<'buffer> {
             None
         };
         let chassis_handle = if structure.data.len() > 7 {
-            Some(packed.chassis_handle)
+            Some(u16::from_le(packed.chassis_handle))
         } else {
             None
         };
