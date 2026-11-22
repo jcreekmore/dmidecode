@@ -200,66 +200,30 @@ impl Deref for Position {
         &self.0
     }
 }
-impl FromIterator<Position> for u8 {
-    fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
+/// Implements `FromIterator<Position>` and `FromIterator<&Position>` for an unsigned integer.
+/// Panics if a position is larger than the integer's bit width.
+macro_rules! impl_from_positions {
+    ($($t:ty),+ $(,)?) => {$(
+        impl FromIterator<Position> for $t {
+            fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
+                iter.into_iter().fold(0, |acc, Position(p)| {
+                    assert!(
+                        p < <$t>::BITS as usize,
+                        "bit position {p} out of range for {}",
+                        stringify!($t)
+                    );
+                    acc | (1 << p)
+                })
+            }
+        }
+        impl<'a> FromIterator<&'a Position> for $t {
+            fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
+                iter.into_iter().copied().collect()
+            }
+        }
+    )+};
 }
-impl FromIterator<Position> for u16 {
-    fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl FromIterator<Position> for u32 {
-    fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl FromIterator<Position> for u64 {
-    fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl FromIterator<Position> for u128 {
-    fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl FromIterator<Position> for usize {
-    fn from_iter<I: IntoIterator<Item = Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl<'a> FromIterator<&'a Position> for u8 {
-    fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl<'a> FromIterator<&'a Position> for u16 {
-    fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl<'a> FromIterator<&'a Position> for u32 {
-    fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl<'a> FromIterator<&'a Position> for u64 {
-    fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl<'a> FromIterator<&'a Position> for u128 {
-    fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
-impl<'a> FromIterator<&'a Position> for usize {
-    fn from_iter<I: IntoIterator<Item = &'a Position>>(iter: I) -> Self {
-        iter.into_iter().fold(0, |acc, p| acc | (1 << p.deref()))
-    }
-}
+impl_from_positions!(u8, u16, u32, u64, u128, usize);
 
 impl<'a, T> Significants<'a, T> {
     fn new(iter: Iter<'a, T>) -> Self {
@@ -461,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "attempt to shift left with overflow")]
+    #[should_panic(expected = "bit position 11 out of range for u8")]
     fn from_iterator_shift_overflow() {
         let _ = INDEX_SAMPLE.iter().map(|&p| Position(p)).collect::<u8>();
     }
